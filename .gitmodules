@@ -1,0 +1,3 @@
+[submodule "git-deps/WiseEnum"]
+	path = git-deps/WiseEnum
+	url = git@github.com:quicknir/wise_enum.git
