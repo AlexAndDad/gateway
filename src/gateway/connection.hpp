@@ -45,6 +45,7 @@ namespace gateway {
         auto handle_rx(minecraft::incomplete) -> void;
         auto handle_rx(minecraft::client::handshake const& ch) -> void;
         auto handle_rx(minecraft::client::login_start const& packet) -> void;
+        auto handle_rx(minecraft::client::encryption_response const& packet) -> void;
 
         template<class Packet>
         auto queue(Packet const& packet)
@@ -52,8 +53,6 @@ namespace gateway {
             auto& buf = tx_buffer_[1];
             auto org_size = buf.size();
             encode(packet, back_inserter(buf));
-            std::cout << "queued:\n"
-            << hexdump(std::string_view(buf.data() + org_size, buf.size())) << std::endl;
 
             maybe_send();
         }

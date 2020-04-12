@@ -7,6 +7,7 @@
 #include "polyfill/join.hpp"
 #include "minecraft/security/private_key.hpp"
 #include <random>
+#include <minecraft/client/encryption_response.hpp>
 
 namespace minecraft::server {
     WISE_ENUM_CLASS(login_state_code, waiting_handshake, waiting_login_start, waiting_encryption_response, exit_state);
@@ -21,6 +22,9 @@ namespace minecraft::server {
         void
         operator()(client::login_start const &event);
 
+        void
+        operator()(client::encryption_response const &event);
+
         static std::vector<std::uint8_t> generate_token();
 
 
@@ -30,6 +34,7 @@ namespace minecraft::server {
         std::string server_id_;
         std::vector<std::uint8_t> verify_token_;
         std::int32_t protocol_version_;
+        std::vector<std::uint8_t> shared_secret_;
     };
 
 }

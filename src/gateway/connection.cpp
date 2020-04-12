@@ -212,6 +212,13 @@ namespace gateway {
     }
 
     auto
+    connection_impl::handle_rx(minecraft::client::encryption_response const& packet) -> void
+    {
+        login_state_(packet);
+        std::cout << "end of the line" << std::endl;
+    }
+
+    auto
     connection_impl::maybe_send() -> void
     {
         if (tx_buffer_[0].empty() and not tx_buffer_[1].empty())

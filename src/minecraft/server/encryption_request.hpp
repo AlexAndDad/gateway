@@ -9,9 +9,9 @@ namespace minecraft::server
 {
     struct encryption_request
     {
-        static constexpr auto id() -> login_packet_id
+        static constexpr auto id() -> server_login_packet
         {
-            return login_packet_id::encryption_request;
+            return server_login_packet::encryption_request;
         }
         std::string server_id;
         std::vector<std::uint8_t> public_key;

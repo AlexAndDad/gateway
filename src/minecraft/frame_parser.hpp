@@ -2,12 +2,14 @@
 
 #include <variant>
 #include <tuple>
+#include <minecraft/client/encryption_response.hpp>
 #include "net.hpp"
 #include "parse_error.hpp"
 #include "minecraft/packet_id.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/client/handshake.hpp"
+#include "minecraft/client/encryption_response.hpp"
 
 namespace minecraft {
 
@@ -21,7 +23,12 @@ namespace minecraft {
 
 
 
-    using frame_variant_base = std::variant<incomplete, error_code, client::handshake, client::login_start>;
+    using frame_variant_base =
+        std::variant<incomplete,
+        error_code,
+        client::handshake,
+        client::login_start,
+        client::encryption_response>;
 
     struct frame_variant
     : frame_variant_base
@@ -83,11 +90,15 @@ namespace minecraft {
         Iter
         parse_state_login(Iter first, Iter last)
         {
-            auto id = login_packet_id();
+            auto id = client_login_packet();
             first = parse(first, last, id);
             switch (id)
             {
-            case login_packet_id::login_start:first = parse_specific<client::login_start>(first, last);
+            case client_login_packet::login_start:
+                first = parse_specific<client::login_start>(first, last);
+                break;
+            case client_login_packet::encryption_response:
+                first = parse_specific<client::encryption_response>(first, last);
                 break;
             default:throw make_error_code(error::invalid_packet);
             }

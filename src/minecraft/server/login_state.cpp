@@ -1,6 +1,7 @@
 #include "minecraft/server/login_state.hpp"
 
 #include <random>
+#include <openssl/rsa.h>
 
 namespace minecraft::server {
 
@@ -59,6 +60,39 @@ namespace minecraft::server {
         encryption_request_.verify_token = verify_token_;
 
         code_ = login_state_code::waiting_encryption_response;
+    }
+
+    void
+    login_state::operator()(client::encryption_response const &event)
+    {
+        using namespace std::literals;
+
+        if (code_ != login_state_code::waiting_encryption_response)
+            throw std::runtime_error(polyfill::join("encryption_response in state: "s, wise_enum::to_string(code_)));
+
+        // decrypt verify token
+
+        auto cipher_context = EVP_CIPHER_CTX_new();
+
+        auto rsa = EVP_PKEY_get0_RSA(this->server_key_.native_handle());
+        std::vector<std::uint8_t> output(RSA_size(rsa));
+        auto outsize = RSA_private_decrypt(event.verify_token.size(), event.verify_token.data(), output.data(), rsa,
+                                           RSA_PKCS1_PADDING);
+
+        if (outsize < 0)
+            throw std::runtime_error("error decrypting verify_token");
+        output.resize(outsize);
+
+        if (output != this->verify_token_)
+            throw std::runtime_error("verify token doesn't match");
+
+        output.resize(RSA_size(rsa));
+        outsize = RSA_private_decrypt(event.shared_secret.size(), event.shared_secret.data(), output.data(), rsa,
+                                      RSA_PKCS1_PADDING);
+        if (outsize < 0)
+            throw std::runtime_error("error decrypting shared secret");
+        output.resize(outsize);
+        shared_secret_ = std::move(output);
     }
 
 
