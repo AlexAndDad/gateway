@@ -3,10 +3,10 @@
 namespace gateway
 {
     void
-    connection_cache::create(socket_type&& sock)
+    connection_cache::create(connection_config config, socket_type&& sock)
     {
         auto ep = sock.remote_endpoint();
-        auto conn = connection(std::move(sock));
+        auto conn = connection(std::move(config), std::move(sock));
         if (canceled_)
         {
             conn.cancel();

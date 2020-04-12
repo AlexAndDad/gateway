@@ -6,8 +6,19 @@
 #include <minecraft/server/login_state.hpp>
 #include "minecraft/frame_parser.hpp"
 #include "gateway/hexdump.hpp"
+#include "minecraft/security/private_key.hpp"
 
 namespace gateway {
+    struct connection_config
+    {
+        connection_config();
+
+        minecraft::security::private_key server_key;
+        std::string server_id;
+
+        friend auto operator<<(std::ostream& os, connection_config const& cfg) -> std::ostream&;
+    };
+
     struct connection_impl
     : std::enable_shared_from_this<connection_impl>
     {
@@ -15,7 +26,7 @@ namespace gateway {
         using protocol = net::ip::tcp;
         using socket_type = net::basic_stream_socket<protocol, executor_type>;
 
-        explicit connection_impl(socket_type &&sock);
+        explicit connection_impl(connection_config config, socket_type &&sock);
 
         auto start() -> void;
 
@@ -50,6 +61,8 @@ namespace gateway {
 
         void maybe_send();
 
+        connection_config config_;
+
         socket_type sock_;
         std::vector<char> rx_buffer_;
         std::vector<char> tx_buffer_[2];
@@ -63,7 +76,7 @@ namespace gateway {
     {
         using socket_type = connection_impl::socket_type;
 
-        explicit connection(socket_type &&sock);
+        explicit connection(connection_config config, socket_type &&sock);
 
         void
         cancel();

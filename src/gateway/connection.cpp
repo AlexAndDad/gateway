@@ -3,11 +3,51 @@
 #include <iostream>
 #include <polyfill/explain.hpp>
 #include <polyfill/report.hpp>
+#include "minecraft/security/rsa.hpp"
+#include <random>
 
 namespace gateway {
 
-    connection_impl::connection_impl(socket_type &&sock)
-    : sock_(std::move(sock))
+    using namespace std::literals;
+
+    namespace {
+        std::string generate_server_id()
+        {
+            auto rng = std::random_device();
+            auto seq = std::seed_seq{rng(), rng(),rng(), rng(), rng()};
+            auto eng = std::default_random_engine(seq);
+            auto chars = "0123456789abcdefghijklmnopqrstuvwxyz"sv;
+            auto dist = std::uniform_int_distribution<std::size_t>(0, chars.size() - 1);
+
+            auto result = std::string();
+            std::generate_n(std::back_inserter(result), 20, [&]{
+                return chars[dist(eng)];
+            });
+
+            return result;
+        }
+
+    }
+
+    connection_config::connection_config()
+    : server_key()
+    , server_id(generate_server_id())
+    {
+        server_key.assign(minecraft::security::rsa(1024));
+    };
+
+    auto operator<<(std::ostream& os, connection_config const& cfg) -> std::ostream&
+    {
+        os << "Connection Config:\n"
+              "\tserver id  :" << cfg.server_id << "\n"
+              "\tserver key :\n" << cfg.server_key.public_der();
+        return os;
+    }
+
+    connection_impl::connection_impl(connection_config config, socket_type &&sock)
+    : config_(std::move(config))
+    , sock_(std::move(sock))
+    , login_state_(config_.server_id, config_.server_key)
     {
     }
 
@@ -102,13 +142,14 @@ namespace gateway {
         {
             if (ec != net::error::operation_aborted)
             {
-                std::cout << hexdump(std::string_view(rx_buffer_.data(), bytes_transferred)) << std::endl;
+                std::clog << hexdump(std::string_view(rx_buffer_.data(), bytes_transferred)) << std::endl;
                 std::clog << "connection: " << ec.message() << " : closing" << std::endl;
             }
             dynbuf.consume(bytes_transferred);
             return;
         }
 
+        std::cout << hexdump(std::string_view(rx_buffer_.data(), bytes_transferred)) << std::endl;
         std::cout << packet << std::endl;
 
         auto visitor = [this](auto &&pckt) {
@@ -186,8 +227,8 @@ namespace gateway {
 
     // ======================================================
 
-    connection::connection(socket_type &&sock)
-    : impl_(std::make_shared<connection_impl>(std::move(sock)))
+    connection::connection(connection_config config, socket_type &&sock)
+    : impl_(std::make_shared<connection_impl>(std::move(config), std::move(sock)))
     {
         impl_->start();
     }

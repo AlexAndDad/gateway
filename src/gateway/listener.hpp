@@ -3,8 +3,19 @@
 #include "config/net.hpp"
 #include <iostream>
 #include "connection_cache.hpp"
+#include "minecraft/security/private_key.hpp"
 
 namespace gateway {
+    struct listener_config : connection_config
+    {
+        auto as_connection_config() const -> connection_config const&
+        {
+            return *this;
+        }
+
+        friend auto operator<<(std::ostream& os, listener_config const& cfg) -> std::ostream&;
+    };
+
     struct listener
     {
         using executor_type = net::io_context::executor_type;
@@ -13,7 +24,7 @@ namespace gateway {
         using socket_type = net::basic_stream_socket<protocol, executor_type>;
         using acceptor_type = net::basic_socket_acceptor<protocol, executor_type>;
 
-        listener(executor_type exec);
+        listener(executor_type exec, listener_config config);
 
         void
         start()
@@ -49,6 +60,7 @@ namespace gateway {
         void
         handle_cancel();
 
+        listener_config config_;
         acceptor_type acceptor_;
         connection_cache connections_;
     };

@@ -25,4 +25,11 @@ find_package(Boost COMPONENTS system REQUIRED CONFIG)
 hunter_add_package(WiseEnum)
 find_package(WiseEnum)
 
-target_link_libraries(gateway PUBLIC Boost::boost Boost::system Threads::Threads WiseEnum::wise_enum)
+hunter_add_package(OpenSSL)
+find_package(OpenSSL)
+
+target_link_libraries(gateway PUBLIC
+        Boost::boost Boost::system
+        OpenSSL::Crypto OpenSSL::SSL
+        Threads::Threads
+        WiseEnum::wise_enum )

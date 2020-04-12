@@ -2,8 +2,16 @@
 
 namespace gateway {
 
-    listener::listener(executor_type exec)
+    auto operator<<(std::ostream& os, listener_config const& cfg) -> std::ostream&
+    {
+        os << "Listener Config\n";
+        os << cfg.as_connection_config();
+        return os;
+    }
+
+    listener::listener(executor_type exec, listener_config config)
     : acceptor_(exec)
+    , config_(config)
     {
         acceptor_.open(protocol::v4());
         acceptor_.set_option(socket_type::reuse_address());
@@ -26,7 +34,7 @@ namespace gateway {
             auto ep = sock.remote_endpoint();
             std::clog << "listener: new connection from " << ep.address() << ':' << ep.port() << std::endl;
 
-            connections_.create(std::move(sock));
+            connections_.create(config_, std::move(sock));
 
             initiate_accept();
         }

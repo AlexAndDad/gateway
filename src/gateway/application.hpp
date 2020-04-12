@@ -1,9 +1,27 @@
 #pragma once
 #include "config/net.hpp"
 #include "listener.hpp"
+#include "minecraft/security/private_key.hpp"
+#include "minecraft/security/rsa.hpp"
 
 namespace gateway
 {
+    struct app_config : listener_config
+    {
+        auto as_listener_config() const -> listener_config const&
+        {
+            return *this;
+        }
+
+        friend auto operator<<(std::ostream& os, app_config const& cfg) -> std::ostream&
+        {
+            os << "Application Config\n";
+            os << cfg.as_listener_config();
+            return os;
+        }
+
+    };
+
     struct application
     {
         using executor_type = net::io_context::executor_type;
@@ -11,8 +29,10 @@ namespace gateway
 
         application(executor_type exec)
         : signals_(exec)
-        , listener_(exec)
+        , listener_(exec, config_)
         {
+            std::cout << "Application Starting\n\n";
+            std::cout << config_ << std::endl;
             signals_.add(SIGINT);
         }
 
@@ -81,6 +101,8 @@ namespace gateway
         {
             listener_.cancel();
         }
+
+        app_config config_;
 
         signal_set signals_;
         listener listener_;
