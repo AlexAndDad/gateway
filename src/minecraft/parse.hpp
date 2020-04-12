@@ -92,5 +92,28 @@ namespace minecraft {
         return first;
     }
 
+    template<class Iter>
+    auto parse(Iter first, Iter last, std::vector<std::uint8_t>& target, std::int32_t byte_limit = 65536)
+    {
+        auto size = std::int32_t();
+        first = parse(first, last, size);
+
+        if (size > byte_limit)
+            throw make_error_code(error::invalid_array);
+
+        target.reserve(size);
+        target.clear();
+        while (first != last && size)
+        {
+            --size;
+            target.push_back(*first++);
+        }
+
+        if (size)
+            throw incomplete();
+
+        return first;
+    }
+
 
 }

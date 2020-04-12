@@ -141,22 +141,24 @@ namespace minecraft {
     auto
     frame_parser::parse_data(IterFirst first, IterLast last) -> IterFirst
     {
-        auto failure = [first, this](auto &&x) {
+        auto give_back = [first, this](auto &&x) {
             result_ = std::forward<decltype(x)>(x);
             return first;
+        };
+
+        auto current = first;
+        auto next = current;
+        auto consume = [&next]() {
+            return next;
         };
 
         try
         {
             std::int32_t packet_length;
-            auto current = parse(first, last, packet_length);
+            current = parse(first, last, packet_length);
             if (std::distance(current, last) < packet_length)
-                return failure(incomplete());
-            auto next = current + packet_length;
-
-            auto success = [next]() {
-                return next;
-            };
+                return give_back(incomplete());
+             next = current + packet_length;
 
             if (compression_enabled())
             {
@@ -177,15 +179,16 @@ namespace minecraft {
                 throw make_error_code(error::invalid_packet);
 
 
-            return success();
+            return consume();
         }
         catch (incomplete &i)
         {
-            return failure(i);
+            return give_back(i);
         }
         catch (error_code &ec)
         {
-            return failure(ec);
+            result_ = ec;
+            return consume();
         }
     }
 

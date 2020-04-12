@@ -26,7 +26,7 @@ namespace minecraft::server {
 
         auto result = std::vector<std::uint8_t>(4);
         auto dist = std::uniform_int_distribution<std::uint32_t>(0, 255);
-        std::generate(result.begin(), result.end(), [&]{
+        std::generate(result.begin(), result.end(), [&] {
             return dist(eng);
         });
         return result;
@@ -55,8 +55,8 @@ namespace minecraft::server {
 
         if (protocol_version_ <= 578)
             encryption_request_.server_id = server_id_;
-        auto key_text= server_key_.public_der();
-        encryption_request_.public_key.assign(key_text.begin(), key_text.end());
+        encryption_request_.public_key = server_key_.public_asn1();
+        encryption_request_.verify_token = verify_token_;
 
         code_ = login_state_code::waiting_encryption_response;
     }

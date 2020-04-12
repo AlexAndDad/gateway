@@ -61,13 +61,24 @@ namespace minecraft::security {
         EVP_PKEY_assign_RSA(handle_, r.release());
     }
 
-    std::string private_key::public_der() const
+    std::string private_key::public_pem() const
     {
         BIO* mem = BIO_new(BIO_s_mem());
         PEM_write_bio_PUBKEY(mem, native_handle());
         BUF_MEM* bptr;
         BIO_get_mem_ptr(mem, &bptr);
         auto result = std::string(bptr->data, bptr->data + bptr->length);
+        BIO_free(mem);
+        return result;
+    }
+
+    std::vector<std::uint8_t> private_key::public_asn1() const
+    {
+        BIO* mem = BIO_new(BIO_s_mem());
+        i2d_PUBKEY_bio(mem, native_handle());
+        BUF_MEM* bptr;
+        BIO_get_mem_ptr(mem, &bptr);
+        auto result = std::vector<std::uint8_t>(bptr->data, bptr->data + bptr->length);
         BIO_free(mem);
         return result;
     }

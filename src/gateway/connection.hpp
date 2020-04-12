@@ -6,7 +6,6 @@
 #include <minecraft/server/login_state.hpp>
 #include "minecraft/frame_parser.hpp"
 #include "gateway/hexdump.hpp"
-#include "minecraft/security/private_key.hpp"
 
 namespace gateway {
     struct connection_config
@@ -52,7 +51,7 @@ namespace gateway {
         {
             auto& buf = tx_buffer_[1];
             auto org_size = buf.size();
-            encode(packet, std::back_inserter(buf));
+            encode(packet, back_inserter(buf));
             std::cout << "queued:\n"
             << hexdump(std::string_view(buf.data() + org_size, buf.size())) << std::endl;
 

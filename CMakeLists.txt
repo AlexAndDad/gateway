@@ -13,9 +13,22 @@ file(GLOB_RECURSE src_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
         src/*.cpp)
 file(GLOB_RECURSE hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
         src/*.hpp)
-add_executable(gateway ${src_files} ${hdr_files})
-target_include_directories(gateway PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(spec_files ${src_files})
+list(FILTER spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
+add_library(gateway_lib ${src_files} ${hdr_files})
+target_include_directories(gateway_lib
+        PUBLIC
+            ${CMAKE_CURRENT_BINARY_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(gateway src/main.cpp)
+target_link_libraries(gateway PUBLIC gateway_lib)
+
+add_executable(gateway_test ${spec_files})
+target_link_libraries(gateway_test PUBLIC gateway_lib)
 
 find_package(Threads REQUIRED)
 
@@ -28,7 +41,12 @@ find_package(WiseEnum)
 hunter_add_package(OpenSSL)
 find_package(OpenSSL)
 
-target_link_libraries(gateway PUBLIC
+hunter_add_package(Catch)
+find_package(Catch2)
+
+target_link_libraries(gateway_test PUBLIC Catch2::Catch2)
+
+target_link_libraries(gateway_lib PUBLIC
         Boost::boost Boost::system
         OpenSSL::Crypto OpenSSL::SSL
         Threads::Threads

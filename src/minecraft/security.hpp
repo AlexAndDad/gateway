@@ -2,6 +2,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
+#include <openssl/pkcs12.h>
 #include <utility>
 #include <stdexcept>
 

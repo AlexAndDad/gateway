@@ -16,6 +16,7 @@ namespace minecraft {
             invalid_packet,
             not_implemented,
             invalid_varint,
+            invalid_array,
             invalid_string,
             invalid_enum,
             incomplete_parse,
@@ -44,6 +45,7 @@ namespace minecraft {
                 case error::invalid_packet:return "invalid packet";
                 case error::not_implemented:return "not implemented";
                 case error::invalid_varint:return "invalid varint";
+                case error::invalid_array:return "invalid array";
                 case error::invalid_string:return "invalid string";
                 case error::invalid_enum:return "invalid enum";
                 case error::incomplete_parse: return "incomplete parse";

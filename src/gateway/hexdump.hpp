@@ -9,9 +9,21 @@
 #include <cstdlib>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace gateway
 {
+
+    inline
+    auto temp_hex(std::uint8_t val) -> std::string_view
+    {
+        thread_local char hexdigits[2];
+        static const char xlate[] = "0123456789abcdef";
+        hexdigits[0] = xlate[val >> 4];
+        hexdigits[1] = xlate[val & 0xf];
+        return std::string_view(hexdigits, 2);
+    }
+
     template<class Word>
     struct hexdump_state;
 
@@ -68,7 +80,7 @@ namespace gateway
         void put(unsigned char c, Handler handler)
         {
             spacing(handler);
-            handler(hexify(c));
+            handler(temp_hex(c));
             handler(" ");
             visual += safe_char(c);
             if(visual.size() >= column_width)
@@ -81,14 +93,6 @@ namespace gateway
             if (!visual.empty())
                 flush_line(h);
             row_count = 0;
-        }
-
-        std::string_view hexify(unsigned char val)
-        {
-            static const char xlate[] = "0123456789abcdef";
-            hexdigits[0] = xlate[val >> 4];
-            hexdigits[1] = xlate[val & 0xf];
-            return std::string_view(hexdigits, 2);
         }
 
         std::size_t row_count = 0;
@@ -137,5 +141,18 @@ namespace gateway
         Container const& c_;
         std::size_t columns_;
     };
+
+    inline
+    std::string hexstring(std::vector<std::uint8_t> const& data)
+    {
+        std::string result;
+        result.reserve(data.size() * 2);
+        for (auto b : data)
+        {
+            auto t = temp_hex(b);
+            result.append(t.begin(), t.end());
+        }
+        return result;
+    }
 
 }

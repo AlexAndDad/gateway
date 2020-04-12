@@ -3,14 +3,19 @@
 //
 
 #include "rsa.hpp"
+#include "minecraft/security/bignum.hpp"
 #include <stdexcept>
 #include <utility>
 
 namespace minecraft::security {
 
     rsa::rsa(std::size_t bits)
-    : handle_(RSA_generate_key(static_cast<int>(bits), RSA_F4, nullptr, nullptr))
+    : handle_(RSA_new())
     {
+        auto bn = bignum(RSA_F4);
+
+        RSA_generate_key_ex(handle_, static_cast<int>(bits), bn.native_handle(), nullptr);
+
         if (not handle_)
             throw std::runtime_error("rsa keygen failed");
     }

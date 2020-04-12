@@ -3,6 +3,7 @@
 #include <openssl/evp.h>
 #include <utility>
 #include <string>
+#include <vector>
 
 namespace minecraft::security
 {
@@ -30,7 +31,8 @@ namespace minecraft::security
         native_handle_type release() { return std::exchange(handle_, nullptr); }
         native_handle_type native_handle() const { return handle_; }
 
-        std::string public_der() const;
+        std::string public_pem() const;
+        std::vector<std::uint8_t> public_asn1() const;
 
     private:
 

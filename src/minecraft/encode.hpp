@@ -49,4 +49,18 @@ namespace minecraft {
         return encode_bytes(in.begin(), in.end(), first);
     }
 
+    template<class Frame, class Container>
+    void encode_frame(Frame const& frame, Container& target)
+    {
+        thread_local std::string length;
+        thread_local std::string data;
+        data.clear();
+        encode(frame, std::back_inserter(data));
+
+        length.clear();
+        encode(std::int32_t(data.size()), std::back_inserter(length));
+        target.insert(target.end(), length.begin(), length.end());
+        target.insert(target.end(), data.begin(), data.end());
+    }
+
 }
