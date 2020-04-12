@@ -5,7 +5,8 @@
 namespace minecraft {
 
     template<class Iter>
-    Iter encode(std::int32_t in, Iter first)
+    Iter
+    encode(std::int32_t in, Iter first)
     {
         auto value = static_cast<std::uint32_t>(in);
         do
@@ -15,33 +16,37 @@ namespace minecraft {
             if (value != 0)
                 b |= 0x80;
             *first++ = b;
-        } while(value);
+        } while (value);
         return first;
     }
 
     template<class Enum, class Iter>
-    auto encode(Enum in, Iter first)
+    auto
+    encode(Enum in, Iter first)
     -> std::enable_if_t<std::is_enum_v<Enum>, Iter>
     {
-        return encode(static_cast<std::underlying_type_t <Enum>>(in), first);
+        return encode(static_cast<std::underlying_type_t<Enum>>(in), first);
+    }
+
+    template<class I1, class I2, class Iter>
+    Iter
+    encode_bytes(I1 first, I2 last, Iter target)
+    {
+        return std::copy(first, last, encode(static_cast<std::int32_t>(std::distance(first, last)), target));
     }
 
     template<class Iter>
-    Iter encode(std::string const& in, Iter first)
+    Iter
+    encode(std::string const &in, Iter first)
     {
-        auto len = static_cast<std::int32_t>(in.size());
-        first = encode(len, first);
-        first = std::copy(in.begin(), in.end(), first);
-        return first;
+        return encode_bytes(in.begin(), in.end(), first);
     }
 
     template<class Iter>
-    Iter encode(std::vector<std::uint8_t> const& in, Iter first)
+    Iter
+    encode(std::vector<std::uint8_t> const &in, Iter first)
     {
-        auto len = static_cast<std::int32_t>(in.size());
-        first = encode(len, first);
-        first = std::copy(in.begin(), in.end(), first);
-        return first;
+        return encode_bytes(in.begin(), in.end(), first);
     }
 
 }
