@@ -1,6 +1,8 @@
 #include "connection.hpp"
 #include "hexdump.hpp"
 #include <iostream>
+#include <polyfill/explain.hpp>
+#include <polyfill/report.hpp>
 
 namespace gateway {
 
@@ -59,7 +61,7 @@ namespace gateway {
             result_type
             operator()(iterator first, iterator last) const
             {
-                auto next = parser.parse(first, last);
+                auto next = parser.parse_data(first, last);
 
                 if (complete(parser.result()))
                     return std::make_pair(next, true);
@@ -82,26 +84,102 @@ namespace gateway {
     }
 
     auto
-    connection_impl::handle_read(error_code const &ec, std::size_t bytes_transferred) -> void
+    connection_impl::handle_read(error_code ec, std::size_t bytes_transferred) -> void
     {
+        auto &&packet = parser_.result();
+        auto dynbuf = net::dynamic_buffer(rx_buffer_);
+        if (!ec.failed())
+        {
+            if (std::holds_alternative<error_code>(packet.as_variant()))
+                ec = std::get<error_code>(packet.as_variant());
+            else if (std::holds_alternative<minecraft::incomplete>(packet.as_variant()))
+            {
+                ec = minecraft::error::incomplete_parse;
+            }
+        }
+
         if (ec.failed())
         {
             if (ec != net::error::operation_aborted)
             {
+                std::cout << hexdump(std::string_view(rx_buffer_.data(), bytes_transferred)) << std::endl;
                 std::clog << "connection: " << ec.message() << " : closing" << std::endl;
             }
-        }
-        else
-        {
-            std::cout << hexdump(std::string_view(rx_buffer_.data(), bytes_transferred)) << std::endl;
-            auto dynbuf = net::dynamic_buffer(rx_buffer_);
-            std::cout << parser_.result() << std::endl;
             dynbuf.consume(bytes_transferred);
+            return;
+        }
 
+        std::cout << packet << std::endl;
 
+        auto visitor = [this](auto &&pckt) {
+            this->handle_rx(pckt);
+        };
+
+        try
+        {
+            std::visit(visitor, packet.as_variant());
+            dynbuf.consume(bytes_transferred);
             initiate_read();
         }
+        catch (...)
+        {
+            std::clog << "connection : " << polyfill::explain() << std::endl;
+        }
+
     }
+
+    auto
+    connection_impl::handle_rx(error_code ec) -> void
+    {
+        throw system_error(ec);
+    }
+
+    auto
+    connection_impl::handle_rx(minecraft::incomplete) -> void
+    {
+        assert(!"logic error");
+        throw system_error(minecraft::error::incomplete_parse);
+    }
+
+    auto
+    connection_impl::handle_rx(minecraft::client::handshake const &ch) -> void
+    {
+        login_state_(ch);
+        parser_.state(ch.next_state);
+    }
+
+    auto
+    connection_impl::handle_rx(minecraft::client::login_start const &packet) -> void
+    {
+        login_state_(packet);
+        queue(login_state_.encryption_request_);
+    }
+
+    auto
+    connection_impl::maybe_send() -> void
+    {
+        if (tx_buffer_[0].empty() and not tx_buffer_[1].empty())
+        {
+            std::swap(tx_buffer_[0], tx_buffer_[1]);
+            net::async_write(sock_, net::buffer(tx_buffer_[0]), bind_executor(get_executor(),
+                                                                              [self = this->shared_from_this()](
+                                                                              error_code const &ec,
+                                                                              std::size_t bytes_transferred) {
+                                                                                  self->handle_write(ec,
+                                                                                                     bytes_transferred);
+                                                                              }));
+        }
+    }
+
+    auto
+    connection_impl::handle_write(error_code ec, std::size_t bytes_transferred) -> void
+    {
+        tx_buffer_[0].clear();
+        if (!ec.failed())
+            maybe_send();
+    }
+
+
 
 
 

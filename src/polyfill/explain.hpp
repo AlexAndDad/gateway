@@ -4,6 +4,7 @@
 #include "net.hpp"
 
 namespace polyfill {
+
     struct explainer
     {
         std::exception_ptr ep = std::current_exception();

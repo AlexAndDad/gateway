@@ -2,7 +2,10 @@
 
 #include "net.hpp"
 #include <memory>
+#include <iostream>
+#include <minecraft/server/login_state.hpp>
 #include "minecraft/frame_parser.hpp"
+#include "gateway/hexdump.hpp"
 
 namespace gateway {
     struct connection_impl
@@ -26,13 +29,33 @@ namespace gateway {
         auto handle_cancel() -> void;
 
         auto initiate_read() -> void;
-        auto handle_read(error_code const& ec, std::size_t bytes_transferred) -> void;
+        auto handle_read(error_code ec, std::size_t bytes_transferred) -> void;
+        auto handle_write(error_code ec, std::size_t bytes_transferred) -> void;
+        auto handle_rx(error_code ec) -> void;
+        auto handle_rx(minecraft::incomplete) -> void;
+        auto handle_rx(minecraft::client::handshake const& ch) -> void;
+        auto handle_rx(minecraft::client::login_start const& packet) -> void;
+
+        template<class Packet>
+        auto queue(Packet const& packet)
+        {
+            auto& buf = tx_buffer_[1];
+            auto org_size = buf.size();
+            encode(packet, std::back_inserter(buf));
+            std::cout << "queued:\n"
+            << hexdump(std::string_view(buf.data() + org_size, buf.size())) << std::endl;
+
+            maybe_send();
+        }
+
+        void maybe_send();
 
         socket_type sock_;
         std::vector<char> rx_buffer_;
+        std::vector<char> tx_buffer_[2];
         minecraft::frame_parser parser_;
         minecraft::frame_variant current_frame_;
-
+        minecraft::server::login_state login_state_;
 };
 
 

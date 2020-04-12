@@ -3,10 +3,10 @@
 //
 
 #pragma once
+
 #include "net.hpp"
 
-namespace minecraft
-{
+namespace minecraft {
     struct error
     {
         enum parse_error
@@ -16,33 +16,37 @@ namespace minecraft
             invalid_packet,
             not_implemented,
             invalid_varint,
-            invalid_string
+            invalid_string,
+            invalid_enum,
+            incomplete_parse,
         };
     };
 
 
-    inline auto parse_error_category() -> error_category const&
+    inline auto
+    parse_error_category() -> error_category const &
     {
-        static struct : error_category
+        static struct
+        : error_category
         {
-            const char* name() const noexcept {
+            const char *
+            name() const noexcept
+            {
                 return "minecraft parse error";
             }
 
-            std::string message(int value) const
+            std::string
+            message(int value) const
             {
-                switch(static_cast<error::parse_error>(value))
+                switch (static_cast<error::parse_error>(value))
                 {
-                case error::ok:
-                    return "ok";
-                case error::invalid_packet:
-                    return "invalid packet";
-                case error::not_implemented:
-                    return "not implemented";
-                case error::invalid_varint:
-                    return "invalid varint";
-                case error::invalid_string:
-                    return "invalid string";
+                case error::ok:return "ok";
+                case error::invalid_packet:return "invalid packet";
+                case error::not_implemented:return "not implemented";
+                case error::invalid_varint:return "invalid varint";
+                case error::invalid_string:return "invalid string";
+                case error::invalid_enum:return "invalid enum";
+                case error::incomplete_parse: return "incomplete parse";
                 }
                 return "unknown code: " + std::to_string(value);
             }
@@ -50,14 +54,17 @@ namespace minecraft
         return cat;
     }
 
-    inline auto make_error_code(error::parse_error e) -> error_code
+    inline auto
+    make_error_code(error::parse_error e) -> error_code
     {
         return error_code(static_cast<int>(e), parse_error_category());
     }
 }
 
-namespace boost::system
-{
+namespace boost::system {
     template<>
-    struct is_error_code_enum<minecraft::error::parse_error> : std::true_type {};
+    struct is_error_code_enum<minecraft::error::parse_error>
+    : std::true_type
+    {
+    };
 }

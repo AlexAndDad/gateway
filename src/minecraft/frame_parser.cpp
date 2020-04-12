@@ -1,36 +1,17 @@
 #include "frame_parser.hpp"
+#include "polyfill/report.hpp"
 
 namespace minecraft
 {
-    void report_on(std::ostream& os, error_code const& ec)
-    {
-        os << "system error: " << ec.message() << " : code=" << ec.value() << " : category=" << ec.category().name();
-    }
+    using polyfill::report_on;
 
     // ===============================================================
 
-    void report_on(std::ostream& os, incomplete const&)
-    {
-        os << "incomplete";
-    }
 
     // ===============================================================
 
-    void report_on(std::ostream& os, client_handshake const& ch)
-    {
-        os << "client handshake : "
-              "protocol version=" << ch.protocol_version
-              << " : server_address=" << ch.server_address
-              << " : server_port=" << ch.server_port
-              << " : next_state=" << wise_enum::to_string(ch.next_state);
-    }
 
     // ===============================================================
-
-    void report_on(std::ostream& os, uncompressed_header const& uh)
-    {
-        os << "uncompressed header: length=" << uh.length << " : id=" << wise_enum::to_string(uh.id);
-    }
 
 
     // ===============================================================
