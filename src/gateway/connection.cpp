@@ -98,6 +98,12 @@ namespace gateway {
     connection_impl::handle_start() -> void
     {
         initiate_read();
+        /*
+        minecraft::server::async_receive_login(sock_, net::dynamic_buffer(rx_buffer_),
+        bind_executor(get_executor(), [self = this->shared_from_this()](error_code const& ec){
+
+        }));
+         */
     }
 
     auto

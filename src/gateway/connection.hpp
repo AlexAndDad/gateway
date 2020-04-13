@@ -6,6 +6,7 @@
 #include <minecraft/server/login_state.hpp>
 #include "minecraft/frame_parser.hpp"
 #include "gateway/hexdump.hpp"
+#include "minecraft/server/receive_login.hpp"
 
 namespace gateway {
     struct connection_config
@@ -67,6 +68,9 @@ namespace gateway {
         minecraft::frame_parser parser_;
         minecraft::frame_variant current_frame_;
         minecraft::server::login_state login_state_;
+
+
+        minecraft::server::receive_login_params login_params_;
 };
 
 

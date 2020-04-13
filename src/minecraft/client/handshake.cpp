@@ -12,4 +12,13 @@ namespace minecraft::client
            << " : next_state=" << wise_enum::to_string(ch.next_state);
     }
 
+    error_code& handshake::validate(error_code& ec) const
+    {
+        if (protocol_version != 200)
+            ec = error::invalid_protocol;
+        if (next_state != client_state::login)
+            ec = error::invalid_packet;
+        return ec;
+    }
+
 }

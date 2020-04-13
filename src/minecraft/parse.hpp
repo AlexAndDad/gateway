@@ -24,6 +24,72 @@ namespace minecraft {
         return first;
     }
 
+    template<class Iter>
+    auto
+    parse2(Iter first, Iter last, std::int32_t &result) -> std::tuple<std::size_t, error_code>
+    {
+        std::size_t count = 0;
+        std::uint32_t accumulator = 0;
+
+        auto success = [&] {
+            result = accumulator;
+            return std::tuple(count, error_code());
+        };
+
+        auto failure = [&](error::parse_error e)
+        {
+            result = 0;
+            return std::tuple(0, error_code(e));
+        };
+
+        int shift = 0;
+        while (first != last)
+        {
+            auto x = std::uint32_t(std::uint8_t(*first++));
+            ++count;
+            accumulator |= (x & 0x7fu) << shift;
+            shift += 7;
+            if (not(x & 0x80u))
+                return success();
+            if (shift > 28)
+                return failure(error::invalid_varint);
+        }
+        return failure(error::incomplete_parse);
+    }
+
+    template<class Iter>
+    auto
+    parse2(Iter first, Iter last, std::int64_t &result) -> std::tuple<std::size_t, error_code>
+    {
+        std::size_t count = 0;
+        std::uint64_t accumulator = 0;
+
+        auto success = [&] {
+            result = accumulator;
+            return std::tuple(count, error_code());
+        };
+
+        auto failure = [&](error::parse_error e)
+        {
+            result = 0;
+            return std::tuple(0, error_code(e));
+        };
+
+        int shift = 0;
+        while (first != last)
+        {
+            auto x = std::uint64_t(std::uint8_t(*first++));
+            ++count;
+            accumulator |= (x & 0x7fu) << shift;
+            shift += 7;
+            if (not(x & 0x80u))
+                return success();
+            if (shift > (7 * 9))
+                return failure(error::invalid_varint);
+        }
+        return failure(error::incomplete_parse);
+    }
+
     template<class I1, class I2>
     auto
     parse(I1 first, I2 last, std::int32_t &result) -> I1

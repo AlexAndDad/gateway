@@ -6,53 +6,62 @@
 
 #include <openssl/bn.h>
 #include <utility>
+#include "minecraft/security/error.hpp"
 
-namespace minecraft::security
-{
+namespace minecraft::security {
+    inline BIGNUM *
+    check_success(BIGNUM *ptr)
+    {
+        if (not ptr)
+            throw_error();
+        return ptr;
+    }
+
     struct bignum
     {
-        using native_handle_type = BIGNUM*;
+        using native_handle_type = BIGNUM *;
 
         explicit bignum(unsigned long word = 0)
         : handle_(BN_new())
         {
-            BN_set_word(handle_, word);
+            check_success(handle_);
+            check_success(BN_set_word(handle_, word));
         }
 
-        bignum(bignum&& r)
+        bignum(bignum &&r)
         : handle_(r.release())
         {
 
         }
 
-        bignum(bignum const& r)
+        bignum(bignum const &r)
         : handle_(r.dup())
         {
 
         }
 
-        bignum& operator=(bignum&& r)
+        bignum &
+        operator=(bignum &&r) noexcept
         {
             BN_free(handle_);
             handle_ = r.release();
             return *this;
         }
 
-        bignum& operator=(bignum const& r)
+        bignum &
+        operator=(bignum const &r)
         {
-            if (handle_ && r.handle_)
+            if (this != &r)
             {
-                BN_copy(handle_, r.handle_);
+                if (r.handle_)
+                    if (handle_)
+                        check_success(BN_copy(handle_, r.handle_));
+                    else
+                        handle_ = r.dup();
+                else
+                    BN_free(std::exchange(handle_, nullptr));
             }
-            else if (r.handle_)
-            {
-                handle_ = BN_dup(r.handle_);
-            }
-            else
-            {
-                BN_free(handle_);
-                handle_ = nullptr;
-            }
+
             return *this;
         }
 
@@ -61,9 +70,19 @@ namespace minecraft::security
             BN_free(handle_);
         }
 
-        native_handle_type release() { return std::exchange(handle_, nullptr); }
-        native_handle_type dup() const { return handle_ ? BN_dup(handle_) : nullptr; }
-        native_handle_type native_handle() const { return handle_; }
+        native_handle_type
+        release() noexcept
+        { return std::exchange(handle_, nullptr); }
+
+        native_handle_type
+        dup() const
+        {
+            return check_success(BN_dup(handle_));
+        }
+
+        native_handle_type
+        native_handle() const noexcept
+        { return handle_; }
 
     private:
 
