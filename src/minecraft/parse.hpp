@@ -134,6 +134,29 @@ namespace minecraft {
         return first;
     }
 
+    template<class Iter, class Enum>
+    static auto
+    parse2(Iter first, Iter last, Enum &target, error_code& ec) ->
+    std::enable_if_t<std::is_enum_v<Enum>, std::size_t>
+    {
+        using utype = std::underlying_type_t<Enum>;
+        auto accum = utype();
+        auto [n, err] = parse2(first, last, accum);
+        if (!err.failed())
+        {
+            auto check = [&accum] {
+                for (auto e : wise_enum::range< Enum >)
+                    if (static_cast< utype >(e.value) == accum)
+                        return true;
+                return false;
+            };
+            if (!check())
+                err= error::invalid_enum;
+        }
+        ec = err;
+        return err.failed() ? 0 : n;
+    }
+
     template<class Iter>
     auto
     parse(Iter first, Iter last, std::string &target, std::size_t char_limit = 32767) -> Iter

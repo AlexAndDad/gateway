@@ -23,6 +23,15 @@ namespace minecraft
             invalid_enum,
             invalid_protocol,
             incomplete_parse,
+            unexpected_packet,
+        };
+
+        // errors in the minecraft protocol login phase
+        enum login_error
+        {
+            shared_secret_failure = 1,
+            not_rsa_key = 2,
+            decryption_failure = 3,
         };
     };
 
@@ -56,6 +65,30 @@ namespace minecraft
                     return "invalid enum";
                 case error::incomplete_parse:
                     return "incomplete parse";
+                case error::unexpected_packet:
+                    return "unexpected packet";
+                }
+                return "unknown code: " + std::to_string(value);
+            }
+        } cat;
+        return cat;
+    }
+    inline auto login_error_category() -> error_category const &
+    {
+        static struct : error_category
+        {
+            const char *name() const noexcept { return "minecraft login error"; }
+
+            std::string message(int value) const
+            {
+                switch (static_cast< error::login_error >(value))
+                {
+                case error::login_error::shared_secret_failure:
+                    return "shared secret failure";
+                case error::login_error::not_rsa_key:
+                    return "not rsa key";
+                case error::login_error::decryption_failure:
+                    return "decryption failure";
                 }
                 return "unknown code: " + std::to_string(value);
             }
@@ -67,12 +100,21 @@ namespace minecraft
     {
         return error_code(static_cast< int >(e), parse_error_category());
     }
+    inline auto make_error_code(error::login_error e) -> error_code
+    {
+        return error_code(static_cast< int >(e), parse_error_category());
+    }
 }   // namespace minecraft
 
 namespace boost::system
 {
     template <>
     struct is_error_code_enum< minecraft::error::parse_error > : std::true_type
+    {
+    };
+
+    template <>
+    struct is_error_code_enum< minecraft::error::login_error > : std::true_type
     {
     };
 }   // namespace boost::system

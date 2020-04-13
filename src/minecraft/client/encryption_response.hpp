@@ -5,24 +5,32 @@
 #pragma once
 
 #include "minecraft/parse.hpp"
+
 #include <iostream>
+#include <minecraft/packet_id.hpp>
+#include <minecraft/security/private_key.hpp>
 
-namespace minecraft::client {
-
+namespace minecraft::client
+{
     struct encryption_response
     {
-        std::vector<std::uint8_t> shared_secret;
-        std::vector<std::uint8_t> verify_token;
+        static constexpr auto id() { return client_login_packet ::encryption_response; }
 
-        template<class Iter>
-        friend auto parse(Iter first, Iter last, encryption_response& arg) -> Iter;
+        std::vector< std::uint8_t > shared_secret;
+        std::vector< std::uint8_t > verify_token;
 
-        friend auto operator<<(std::ostream& os, encryption_response const& arg) -> std::ostream&;
-        friend auto report_on(std::ostream& os, encryption_response const& arg) -> void;
+        template < class Iter >
+        friend auto parse(Iter first, Iter last, encryption_response &arg) -> Iter;
+
+        friend auto                 operator<<(std::ostream &os, encryption_response const &arg) -> std::ostream &;
+        friend auto                 report_on(std::ostream &os, encryption_response const &arg) -> void;
+        std::vector< std::uint8_t > decrypt_secret(minecraft::security::private_key const &server_key,
+                                                   std::vector< std::uint8_t > const &     original_verify_token,
+                                                   error_code &                            ec) const;
     };
 
-    template<class Iter>
-    auto parse(Iter first, Iter last, encryption_response& arg) -> Iter
+    template < class Iter >
+    auto parse(Iter first, Iter last, encryption_response &arg) -> Iter
     {
         using minecraft::parse;
         first = parse(first, last, arg.shared_secret);
@@ -30,4 +38,29 @@ namespace minecraft::client {
         return first;
     }
 
-}
+    template < class Iter >
+    auto parse(Iter first, Iter last, encryption_response &arg, error_code &ec) -> std::size_t
+    {
+        std::size_t n = 0;
+        try
+        {
+            using minecraft::parse;
+            auto i = parse(first, last, arg.shared_secret);
+            i      = parse(i, last, arg.verify_token);
+            if (i != last)
+                ec = error::invalid_packet;
+            if (not ec.failed())
+                n = std::distance(first, i);
+        }
+        catch (incomplete)
+        {
+            ec = error::incomplete_parse;
+        }
+        catch (error_code &e)
+        {
+            ec = e;
+        }
+        return n;
+    }
+
+}   // namespace minecraft::client

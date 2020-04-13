@@ -1,17 +1,19 @@
+#pragma once
+
 #include "packet_id.hpp"
+
 #include <string>
 #include <vector>
 
-namespace minecraft {
-
-    template<class Iter>
-    Iter
-    encode(std::int32_t in, Iter first)
+namespace minecraft
+{
+    template < class Iter >
+    Iter encode(std::int32_t in, Iter first)
     {
-        auto value = static_cast<std::uint32_t>(in);
+        auto value = static_cast< std::uint32_t >(in);
         do
         {
-            auto b = static_cast<std::uint8_t>(value & 0x7f);
+            auto b = static_cast< std::uint8_t >(value & 0x7f);
             value >>= 7;
             if (value != 0)
                 b |= 0x80;
@@ -20,37 +22,40 @@ namespace minecraft {
         return first;
     }
 
-    template<class Enum, class Iter>
-    auto
-    encode(Enum in, Iter first)
-    -> std::enable_if_t<std::is_enum_v<Enum>, Iter>
+    template < class Enum, class Iter >
+    auto encode(Enum in, Iter first) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
     {
-        return encode(static_cast<std::underlying_type_t<Enum>>(in), first);
+        return encode(static_cast< std::underlying_type_t< Enum > >(in), first);
     }
 
-    template<class I1, class I2, class Iter>
-    Iter
-    encode_bytes(I1 first, I2 last, Iter target)
+    template < class I1, class I2, class Iter >
+    Iter encode_bytes(I1 first, I2 last, Iter target)
     {
-        return std::copy(first, last, encode(static_cast<std::int32_t>(std::distance(first, last)), target));
+        return std::copy(first, last, encode(static_cast< std::int32_t >(std::distance(first, last)), target));
     }
 
-    template<class Iter>
-    Iter
-    encode(std::string const &in, Iter first)
+    template < class Iter >
+    Iter encode(std::string const &in, Iter first)
     {
         return encode_bytes(in.begin(), in.end(), first);
     }
 
-    template<class Iter>
-    Iter
-    encode(std::vector<std::uint8_t> const &in, Iter first)
+    template < class Iter >
+    Iter encode(std::vector< std::uint8_t > const &in, Iter first)
     {
         return encode_bytes(in.begin(), in.end(), first);
     }
 
-    template<class Frame, class Container>
-    void encode_frame(Frame const& frame, Container& target)
+    template<class Container>
+    void encode_to_container(std::vector< uint8_t > const &source, Container &dest) {
+
+        auto i = std::back_inserter(dest);
+        encode(std::uint32_t(source.size()), i);
+        dest.insert(dest.end(), source.begin(), source.end());
+    }
+
+    template < class Frame, class Container >
+    void encode_frame(Frame const &frame, Container &target)
     {
         thread_local std::string length;
         thread_local std::string data;
@@ -63,4 +68,4 @@ namespace minecraft {
         target.insert(target.end(), data.begin(), data.end());
     }
 
-}
+}   // namespace minecraft

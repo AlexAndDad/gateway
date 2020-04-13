@@ -48,6 +48,9 @@ namespace gateway {
         auto handle_rx(minecraft::client::login_start const& packet) -> void;
         auto handle_rx(minecraft::client::encryption_response const& packet) -> void;
 
+        void initiate_spin();
+        void handle_spin(error_code ec, std::size_t bytes_transferrred);
+
         template<class Packet>
         auto queue(Packet const& packet)
         {
