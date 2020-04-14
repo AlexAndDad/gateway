@@ -1,10 +1,11 @@
-#include <catch2/catch.hpp>
+#include "../../../libs/config/filesystem.hpp"
 #include "config/test_data.hpp"
-#include "config/filesystem.hpp"
-#include <sys/types.h>
-#include <sys/stat.h>
+
+#include <catch2/catch.hpp>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #define ZLIB_CONST
 #include <zlib.h>
 

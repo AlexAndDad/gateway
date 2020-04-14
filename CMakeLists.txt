@@ -9,8 +9,7 @@ HunterGate(
 
 project(GateWay VERSION 0.1.0)
 
-set(TEST_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test_data")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/test_data.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/src/config/test_data.hpp @ONLY)
+add_subdirectory(libs)
 
 file(GLOB_RECURSE src_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
         src/*.cpp)
@@ -25,6 +24,7 @@ list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
 add_library(gateway_lib ${src_files} ${hdr_files})
+target_link_libraries(gateway_lib PUBLIC config_lib)
 target_include_directories(gateway_lib
         PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}/src

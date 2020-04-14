@@ -1,9 +1,10 @@
 #pragma once
 
 #include "config/net.hpp"
-#include <iostream>
 #include "connection_cache.hpp"
 #include "minecraft/security/private_key.hpp"
+
+#include <iostream>
 
 namespace gateway {
     struct listener_config : connection_config

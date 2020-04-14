@@ -1,4 +1,4 @@
-#include "config/net.hpp"
+#include "../../../libs/config/net.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/server/chat_message.hpp"
 
