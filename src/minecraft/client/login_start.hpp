@@ -10,7 +10,7 @@ namespace minecraft::client
     struct login_start
     {
         static constexpr auto id() { return client_login_packet ::login_start; }
-        std::string           name;
+        varchar<16>           name;
     };
 
     inline void report_on(std::ostream &os, login_start const &ls) { os << "client::login_start : name=" << ls.name; }
@@ -22,31 +22,12 @@ namespace minecraft::client
     }
 
     template < class Iter >
-    Iter parse(Iter first, Iter last, login_start &ls)
+    Iter parse(Iter first, Iter last, login_start &ls, error_code &ec)
     {
         using minecraft::parse;
-        return parse(first, last, ls.name, 16);
-    }
-
-    template < class Iter >
-    std::size_t parse(Iter first, Iter last, login_start &ls, error_code &ec)
-    {
-        using minecraft::parse;
-        std::size_t n = 0;
-        try
-        {
-            auto current = parse(first, last, ls.name, 16);
-            n =  std::distance(first, current);
-            ec.clear();
-        }
-        catch (incomplete)
-        {
-            ec = error::incomplete_parse;
-        }
-        catch (error_code &err)
-        {
-            ec = err;
-        }
-        return n;
+        auto current = parse(first, last, std::tie(ls.name), ec);
+        if (not ec.failed() and current != last)
+            ec = error::invalid_packet;
+        return ec.failed() ? first : current;
     }
 }   // namespace minecraft::client

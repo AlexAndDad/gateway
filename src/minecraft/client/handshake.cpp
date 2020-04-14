@@ -6,8 +6,8 @@ namespace minecraft::client
     {
         os << "client handshake : "
               "protocol version="
-           << wise_enum::to_string(ch.protocol_version) << " : server_address=" << ch.server_address << " : server_port=" << ch.server_port
-           << " : next_state=" << wise_enum::to_string(ch.next_state);
+           << ch.protocol_version << " : server_address=" << ch.server_address << " : server_port=" << ch.server_port
+           << " : next_state=" << ch.next_state;
     }
 
     std::ostream &operator<<(std::ostream &os, handshake const &arg)

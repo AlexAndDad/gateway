@@ -1,208 +1,204 @@
 #pragma once
 
-#include <string>
-#include <cstdint>
-#include <wise_enum.h>
 #include "minecraft/incomplete.hpp"
 #include "minecraft/parse_error.hpp"
+#include "types.hpp"
 
-namespace minecraft {
+#include <boost/mp11/tuple.hpp>
+#include <cstdint>
+#include <string>
+#include <wise_enum.h>
 
+namespace minecraft
+{
+    template < class Integral >
+    constexpr int max_encoded_bytes();
 
-    template<class Iter>
-    auto
-    parse(Iter first, Iter last, std::uint16_t &target) -> Iter
+    template <>
+    constexpr int max_encoded_bytes< std::uint32_t >()
     {
-        assert(std::distance(first, last) >= 2);
+        return 5;
+    };
 
-        auto convert = [](char c) {
-            return static_cast<std::uint16_t>(std::uint16_t(static_cast<std::uint8_t>(c)));
-        };
-        auto h = convert(*first++) << 8;
-        auto l = convert(*first++);
-        target = h | l;
+    template <>
+    constexpr int max_encoded_bytes< std::uint64_t >()
+    {
+        return 10;
+    };
+
+    template < class Iter , class SignedType>
+    auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec) -> Iter
+    {
+        using value_type    = SignedType;
+        using unsigned_type = std::make_unsigned_t< value_type >;
+
+        std::size_t   count       = 0;
+        unsigned_type accumulator = 0;
+        Iter          i           = first;
+
+        while (i != last)
+        {
+            auto x = static_cast< unsigned_type >(static_cast< std::uint8_t >(*i++));
+            accumulator |= (x & 0x7fu) << (7 * count);
+            ++count;
+            if (not(x & 0x80u))
+            {
+                ec.clear();
+                result = accumulator;
+                return i;
+            }
+            if (count >= max_encoded_bytes< unsigned_type >())
+            {
+                ec = error::invalid_varint;
+                return first;
+            }
+        }
+        ec = error::incomplete_parse;
         return first;
     }
 
-    template<class Iter>
-    auto
-    parse2(Iter first, Iter last, std::int32_t &result) -> std::tuple<std::size_t, error_code>
+    template < class Iter >
+    auto parse(Iter first, Iter last, std::uint8_t &target, error_code &ec) -> Iter
     {
-        std::size_t count = 0;
-        std::uint32_t accumulator = 0;
-
-        auto success = [&] {
-            result = accumulator;
-            return std::tuple(count, error_code());
-        };
-
-        auto failure = [&](error::parse_error e)
+        if (first == last)
+            ec = error::incomplete_parse;
+        else
         {
-            result = 0;
-            return std::tuple(0, error_code(e));
-        };
-
-        int shift = 0;
-        while (first != last)
-        {
-            auto x = std::uint32_t(std::uint8_t(*first++));
-            ++count;
-            accumulator |= (x & 0x7fu) << shift;
-            shift += 7;
-            if (not(x & 0x80u))
-                return success();
-            if (shift > 28)
-                return failure(error::invalid_varint);
+            target = static_cast< std::uint8_t >(*first++);
+            ec.clear();
         }
-        return failure(error::incomplete_parse);
-    }
-
-    template<class Iter>
-    auto
-    parse2(Iter first, Iter last, std::int64_t &result) -> std::tuple<std::size_t, error_code>
-    {
-        std::size_t count = 0;
-        std::uint64_t accumulator = 0;
-
-        auto success = [&] {
-            result = accumulator;
-            return std::tuple(count, error_code());
-        };
-
-        auto failure = [&](error::parse_error e)
-        {
-            result = 0;
-            return std::tuple(0, error_code(e));
-        };
-
-        int shift = 0;
-        while (first != last)
-        {
-            auto x = std::uint64_t(std::uint8_t(*first++));
-            ++count;
-            accumulator |= (x & 0x7fu) << shift;
-            shift += 7;
-            if (not(x & 0x80u))
-                return success();
-            if (shift > (7 * 9))
-                return failure(error::invalid_varint);
-        }
-        return failure(error::incomplete_parse);
-    }
-
-    template<class I1, class I2>
-    auto
-    parse(I1 first, I2 last, std::int32_t &result) -> I1
-    {
-        std::uint32_t accumulator = 0;
-        auto success = [&] {
-            result = accumulator;
-            return first;
-        };
-
-        int shift = 0;
-        while (first != last)
-        {
-            auto x = std::uint32_t(*first++);
-            accumulator |= (x & 0x7fu) << shift;
-            shift += 7;
-            if (not(x & 0x80u))
-                return success();
-            if (shift > 28)
-                throw make_error_code(error::invalid_varint);
-        }
-        throw incomplete();
-    }
-
-    template<class Iter, class Enum>
-    static auto
-    parse(Iter first, Iter last, Enum &target) ->
-    std::enable_if_t<std::is_enum_v<Enum>, Iter>
-    {
-        using utype = std::underlying_type_t<Enum>;
-        auto accum = utype();
-        first = parse(first, last, accum);
-        auto check = [&accum] {
-            for (auto e : wise_enum::range<Enum>)
-                if (static_cast<utype>(e.value) == accum)
-                    return true;
-            return false;
-        };
-        if (!check())
-            throw make_error_code(error::invalid_enum);
-        target = static_cast<Enum>(accum);
         return first;
     }
 
-    template<class Iter, class Enum>
-    static auto
-    parse2(Iter first, Iter last, Enum &target, error_code& ec) ->
-    std::enable_if_t<std::is_enum_v<Enum>, std::size_t>
+    template < class Iter, class Enum >
+    auto parse(Iter first, Iter last, Enum &target, error_code &ec) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
     {
-        using utype = std::underlying_type_t<Enum>;
-        auto accum = utype();
-        auto [n, err] = parse2(first, last, accum);
-        if (!err.failed())
+        auto underlying = std::underlying_type_t<Enum>();
+        auto i = parse(first, last, underlying, ec);
+        if (not ec.failed())
+            target = static_cast<Enum>(underlying);
+        return i;
+    }
+
+    template < class Iter >
+    auto parse(Iter first, Iter last, std::uint16_t &target, error_code &ec) -> Iter
+    {
+        if (std::distance(first, last) < 2)
+            ec = error::incomplete_parse;
+        else
         {
-            auto check = [&accum] {
-                for (auto e : wise_enum::range< Enum >)
-                    if (static_cast< utype >(e.value) == accum)
-                        return true;
-                return false;
+            auto convert = [](char c) {
+                return static_cast< std::uint16_t >(std::uint16_t(static_cast< std::uint8_t >(c)));
             };
-            if (!check())
-                err= error::invalid_enum;
+            auto h = convert(*first++) << 8;
+            auto l = convert(*first++);
+            target = h | l;
+            ec.clear();
         }
-        ec = err;
-        return err.failed() ? 0 : n;
+        return first;
     }
 
-    template<class Iter>
+    template < class Iter >
     auto
-    parse(Iter first, Iter last, std::string &target, std::size_t char_limit = 32767) -> Iter
+    parse(Iter first, Iter last, std::vector< std::uint8_t > &target, error_code &ec, std::int32_t byte_limit = 65536)
+        -> Iter
     {
-        auto size = std::int32_t();
-        first = parse(first, last, size);
+        auto size    = std::int32_t();
+        auto current = parse_var(first, last, size, ec);
+        if (ec.failed())
+            return first;
 
-        const auto byte_limit = (char_limit * 4) + 3;
         if (size > byte_limit)
-            throw make_error_code(error::invalid_string);
-
-        target.reserve(size);
-        while (first != last && size)
         {
-            --size;
-            target.push_back(*first++);
+            ec = error::invalid_array;
+            return first;
         }
 
-        if (size)
-            throw incomplete();
-
-        return first;
-    }
-
-    template<class Iter>
-    auto parse(Iter first, Iter last, std::vector<std::uint8_t>& target, std::int32_t byte_limit = 65536)
-    {
-        auto size = std::int32_t();
-        first = parse(first, last, size);
-
-        if (size > byte_limit)
-            throw make_error_code(error::invalid_array);
-
-        target.reserve(size);
         target.clear();
-        while (first != last && size)
+        target.reserve(size);
+        while (current != last && size)
         {
             --size;
-            target.push_back(*first++);
+            target.push_back(*current++);
         }
 
         if (size)
-            throw incomplete();
+        {
+            ec = error::incomplete_parse;
+            return first;
+        }
 
-        return first;
+        ec.clear();
+        return current;
     }
 
 
-}
+
+    template < class Iter, class Underlying >
+    Iter parse(Iter first, Iter second, var< Underlying > &target, error_code &ec)
+    {
+        return parse_var(first, second, static_cast< Underlying & >(target), ec);
+    }
+
+    template < class Iter, class Enum >
+    Iter parse(Iter first, Iter second, var_enum< Enum > &target, error_code &ec)
+    {
+        using underlying = std::underlying_type_t< Enum >;
+        auto accum       = underlying();
+        auto i           = parse_var(first, second, accum, ec);
+        if (!ec.failed())
+            target = static_cast< Enum >(accum);
+        return i;
+    }
+
+    template < class Iter, class... Args >
+    Iter parse(Iter first, Iter last, std::tuple< Args &... > args, error_code &ec)
+    {
+        ec.clear();
+        auto current = first;
+        boost::mp11::tuple_for_each(args, [&](auto &target) {
+            if (not ec.failed())
+                current = parse(current, last, target, ec);
+        });
+        if (ec.failed())
+            return first;
+        else
+            return current;
+    }
+
+    template < class Iter, std::size_t Limit >
+    Iter parse(Iter first, Iter last, varchar< Limit > &result, error_code &ec)
+    {
+        auto size    = std::int32_t();
+        auto current = parse_var(first, last, size, ec);
+
+        constexpr auto byte_limit = Limit * 4;
+        if (size > byte_limit)
+        {
+            ec = error::invalid_string;
+        }
+        else
+        {
+            result.reserve(size);
+            while (current != last && size)
+            {
+                --size;
+                result.push_back(*current++);
+            }
+
+            if (size)
+                ec = error::incomplete_parse;
+        }
+
+        if (ec.failed())
+        {
+            result.clear();
+            return first;
+        }
+        else
+        {
+            return current;
+        }
+    }
+
+}   // namespace minecraft

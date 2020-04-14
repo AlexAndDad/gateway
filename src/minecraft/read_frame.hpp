@@ -23,13 +23,16 @@ namespace minecraft
                    frame_length =
                        std::int32_t(0)](auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
 #include <boost/asio/yield.hpp>
-            std::size_t original_size, len;
+            std::size_t len, original_size;
             reenter(coro)
             {
                 {
                 read_length:
-                    auto available    = buffer.data(0, buffer.size());
-                    std::tie(len, ec) = parse2(buffers_begin(available), buffers_end(available), frame_length);
+                    auto available = buffer.data(0, buffer.size());
+                    auto first     = buffers_begin(available);
+                    auto last      = buffers_end(available);
+                    auto next      = parse_var(first, last, frame_length, ec);
+                    len            = std::distance(first, next);
                 };
 
                 if (!ec.failed())
@@ -53,11 +56,14 @@ namespace minecraft
                 }
                 else   // incomplete parse
                 {
-                    cont          = true;
-                    original_size = buffer.size();
-                    buffer.grow(4096);
-                    yield stream.async_read_some(buffer.data(original_size, buffer.size() - original_size),
-                                                 std::move(self));
+                    yield
+                    {
+                        cont          = true;
+                        original_size = buffer.size();
+                        buffer.grow(4096);
+                        auto buf = buffer.data(original_size, buffer.size() - original_size);
+                        stream.async_read_some(buf, std::move(self));
+                    }
                     buffer.shrink(buffer.size() - bytes_transferred);
                     if (ec.failed())
                     {
@@ -71,11 +77,15 @@ namespace minecraft
 
                 while (buffer.size() < frame_length)
                 {
-                    cont          = true;
                     original_size = buffer.size();
                     buffer.grow(frame_length - buffer.size());
-                    yield stream.async_read_some(buffer.data(original_size, buffer.size() - original_size),
-                                                 std::move(self));
+                    cont = true;
+                    yield
+                    {
+                        auto buf = buffer.data(original_size, buffer.size() - original_size);
+                        stream.async_read_some(buf, std::move(self));
+                    }
+                    buffer.shrink(buffer.size() - bytes_transferred);
                     if (ec.failed())
                     {
                         bytes_transferred = 0;
@@ -112,10 +122,11 @@ namespace minecraft
                 if (not ec.failed())
                 {
                     auto extent = buffer.data(0, bytes_transferred);
-                    auto first = net::buffers_begin(extent);
-                    auto last = net::buffers_end(extent);
-                    auto which = target.id();
-                    first += parse2(first, last, which, ec);
+                    auto first  = net::buffers_begin(extent);
+                    auto last   = net::buffers_end(extent);
+                    using which_type = var_enum<decltype(target.id())>;
+                    auto which  = which_type();
+                    first = parse(first, last, which, ec);
                     if (!ec.failed())
                         if (which != target.id())
                             ec = error::unexpected_packet;

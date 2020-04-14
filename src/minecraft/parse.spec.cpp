@@ -8,20 +8,22 @@ TEST_CASE("parse fundamentals")
 
     SECTION("int32_t")
     {
-        auto good = [](vec data, std::uint32_t expected, std::size_t expected_length) {
-            auto result   = std::int32_t();
-            auto [n, err] = minecraft::parse2(data.begin(), data.end(), result);
-            CHECK(!err.failed());
+        auto good = [](vec data, minecraft::var_int expected, std::size_t expected_length) {
+            auto result   = minecraft::var_int();
+            minecraft::error_code ec;
+            auto next = minecraft::parse(data.begin(), data.end(), result, ec);
+            CHECK(!ec.failed());
             CHECK(result == expected);
-            CHECK(n == expected_length);
+            CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
         auto bad = [](vec data, minecraft::error_code expected, std::size_t expected_length = 0) {
-            auto result   = std::int32_t();
-            auto [n, err] = minecraft::parse2(data.begin(), data.end(), result);
-            CHECK(err.failed());
-            CHECK(expected.message() == err.message());
-            CHECK(n == expected_length);
+            auto result   = minecraft::var_int();
+            minecraft::error_code ec;
+            auto next =  minecraft::parse(data.begin(), data.end(), result, ec);
+            CHECK(ec.failed());
+            CHECK(expected.message() == ec.message());
+            CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
         SECTION("00") { good(vec { 0x00 }, 0, 1); }
@@ -39,20 +41,22 @@ TEST_CASE("parse fundamentals")
 
     SECTION("int64_t")
     {
-        auto good = [](vec data, std::uint64_t expected, std::size_t expected_length) {
-            auto result   = std::int64_t();
-            auto [n, err] = minecraft::parse2(data.begin(), data.end(), result);
-            CHECK(!err.failed());
+        auto good = [](vec data, minecraft::var_long expected, std::size_t expected_length) {
+            auto result   = minecraft::var_long();
+            minecraft::error_code ec;
+            auto next = minecraft::parse(data.begin(), data.end(), result, ec);
+            CHECK(!ec.failed());
             CHECK(result == expected);
-            CHECK(n == expected_length);
+            CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
         auto bad = [](vec data, minecraft::error_code expected, std::size_t expected_length = 0) {
-            auto result   = std::int64_t();
-            auto [n, err] = minecraft::parse2(data.begin(), data.end(), result);
-            CHECK(err.failed());
-            CHECK(expected.message() == err.message());
-            CHECK(n == expected_length);
+            auto result   = minecraft::var_long();
+            minecraft::error_code ec;
+            auto next =  minecraft::parse(data.begin(), data.end(), result, ec);
+            CHECK(ec.failed());
+            CHECK(expected.message() == ec.message());
+            CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
         SECTION("00") { good(vec { 0x00 }, 0, 1); }

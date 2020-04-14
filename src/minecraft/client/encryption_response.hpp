@@ -30,37 +30,13 @@ namespace minecraft::client
     };
 
     template < class Iter >
-    auto parse(Iter first, Iter last, encryption_response &arg) -> Iter
+    auto parse(Iter first, Iter last, encryption_response &arg, error_code &ec) -> Iter
     {
         using minecraft::parse;
-        first = parse(first, last, arg.shared_secret);
-        first = parse(first, last, arg.verify_token);
-        return first;
-    }
-
-    template < class Iter >
-    auto parse(Iter first, Iter last, encryption_response &arg, error_code &ec) -> std::size_t
-    {
-        std::size_t n = 0;
-        try
-        {
-            using minecraft::parse;
-            auto i = parse(first, last, arg.shared_secret);
-            i      = parse(i, last, arg.verify_token);
-            if (i != last)
-                ec = error::invalid_packet;
-            if (not ec.failed())
-                n = std::distance(first, i);
-        }
-        catch (incomplete)
-        {
-            ec = error::incomplete_parse;
-        }
-        catch (error_code &e)
-        {
-            ec = e;
-        }
-        return n;
+        auto current = parse(first, last, std::tie(arg.shared_secret, arg.verify_token), ec);
+        if (not ec.failed() and current != last)
+        ec = error::invalid_packet;
+        return ec.failed() ? first : current;
     }
 
 }   // namespace minecraft::client

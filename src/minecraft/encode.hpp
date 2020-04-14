@@ -1,6 +1,7 @@
 #pragma once
 
 #include "packet_id.hpp"
+#include "types.hpp"
 
 #include <string>
 #include <vector>
@@ -67,5 +68,27 @@ namespace minecraft
         target.insert(target.end(), length.begin(), length.end());
         target.insert(target.end(), data.begin(), data.end());
     }
+
+    template < class Integral, class Iter >
+    Iter var_encode(Integral in, Iter first)
+    {
+        auto value = static_cast< std::make_unsigned_t<Integral> >(in);
+        do
+        {
+            auto b = static_cast< std::uint8_t >(value & 0x7f);
+            value >>= 7;
+            if (value != 0)
+                b |= 0x80;
+            *first++ = b;
+        } while (value);
+        return first;
+    }
+
+    template<class Iter, class Underlying>
+    Iter encode(var<Underlying> arg, Iter iter)
+    {
+        return var_encode(static_cast<Underlying>(arg), iter);
+    }
+
 
 }   // namespace minecraft

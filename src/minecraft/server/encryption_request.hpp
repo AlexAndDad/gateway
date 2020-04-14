@@ -1,6 +1,8 @@
 #pragma once
 
+#include "minecraft/net.hpp"
 #include "minecraft/encode.hpp"
+#include "minecraft/parse.hpp"
 #include "minecraft/security/private_key.hpp"
 
 #include <cstdint>
@@ -13,7 +15,7 @@ namespace minecraft::server
     struct encryption_request
     {
         static constexpr auto       id() -> server_login_packet { return server_login_packet::encryption_request; }
-        std::string                 server_id;
+        varchar<20>                 server_id;
         std::vector< std::uint8_t > public_key;
         std::vector< std::uint8_t > verify_token;
 
@@ -35,6 +37,17 @@ namespace minecraft::server
         i1      = encode(packet.verify_token, i1);
 
         return encode(buf, first);
+    }
+
+    template < class Iter >
+    inline Iter parse(Iter first, Iter last, encryption_request &packet, error_code& ec)
+    {
+        using minecraft::parse;
+
+        auto current = parse(first, last, std::tie(packet.server_id, packet.public_key, packet.verify_token), ec);
+        if (not ec.failed() and current != last)
+            ec = error::invalid_packet;
+        return current;
     }
 
 }   // namespace minecraft::server

@@ -18,16 +18,17 @@ namespace
 
 TEST_CASE("minecraft encode")
 {
-    SECTION("std::int8_t")
+    SECTION("var_int")
     {
-        auto scenario = [](std::int32_t initial, std::string_view expected)
+        auto scenario = [](minecraft::var_int initial, std::string_view expected)
         {
-            INFO("int32 " << initial);
+            INFO("var_int " << initial);
             std::string buffer;
-            auto round_trip = std::int32_t(-1);
+            auto round_trip = minecraft::var_int(-1);
             minecraft::encode(initial, std::back_inserter(buffer));
             CHECK(buffer == expected);
-            auto pos = minecraft::parse(buffer.begin(), buffer.end(), round_trip);
+            auto ec = minecraft::error_code();
+            auto pos = minecraft::parse(buffer.begin(), buffer.end(), round_trip, ec);
             CHECK(round_trip == initial);
             CHECK(pos == buffer.end());
         };
@@ -51,6 +52,7 @@ TEST_CASE("minecraft encode")
         minecraft::encode(initial, back_inserter(buffer));
         REQUIRE(buffer == "\x05hello"sv);
 
-        auto iend = minecraft::parse(buffer.begin(), buffer.end(), initial);
+        auto ec = minecraft::error_code();
+        auto iend = minecraft::parse(buffer.begin(), buffer.end(), initial, ec);
     }
 }

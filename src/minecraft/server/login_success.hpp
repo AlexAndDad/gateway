@@ -9,8 +9,8 @@ namespace minecraft::server
     {
         static auto constexpr id() { return server_login_packet::login_success; }
 
-        std::string uuid;
-        std::string username;
+        varchar<36> uuid;
+        varchar<16> username;
 
         friend std::ostream &operator<<(std::ostream &os, login_success const &arg);
     };
