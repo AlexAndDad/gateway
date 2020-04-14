@@ -1,5 +1,5 @@
-#include "../libs/config/net.hpp"
-#include "gateway/application.hpp"
+#include "config/net.hpp"
+#include "application.hpp"
 #include "polyfill/explain.hpp"
 
 #include <iostream>

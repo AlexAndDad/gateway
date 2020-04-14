@@ -50,8 +50,7 @@ set(polyfill_spec_files ${polyfill_src_files})
 list(FILTER polyfill_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER polyfill_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
-add_library(polyfill_lib)
-target_sources(polyfill_lib PUBLIC ${polyfill_src_files} ${polyfill_hdr_files})
+add_library(polyfill_lib ${polyfill_src_files} ${polyfill_hdr_files})
 target_link_libraries(polyfill_lib PUBLIC config_lib)
 target_include_directories(polyfill_lib
         PUBLIC
@@ -76,8 +75,7 @@ set(minecraft_spec_files ${minecraft_src_files})
 list(FILTER minecraft_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER minecraft_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
-add_library(minecraft_lib)
-target_sources(minecraft_lib PUBLIC ${minecraft_src_files} ${minecraft_hdr_files})
+add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 target_link_libraries(minecraft_lib PUBLIC
         config_lib polyfill_lib
         Boost::boost Boost::filesystem Boost::system
