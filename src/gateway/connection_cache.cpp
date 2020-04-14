@@ -2,27 +2,22 @@
 
 namespace gateway
 {
-    void
-    connection_cache::create(connection_config config, socket_type&& sock)
+    void connection_cache::create(connection_config config, socket_type &&sock)
     {
-        auto ep = sock.remote_endpoint();
-        auto conn = connection(std::move(config), std::move(sock));
         if (canceled_)
         {
-            conn.cancel();
+            return;
         }
-        else
-        {
-            cache_[ep] = conn.get_weak_impl();
-        }
+        auto ep    = sock.remote_endpoint();
+        auto conn  = connection(std::move(config), std::move(sock));
+        cache_[ep] = conn.get_weak_impl();
     }
 
-    void
-    connection_cache::cancel()
+    void connection_cache::cancel()
     {
         canceled_ = true;
 
-        for(auto iter = cache_.begin() ; iter != cache_.end() ; )
+        for (auto iter = cache_.begin(); iter != cache_.end();)
         {
             if (auto p = iter->second.lock())
                 p->cancel();
@@ -30,4 +25,4 @@ namespace gateway
         }
     }
 
-}
+}   // namespace gateway
