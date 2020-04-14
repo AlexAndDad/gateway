@@ -9,33 +9,6 @@ HunterGate(
 
 project(GateWay VERSION 0.1.0)
 
-add_subdirectory(libs)
-
-file(GLOB_RECURSE src_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
-        src/*.cpp)
-file(GLOB_RECURSE generated_hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
-        ${CMAKE_CURRENT_BINARY_DIR}/src/*.hpp)
-file(GLOB_RECURSE hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
-        src/*.hpp)
-list(APPEND hdr_files ${generated_hdr_files})
-set(spec_files ${src_files})
-list(FILTER spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
-list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
-list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
-
-add_library(gateway_lib ${src_files} ${hdr_files})
-target_link_libraries(gateway_lib PUBLIC polyfill_lib)
-target_include_directories(gateway_lib
-        PUBLIC
-        ${CMAKE_CURRENT_BINARY_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-add_executable(gateway src/main.cpp)
-target_link_libraries(gateway PUBLIC gateway_lib)
-
-add_executable(gateway_test ${spec_files} ${all_spec_files})
-target_link_libraries(gateway_test PUBLIC gateway_lib ${all_libs})
-
 find_package(Threads REQUIRED)
 
 hunter_add_package(Boost COMPONENTS filesystem system)
@@ -53,11 +26,33 @@ find_package(ZLIB CONFIG REQUIRED)
 hunter_add_package(Catch)
 find_package(Catch2)
 
-target_link_libraries(gateway_test PUBLIC Catch2::Catch2)
 
-target_link_libraries(gateway_lib PUBLIC
-        Boost::boost Boost::filesystem Boost::system
-        OpenSSL::Crypto OpenSSL::SSL
-        Threads::Threads
-        WiseEnum::wise_enum
-        ZLIB::zlib)
+add_subdirectory(libs)
+
+file(GLOB_RECURSE src_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        src/*.cpp)
+file(GLOB_RECURSE generated_hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_BINARY_DIR}/src/*.hpp)
+file(GLOB_RECURSE hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        src/*.hpp)
+list(APPEND hdr_files ${generated_hdr_files})
+set(spec_files ${src_files})
+list(FILTER spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
+
+add_library(gateway_lib ${src_files} ${hdr_files})
+target_link_libraries(gateway_lib PUBLIC minecraft_lib)
+target_include_directories(gateway_lib
+        PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(gateway src/main.cpp)
+target_link_libraries(gateway PUBLIC gateway_lib)
+
+add_executable(all_test ${spec_files} ${all_spec_files})
+target_link_libraries(all_test PUBLIC gateway_lib ${all_libs})
+
+
+target_link_libraries(all_test PUBLIC Catch2::Catch2)
