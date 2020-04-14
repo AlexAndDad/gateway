@@ -8,6 +8,9 @@
 #include "net.hpp"
 
 #include <boost/beast/core/bind_handler.hpp>
+#include "polyfill/hexdump.hpp"
+
+#define MINECRAFT_READ_FRAME_DEBUG 1
 
 namespace minecraft
 {
@@ -124,6 +127,11 @@ namespace minecraft
                     auto extent = buffer.data(0, bytes_transferred);
                     auto first  = net::buffers_begin(extent);
                     auto last   = net::buffers_end(extent);
+#if MINECRAFT_READ_FRAME_DEBUG
+                    std::cout << "\nframe received\n";
+                    std::cout <<"length = " << bytes_transferred << "\n";
+                    std::cout << polyfill::hexdump(std::string(first, last)) << std::endl;
+#endif
                     using which_type = var_enum<decltype(target.id())>;
                     auto which  = which_type();
                     first = parse(first, last, which, ec);

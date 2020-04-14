@@ -8,7 +8,7 @@ namespace minecraft::server
     {
         auto original = target.size();
         auto i        = std::back_inserter(target);
-        i             = encode(arg.id(), i);
+        i             = encode(variable_length(arg.id()), i);
         i             = encode(arg.json_data, i);
         i             = encode(arg.position, i);
         return target.size() - original;

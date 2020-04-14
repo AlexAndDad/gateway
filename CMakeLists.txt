@@ -11,8 +11,8 @@ project(GateWay VERSION 0.1.0)
 
 find_package(Threads REQUIRED)
 
-hunter_add_package(Boost COMPONENTS filesystem system)
-find_package(Boost COMPONENTS filesystem system REQUIRED CONFIG)
+hunter_add_package(Boost COMPONENTS filesystem program_options system)
+find_package(Boost COMPONENTS filesystem program_options system REQUIRED CONFIG)
 
 hunter_add_package(WiseEnum)
 find_package(WiseEnum)

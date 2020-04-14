@@ -37,7 +37,7 @@ namespace minecraft::server
         thread_local static std::vector< std::uint8_t > buf;
         buf.clear();
         auto i1 = std::back_inserter(buf);
-        i1      = encode(packet.id(), i1);
+        i1      = encode(variable_length(packet.id()), i1);
         i1      = encode(packet.server_id, i1);
         i1      = encode(packet.public_key, i1);
         i1      = encode(packet.verify_token, i1);

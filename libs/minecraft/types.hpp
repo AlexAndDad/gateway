@@ -56,6 +56,9 @@ namespace minecraft
         explicit constexpr operator value_type &() { return value_; }
         explicit constexpr operator const_value_type &() const { return value_; }
 
+        constexpr value_type &      value() { return value_; }
+        constexpr value_type const &value() const { return value_; }
+
       private:
         Integral value_;
     };
@@ -98,6 +101,9 @@ namespace minecraft
         constexpr operator Enum &() { return value_; }
         constexpr operator Enum() const { return value_; }
 
+        constexpr value_type& value() { return value_; }
+        constexpr value_type const& value() const { return value_; }
+
       private:
         Enum value_;
     };
@@ -116,5 +122,17 @@ namespace minecraft
 
         using std::string::operator=;
     };
+
+    template < class Enum >
+    constexpr auto variable_length(Enum e) -> std::enable_if_t< std::is_enum_v< Enum >, var_enum< Enum > >
+    {
+        return var_enum< Enum >(e);
+    }
+
+    template < class Integral >
+    constexpr auto variable_length(Integral i) -> std::enable_if_t< std::is_integral_v< Integral >, var< Integral > >
+    {
+        return var< Integral >(i);
+    }
 
 }   // namespace minecraft

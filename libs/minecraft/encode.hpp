@@ -2,13 +2,35 @@
 
 #include "packet_id.hpp"
 #include "types.hpp"
+
 #include <string>
 #include <vector>
 
 namespace minecraft
 {
+    //
+    // fixed length integers
+    //
     template < class Iter >
-    Iter encode(std::int32_t in, Iter first)
+    Iter encode(std::uint8_t const &arg, Iter first)
+    {
+        *first++ = arg;
+        return first;
+    }
+
+    template < class Iter >
+    Iter encode(std::uint16_t const &arg, Iter first)
+    {
+        *first++ = static_cast< std::uint8_t >(arg >> 8);
+        *first++ = static_cast< std::uint8_t >(arg);
+        return first;
+    }
+
+    //
+    // variable length integers
+    //
+    template < class Iter >
+    Iter encode_var(std::int32_t const &in, Iter first)
     {
         auto value = static_cast< std::uint32_t >(in);
         do
@@ -22,16 +44,33 @@ namespace minecraft
         return first;
     }
 
-    template < class Enum, class Iter >
-    auto encode(Enum in, Iter first) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
+    template < class Integral, class Iter >
+    Iter encode(var< Integral > const &arg, Iter first)
     {
-        return encode(static_cast< std::underlying_type_t< Enum > >(in), first);
+        return encode_var(arg.value(), first);
+    }
+
+    template < class Enum, class Iter >
+    auto encode(var_enum< Enum > const &arg, Iter iter) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
+    {
+        using underlying_type = std::underlying_type_t< Enum >;
+        auto temp             = static_cast< underlying_type >(arg.value());
+        return encode_var(temp, iter);
+    }
+
+    template < class Enum, class Iter >
+    auto encode(Enum const &in, Iter first) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
+    {
+        auto val = static_cast< std::underlying_type_t< Enum > >(in);
+        return encode(val, first);
     }
 
     template < class I1, class I2, class Iter >
     Iter encode_bytes(I1 first, I2 last, Iter target)
     {
-        return std::copy(first, last, encode(static_cast< std::int32_t >(std::distance(first, last)), target));
+        auto len = static_cast< std::int32_t >(std::distance(first, last));
+        target   = encode(variable_length(len), target);
+        return std::copy(first, last, target);
     }
 
     template < class Iter >
@@ -46,11 +85,11 @@ namespace minecraft
         return encode_bytes(in.begin(), in.end(), first);
     }
 
-    template<class Container>
-    void encode_to_container(std::vector< uint8_t > const &source, Container &dest) {
-
+    template < class Container >
+    void encode_to_container(std::vector< uint8_t > const &source, Container &dest)
+    {
         auto i = std::back_inserter(dest);
-        encode(std::uint32_t(source.size()), i);
+        encode(variable_length(std::uint32_t(source.size())), i);
         dest.insert(dest.end(), source.begin(), source.end());
     }
 
@@ -63,7 +102,7 @@ namespace minecraft
         encode(frame, std::back_inserter(data));
 
         length.clear();
-        encode(std::int32_t(data.size()), std::back_inserter(length));
+        encode(var_int(data.size()), std::back_inserter(length));
         target.insert(target.end(), length.begin(), length.end());
         target.insert(target.end(), data.begin(), data.end());
     }
@@ -71,7 +110,7 @@ namespace minecraft
     template < class Integral, class Iter >
     Iter var_encode(Integral in, Iter first)
     {
-        auto value = static_cast< std::make_unsigned_t<Integral> >(in);
+        auto value = static_cast< std::make_unsigned_t< Integral > >(in);
         do
         {
             auto b = static_cast< std::uint8_t >(value & 0x7f);
@@ -83,24 +122,16 @@ namespace minecraft
         return first;
     }
 
-    template<class Iter, class Underlying>
-    Iter encode(var<Underlying> arg, Iter iter)
-    {
-        return var_encode(static_cast<Underlying>(arg), iter);
-    }
-
-    template<class T, class Iter>
-    Iter encode(std::optional<T> const& arg, Iter iter)
+    template < class T, class Iter >
+    Iter encode(std::optional< T > const &arg, Iter iter)
     {
         std::uint8_t present = arg.has_value() ? 1 : 0;
-        iter = encode(present, iter);
+        iter                 = encode(present, iter);
         if (present)
         {
             iter = encode(*arg, iter);
         }
         return iter;
     }
-
-
 
 }   // namespace minecraft
