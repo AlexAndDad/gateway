@@ -24,7 +24,7 @@ list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
 add_library(gateway_lib ${src_files} ${hdr_files})
-target_link_libraries(gateway_lib PUBLIC config_lib)
+target_link_libraries(gateway_lib PUBLIC polyfill_lib)
 target_include_directories(gateway_lib
         PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}/src
@@ -33,8 +33,8 @@ target_include_directories(gateway_lib
 add_executable(gateway src/main.cpp)
 target_link_libraries(gateway PUBLIC gateway_lib)
 
-add_executable(gateway_test ${spec_files})
-target_link_libraries(gateway_test PUBLIC gateway_lib)
+add_executable(gateway_test ${spec_files} ${all_spec_files})
+target_link_libraries(gateway_test PUBLIC gateway_lib ${all_libs})
 
 find_package(Threads REQUIRED)
 
