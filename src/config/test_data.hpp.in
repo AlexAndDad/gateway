@@ -1,0 +1,8 @@
+#pragma once
+
+#include <string>
+
+inline std::string test_data_dir()
+{
+    return "@TEST_DATA_DIR@";
+}
