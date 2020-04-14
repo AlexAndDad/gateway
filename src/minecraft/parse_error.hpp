@@ -24,6 +24,7 @@ namespace minecraft
             invalid_protocol,
             incomplete_parse,
             unexpected_packet,
+            invalid_nbt_tag,
         };
 
         // errors in the minecraft protocol login phase
@@ -67,6 +68,8 @@ namespace minecraft
                     return "incomplete parse";
                 case error::unexpected_packet:
                     return "unexpected packet";
+                case error::invalid_nbt_tag:
+                    return "invalid nbt tag";
                 }
                 return "unknown code: " + std::to_string(value);
             }

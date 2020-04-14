@@ -2,7 +2,6 @@
 
 #include "packet_id.hpp"
 #include "types.hpp"
-
 #include <string>
 #include <vector>
 
@@ -89,6 +88,19 @@ namespace minecraft
     {
         return var_encode(static_cast<Underlying>(arg), iter);
     }
+
+    template<class T, class Iter>
+    Iter encode(std::optional<T> const& arg, Iter iter)
+    {
+        std::uint8_t present = arg.has_value() ? 1 : 0;
+        iter = encode(present, iter);
+        if (present)
+        {
+            iter = encode(*arg, iter);
+        }
+        return iter;
+    }
+
 
 
 }   // namespace minecraft

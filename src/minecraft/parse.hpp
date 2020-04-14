@@ -151,6 +151,30 @@ namespace minecraft
         return i;
     }
 
+    template<class Iter, class T>
+    Iter parse(Iter first, Iter last, std::optional<T>& opt, error_code& ec)
+    {
+        auto present = std::uint8_t();
+        auto current = parse(first, last, present, ec);
+        if (ec.failed())
+            return first;
+        if (present)
+        {
+            opt.emplace(T());
+            current = parse(current, last, *opt, ec);
+            if (ec.failed())
+            {
+                opt.reset();
+                return first;
+            }
+        }
+        else
+        {
+            opt.reset();
+        }
+        return current;
+    }
+
     template < class Iter, class... Args >
     Iter parse(Iter first, Iter last, std::tuple< Args &... > args, error_code &ec)
     {
