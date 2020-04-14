@@ -11,7 +11,10 @@ namespace polyfill {
     address_hasher::operator()(net::ip::address const &v) const -> std::size_t
     {
         if (v.is_v4())
-            return v.to_v4().to_ulong();
+        {
+            auto const& range = v.to_v4().to_bytes();
+            return boost::hash_range(range.begin(), range.end());
+        }
         else if (v.is_v6())
         {
             auto const &range = v.to_v6().to_bytes();

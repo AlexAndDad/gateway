@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../../../libs/config/net.hpp"
+#include "config/net.hpp"
 
 namespace minecraft::security {
 

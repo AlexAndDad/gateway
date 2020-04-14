@@ -25,6 +25,7 @@ list(FILTER config_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
 add_library(config_lib INTERFACE)
 #target_sources(config_lib INTERFACE ${config_src_files} ${config_hdr_files})
+target_compile_definitions(config_lib INTERFACE -DBOOST_ASIO_NO_DEPRECATED)
 target_link_libraries(config_lib INTERFACE WiseEnum::wise_enum)
 
 target_include_directories(config_lib
