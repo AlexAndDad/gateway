@@ -3,11 +3,11 @@
 #include "minecraft/client/handshake.hpp"
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/net.hpp"
-#include "gateway/hexdump.hpp"
 #include "minecraft/read_frame.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
+#include "minecraft/hexdump.hpp"
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -39,14 +39,14 @@ namespace minecraft::server
         friend auto operator<<(std::ostream &os, receive_login_params const &arg) -> std::ostream &
         {
             os << "receive login params :\n";
-            os << " security token        : " << gateway::hexstring(arg.security_token) << std::endl;
+            os << " security token        : " << hexstring(arg.security_token) << std::endl;
             os << " server key            :\n" << arg.server_key.public_pem() << std::endl;
             os << " use security          : " << arg.use_security() << std::endl;
             os << "client handshake frame :\n" << arg.client_handshake_frame << std::endl;
             os << "client login start     :\n" << arg.client_login_start << std::endl;
             os << "server encryption request :\n" << arg.server_encryption_request << std::endl;
             os << "client encryption response :\n" << arg.client_encryption_response << std::endl;
-            os << "shared secret : " << gateway::hexstring(arg.shared_secret) << std::endl;
+            os << "shared secret : " << hexstring(arg.shared_secret) << std::endl;
             os << arg.server_login_success;
             return os;
         }

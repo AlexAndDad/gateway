@@ -1,6 +1,6 @@
 #include "minecraft/server/encryption_request.hpp"
 
-#include "gateway/hexdump.hpp"
+#include "minecraft/hexdump.hpp"
 
 #include <random>
 
@@ -9,8 +9,8 @@ namespace minecraft::server
     std::ostream &operator<<(std::ostream &os, encryption_request const &arg)
     {
         os << "encryption_request.server_id=" << arg.server_id;
-        os << "\nencryption_request.public_key=" << gateway::hexstring(arg.public_key);
-        os << "\nencryption_request.verify_token=" << gateway::hexstring(arg.verify_token);
+        os << "\nencryption_request.public_key=" << hexstring(arg.public_key);
+        os << "\nencryption_request.verify_token=" << hexstring(arg.verify_token);
         return os;
     }
 

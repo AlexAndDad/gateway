@@ -1,8 +1,8 @@
 #include "connection.hpp"
 
-#include "hexdump.hpp"
 #include "minecraft/security/rsa.hpp"
 #include "minecraft/send_frame.hpp"
+#include "polyfill/hexdump.hpp"
 
 #include <iostream>
 #include <minecraft/server/chat_message.hpp>
@@ -61,7 +61,7 @@ namespace gateway
            << cfg.server_id
            << "\n"
               "\tserver key : "
-           << hexstring(cfg.server_key.public_asn1());
+           << polyfill::hexstring(cfg.server_key.public_asn1());
         return os;
     }
 

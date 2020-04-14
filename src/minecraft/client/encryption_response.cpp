@@ -4,7 +4,7 @@
 
 #include "encryption_response.hpp"
 
-#include "gateway/hexdump.hpp"
+#include "minecraft/hexdump.hpp"
 
 #include <openssl/rsa.h>
 
@@ -14,7 +14,7 @@ namespace minecraft::client
     {
         os << "client::encryption_response"
               " : shared_secret="
-           << gateway::hexstring(arg.shared_secret) << " : verify_token=" << gateway::hexstring(arg.verify_token);
+           << hexstring(arg.shared_secret) << " : verify_token=" << hexstring(arg.verify_token);
         return os;
     }
 
