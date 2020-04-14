@@ -1,7 +1,7 @@
 #pragma once
 
-#include "minecraft/net.hpp"
 #include "minecraft/encode.hpp"
+#include "minecraft/net.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/security/private_key.hpp"
 
@@ -15,17 +15,23 @@ namespace minecraft::server
     struct encryption_request
     {
         static constexpr auto       id() -> server_login_packet { return server_login_packet::encryption_request; }
-        varchar<20>                 server_id;
+        varchar< 20 >               server_id;
         std::vector< std::uint8_t > public_key;
         std::vector< std::uint8_t > verify_token;
 
         friend std::ostream &operator<<(std::ostream &os, encryption_request const &arg);
 
         friend void prepare(encryption_request &req, minecraft::security::private_key const &ppk);
+
+        template < class Self >
+        static auto as_tuple(Self &self)
+        {
+            return std::tie(self.server_id, self.public_key, self.verify_token);
+        }
     };
 
     template < class Iter >
-    inline Iter encode(encryption_request const &packet, Iter first)
+    Iter encode(encryption_request const &packet, Iter first)
     {
         using minecraft::encode;
         thread_local static std::vector< std::uint8_t > buf;
@@ -40,11 +46,11 @@ namespace minecraft::server
     }
 
     template < class Iter >
-    inline Iter parse(Iter first, Iter last, encryption_request &packet, error_code& ec)
+    Iter parse(Iter first, Iter last, encryption_request &packet, error_code &ec)
     {
         using minecraft::parse;
 
-        auto current = parse(first, last, std::tie(packet.server_id, packet.public_key, packet.verify_token), ec);
+        auto current = parse(first, last, encryption_request::as_tuple(packet), ec);
         if (not ec.failed() and current != last)
             ec = error::invalid_packet;
         return current;
