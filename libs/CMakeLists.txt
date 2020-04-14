@@ -24,7 +24,8 @@ list(FILTER config_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER config_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
 add_library(config_lib INTERFACE)
-target_sources(config_lib INTERFACE ${config_src_files} ${config_hdr_files})
+#target_sources(config_lib INTERFACE ${config_src_files} ${config_hdr_files})
+target_link_libraries(config_lib INTERFACE WiseEnum::wise_enum)
 
 target_include_directories(config_lib
         INTERFACE
@@ -75,14 +76,12 @@ set(minecraft_spec_files ${minecraft_src_files})
 list(FILTER minecraft_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER minecraft_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
-add_library(minecraft_lib)
-target_sources(minecraft_lib PUBLIC ${minecraft_src_files} ${minecraft_hdr_files})
+add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 target_link_libraries(minecraft_lib PUBLIC
         config_lib polyfill_lib
         Boost::boost Boost::filesystem Boost::system
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL
-        WiseEnum::wise_enum
         ZLIB::zlib)
 
 target_include_directories(minecraft_lib

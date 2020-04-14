@@ -3,7 +3,7 @@
 #include "minecraft/server/receive_login.hpp"
 #include "net.hpp"
 #include "polyfill/hexdump.hpp"
-#include "gateway/connection_impl.hpp"
+#include "connection_impl.hpp"
 
 #include <iostream>
 #include <memory>
@@ -11,8 +11,6 @@
 
 namespace gateway
 {
-
-
     struct connection
     {
         using socket_type = connection_impl::socket_type;
