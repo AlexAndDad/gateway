@@ -76,13 +76,11 @@ namespace minecraft::security
                                              reinterpret_cast< std::uint8_t const * >(iv.data())));
         }
 
-        template < class PlaintextDynamicBuffer, class CipherDynamicBuffer >
-        auto update(PlaintextDynamicBuffer plaintext, CipherDynamicBuffer ciphertext) -> void
+        template < class CipherDynamicBuffer >
+        auto update(net::const_buffer plaintext, CipherDynamicBuffer ciphertext) -> void
         {
             static_assert(net::is_dynamic_buffer_v2< CipherDynamicBuffer >::value);
             static_assert(std::is_same_v< typename CipherDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
-            static_assert(net::is_dynamic_buffer_v2< PlaintextDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename PlaintextDynamicBuffer::const_buffers_type, net::const_buffer >);
 
             auto input_size = plaintext.size();
             if (input_size == 0)
@@ -95,16 +93,14 @@ namespace minecraft::security
             ciphertext.grow(grow_size);
 
             net::mutable_buffer out_buf = ciphertext.data(original_output_size, ciphertext.size());
-            net::const_buffer   in_buf  = plaintext.data(0, plaintext.size());
 
             int outl = 0;
             check_success(EVP_EncryptUpdate(native_handle(),
                                             reinterpret_cast< std::uint8_t * >(out_buf.data()),
                                             &outl,
-                                            reinterpret_cast< std::uint8_t const * >(in_buf.data()),
-                                            in_buf.size()));
+                                            reinterpret_cast< std::uint8_t const * >(plaintext.data()),
+                                            plaintext.size()));
             ciphertext.shrink(grow_size - outl);
-            plaintext.consume(plaintext.size());
         }
 
         template < class CipherDynamicBuffer >
@@ -144,11 +140,9 @@ namespace minecraft::security
                                              reinterpret_cast< std::uint8_t const * >(iv.data())));
         }
 
-        template < class CipherDynamicBuffer, class PlaintextDynamicBuffer >
-        auto update(CipherDynamicBuffer ciphertext, PlaintextDynamicBuffer plaintext) -> void
+        template < class PlaintextDynamicBuffer >
+        auto update(net::const_buffer ciphertext, PlaintextDynamicBuffer plaintext) -> void
         {
-            static_assert(net::is_dynamic_buffer_v2< CipherDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename CipherDynamicBuffer::const_buffers_type, net::const_buffer >);
             static_assert(net::is_dynamic_buffer_v2< PlaintextDynamicBuffer >::value);
             static_assert(std::is_same_v< typename PlaintextDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
 
@@ -163,16 +157,14 @@ namespace minecraft::security
             plaintext.grow(grow_size);
 
             net::mutable_buffer out_buf = plaintext.data(original_output_size, plaintext.size());
-            net::const_buffer   in_buf  = ciphertext.data(0, ciphertext.size());
 
             int outl = 0;
             check_success(EVP_DecryptUpdate(native_handle(),
                                             reinterpret_cast< std::uint8_t * >(out_buf.data()),
                                             &outl,
-                                            reinterpret_cast< std::uint8_t const * >(in_buf.data()),
-                                            in_buf.size()));
+                                            reinterpret_cast< std::uint8_t const * >(ciphertext.data()),
+                                            ciphertext.size()));
             plaintext.shrink(grow_size - outl);
-            ciphertext.consume(ciphertext.size());
         }
 
         template < class PlaintextDynamicBuffer >

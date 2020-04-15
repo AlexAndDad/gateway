@@ -1,5 +1,6 @@
+#include "minecraft/stream.hpp"
+
 #include <catch2/catch.hpp>
-#include "minecraft/minecraft_stream.hpp"
 
 using namespace minecraft;
 

@@ -11,21 +11,6 @@
 
 namespace minecraft
 {
-    template < class Integral >
-    constexpr int max_encoded_bytes();
-
-    template <>
-    constexpr int max_encoded_bytes< std::uint32_t >()
-    {
-        return 5;
-    };
-
-    template <>
-    constexpr int max_encoded_bytes< std::uint64_t >()
-    {
-        return 10;
-    };
-
     template < class Iter , class SignedType>
     auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec) -> Iter
     {
@@ -47,7 +32,7 @@ namespace minecraft
                 result = accumulator;
                 return i;
             }
-            if (count >= max_encoded_bytes< unsigned_type >())
+            if (count >= max_var_encoded_bytes< SignedType >())
             {
                 ec = error::invalid_varint;
                 return first;

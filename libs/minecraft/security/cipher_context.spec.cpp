@@ -4,6 +4,8 @@
 
 TEST_CASE("minecraft::security::cipher_context")
 {
+    using namespace minecraft;
+
     SECTION("round trip")
     {
         std::string const original = R"frankie(Welcome to the pleasure dome
@@ -95,7 +97,7 @@ The war is won)frankie";
 
         try
         {
-            encryption_cipher.update(minecraft::net::dynamic_buffer(plaintext),
+            encryption_cipher.update(net::buffer(plaintext),
                                      minecraft::net::dynamic_buffer(ciphertext));
         }
         catch(...)
@@ -103,7 +105,6 @@ The war is won)frankie";
             INFO("" << polyfill::explain());
             FAIL();
         }
-        CHECK(plaintext.size() == 0);
         CHECK(ciphertext.size() == 1845);
         encryption_cipher.finalise(minecraft::net::dynamic_buffer(ciphertext));
         CHECK(ciphertext.size() == 1845);
@@ -112,7 +113,8 @@ The war is won)frankie";
             minecraft::security::decryption_context(minecraft::net::buffer(iv_and_key), minecraft::net::buffer(iv_and_key));
         try
         {
-            decryption_cipher.update(minecraft::net::dynamic_buffer(ciphertext),
+            plaintext.clear();
+            decryption_cipher.update(minecraft::net::buffer(ciphertext),
                                      minecraft::net::dynamic_buffer(plaintext));
         }
         catch(...)
@@ -121,7 +123,6 @@ The war is won)frankie";
             FAIL();
         }
         CHECK(plaintext.size() == 1845);
-        CHECK(ciphertext.size() == 0);
         decryption_cipher.finalise(minecraft::net::dynamic_buffer(plaintext));
         CHECK(plaintext.size() == 1845);
 

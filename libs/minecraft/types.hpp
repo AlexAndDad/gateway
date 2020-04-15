@@ -13,6 +13,25 @@ namespace minecraft
     // std::uint8_t <-> Byte
     // std::int32_t <-> VarInt
 
+    template < class Integral, class U = Integral >
+    constexpr int max_var_encoded_bytes()
+    {
+        static_assert(not std::is_same_v< Integral, U >);
+        return 0;
+    };
+
+    template <>
+    constexpr int max_var_encoded_bytes< std::int32_t >()
+    {
+        return 5;
+    };
+
+    template <>
+    constexpr int max_var_encoded_bytes< std::int64_t >()
+    {
+        return 10;
+    };
+
     template < class Integral >
     struct var : boost::operators< var< Integral > >
     {
@@ -64,6 +83,12 @@ namespace minecraft
     };
 
     template < class Integral >
+    constexpr std::size_t max_encoded_bytes(var< Integral > const &)
+    {
+        return max_var_encoded_bytes< Integral >();
+    }
+
+    template < class Integral >
     std::ostream &operator<<(std::ostream &os, var< Integral > const &v)
     {
         os << static_cast< Integral const & >(v);
@@ -101,8 +126,8 @@ namespace minecraft
         constexpr operator Enum &() { return value_; }
         constexpr operator Enum() const { return value_; }
 
-        constexpr value_type& value() { return value_; }
-        constexpr value_type const& value() const { return value_; }
+        constexpr value_type &      value() { return value_; }
+        constexpr value_type const &value() const { return value_; }
 
       private:
         Enum value_;
