@@ -30,18 +30,22 @@ namespace minecraft::server
         }
     };
 
+    inline void compose(encryption_request const &packet, std::vector< char > &compose_buffer)
+    {
+        auto i1 = std::back_inserter(compose_buffer);
+        i1      = encode(variable_length(packet.id()), i1);
+        i1      = encode(packet.server_id, i1);
+        i1      = encode(packet.public_key, i1);
+        encode(packet.verify_token, i1);
+    }
+
     template < class Iter >
     Iter encode(encryption_request const &packet, Iter first)
     {
         using minecraft::encode;
-        thread_local static std::vector< std::uint8_t > buf;
+        thread_local static std::vector< char > buf;
         buf.clear();
-        auto i1 = std::back_inserter(buf);
-        i1      = encode(variable_length(packet.id()), i1);
-        i1      = encode(packet.server_id, i1);
-        i1      = encode(packet.public_key, i1);
-        i1      = encode(packet.verify_token, i1);
-
+        compose(packet, buf);
         return encode(buf, first);
     }
 

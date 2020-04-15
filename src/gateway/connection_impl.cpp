@@ -76,7 +76,18 @@ namespace gateway
 
         login_params_.set_server_key(config_.server_key);
         login_params_.set_server_id(config_.server_id);
-        login_params_.use_security(false);
+        login_params_.use_security(true);
+        login_params_.on_fail = [](error_code ec){
+            std::cout << "handshake: failure: " << polyfill::report(ec) << std::endl;
+        };
+        login_params_.on_tx = [](net::const_buffer data){
+            std::cout << "handshake: send: " << data.size() << '\n';
+            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
+        };
+        login_params_.on_rx = [](net::const_buffer data){
+            std::cout << "handshake: receive: " << data.size() << '\n';
+            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
+        };
 
         minecraft::server::async_receive_login(
             stream_,
