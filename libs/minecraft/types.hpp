@@ -164,13 +164,18 @@ namespace minecraft
 
     struct position
     {
-        position() = default;
+        position()
+        : x_(0)
+        , y_(0)
+        , z_(0)
+        {
+        }
 
         position(std::int32_t x, std::int32_t y, std::int32_t z)
+        : x_(x)
+        , y_(y)
+        , z_(y)
         {
-            x_ = x;
-            y_ = y;
-            z_ = z;
         }
 
         friend std::ostream &operator<<(std::ostream &stream, const position &self)
