@@ -10,21 +10,13 @@
 #include <cstdint>
 #include <vector>
 
-namespace minecraft
+namespace minecraft::protocol
 {
     struct encryption_state
     {
-        encryption_state(shared_secret const &secret)
-            : tx_context_(net::buffer(secret), net::buffer(secret))
-            , rx_context_(net::buffer(secret), net::buffer(secret))
-        {
-        }
+        encryption_state(shared_secret const &secret);
 
-        encryption_state(net::const_buffer secret)
-            : tx_context_(secret, secret)
-            , rx_context_(secret, secret)
-        {
-        }
+        encryption_state(net::const_buffer secret);
 
         security::encryption_context tx_context_;
         std::vector< char >  tx_cipher_;

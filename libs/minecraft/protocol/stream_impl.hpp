@@ -1,5 +1,5 @@
 #pragma once
-#include "minecraft/encryption_state.hpp"
+#include "encryption_state.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/version.hpp"
 #include "minecraft/security/cipher_context.hpp"
