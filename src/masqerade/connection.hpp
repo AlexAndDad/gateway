@@ -71,7 +71,7 @@ namespace masquerade {
         resolver_type resolver_;
         socket_type upstream_sock_;
         std::vector<char> upstream_rx_buffer_;
-        minecraft::protocol::connect_params upstream_connect_params_;
+        minecraft::protocol::client_connect_state upstream_connect_params_;
 };
 
 

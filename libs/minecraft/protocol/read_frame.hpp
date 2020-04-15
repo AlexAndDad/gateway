@@ -142,6 +142,35 @@ namespace minecraft::protocol
         return ec;
     }
 
+    template < class Enum, class... FrameTypes >
+    auto
+    expect_frames(net::const_buffer source, var< Enum > &which, std::tuple< FrameTypes &... > targets, error_code &ec)
+        -> error_code &
+    {
+        ec.clear();
+
+        auto first = reinterpret_cast< const char * >(source.data());
+        auto last  = first + source.size();
+
+        auto next = parse(first, last, which, ec);
+
+        ec = error::unexpected_packet;
+        if (not ec.failed())
+            boost::mp11::tuple_for_each(targets, [&](auto &frame) {
+                if (which.value() == frame.id())
+                {
+                    next = parse(next, last, frame, ec);
+                    if (not ec.failed())
+                        if (next != last)
+                            ec = error::invalid_packet;
+                    if (not ec.failed())
+                        ec.clear();
+                }
+            });
+
+        return ec;
+    }
+
     template < class Stream, class DynamicBuffer, class FrameType, class CompletionHandler >
     auto async_expect_frame(Stream &stream, DynamicBuffer buffer, FrameType &target, CompletionHandler &&handler)
     {
@@ -199,4 +228,4 @@ namespace minecraft::protocol
         return net::async_compose< CompletionHandler, void(error_code) >(std::move(op), handler, s);
     }
 
-}   // namespace minecraft
+}   // namespace minecraft::protocol

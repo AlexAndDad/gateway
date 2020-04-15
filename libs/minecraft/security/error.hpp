@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "config/net.hpp"
+#include "minecraft/net.hpp"
 
 namespace minecraft::security {
 
@@ -18,16 +18,17 @@ namespace minecraft::security {
 
         enum codeless : int
         {
-            no_cde = 1
+            no_cde = 1,
+            not_rsa = 2
         };
     };
 
     error::ssl peek_error();
     error::ssl get_error();
 
-    config::error_code make_error_code(error::ssl);
-    config::error_code make_error_code(error::codeless);
-    config::error_category const& openssl_category();
+    error_code make_error_code(error::ssl);
+    error_code make_error_code(error::codeless);
+    error_category const& openssl_category();
 
     [[noreturn]]
     void throw_error_chain(error::ssl);
@@ -39,6 +40,13 @@ namespace minecraft::security {
     {
         if (not result)
             throw_error();
+    }
+
+    inline int check_positive(int val)
+    {
+        if (val < 0)
+            throw_error();
+        return val;
     }
 
 }
