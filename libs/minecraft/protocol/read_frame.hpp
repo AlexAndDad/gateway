@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include "minecraft/net.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/stream.hpp"
-#include "net.hpp"
 #include "polyfill/hexdump.hpp"
 
 #include <boost/beast/core/bind_handler.hpp>
 
 #define MINECRAFT_READ_FRAME_DEBUG 1
 
-namespace minecraft
+namespace minecraft::protocol
 {
     template < class Stream, class DynamicBuffer, class CompletionHandler >
     auto async_read_frame(Stream &stream, DynamicBuffer buffer, CompletionHandler &&handler)

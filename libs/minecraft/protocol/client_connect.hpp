@@ -3,9 +3,9 @@
 #include "minecraft/client/handshake.hpp"
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/net.hpp"
-#include "minecraft/read_frame.hpp"
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/login_success.hpp"
+#include "read_frame.hpp"
 
 namespace minecraft::protocol
 {

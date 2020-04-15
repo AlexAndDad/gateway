@@ -1,11 +1,10 @@
-#include <catch2/catch.hpp>
-#include "minecraft/read_frame.hpp"
+#include "minecraft/net.hpp"
+#include "read_frame.hpp"
 
 #include <boost/beast.hpp>
-#include <boost/beast/_experimental/test/stream.hpp>
 #include <boost/beast/_experimental/test/handler.hpp>
-
-#include "minecraft/net.hpp"
+#include <boost/beast/_experimental/test/stream.hpp>
+#include <catch2/catch.hpp>
 
 TEST_CASE("minecraft::read_frame")
 {
@@ -25,7 +24,7 @@ TEST_CASE("minecraft::read_frame")
         client.connect(server);
         client.write_some(net::buffer(data));
         client.close();
-        async_read_frame(server, net::dynamic_buffer(store), [&](config::error_code ec_, std::size_t bt){
+        protocol::async_read_frame(server, net::dynamic_buffer(store), [&](config::error_code ec_, std::size_t bt){
             ec = ec_;
             frame_length = bt;
         });

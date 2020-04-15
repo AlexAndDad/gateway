@@ -4,10 +4,10 @@
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/hexdump.hpp"
 #include "minecraft/net.hpp"
-#include "minecraft/read_frame.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
+#include "read_frame.hpp"
 #include "stream.hpp"
 
 #include <boost/uuid/random_generator.hpp>
