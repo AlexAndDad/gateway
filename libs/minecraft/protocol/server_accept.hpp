@@ -15,7 +15,7 @@
 
 namespace minecraft::protocol
 {
-    struct receive_login_params
+    struct server_accept_login_params
     {
         void set_server_key(minecraft::security::private_key k) { server_key = std::move(k); }
 
@@ -61,7 +61,7 @@ namespace minecraft::protocol
             return buf;
         }
 
-        friend auto operator<<(std::ostream &os, receive_login_params const &arg) -> std::ostream &
+        friend auto operator<<(std::ostream &os, server_accept_login_params const &arg) -> std::ostream &
         {
             os << "receive login params :\n";
             os << " security token        : " << hexstring(arg.security_token) << std::endl;
@@ -77,17 +77,17 @@ namespace minecraft::protocol
         }
     };
 
-    struct login_op_base
+    struct server_accept_op_base
     {
         static boost::uuids::uuid generate_uuid();
     };
 
     template < class Stream, class DynamicBuffer >
-    struct receive_login_op
+    struct server_accept_op
     : net::coroutine
-    , login_op_base
+    , server_accept_op_base
     {
-        receive_login_op(Stream &stream, DynamicBuffer buffer, receive_login_params &params)
+        server_accept_op(Stream &stream, DynamicBuffer buffer, server_accept_login_params &params)
         : stream_(stream)
         , buffer_(buffer)
         , params_(params)
@@ -160,25 +160,26 @@ namespace minecraft::protocol
             }
 #include <boost/asio/unyield.hpp>
 
-        }   // namespace minecraft::server
+        }
 
         Stream &              stream_;
         DynamicBuffer         buffer_;
-        receive_login_params &params_;
+        server_accept_login_params &params_;
         std::vector< char >   tx_buffer_;
-    };   // namespace minecraft::server
+    };
 
     template < class Stream, class DynamicBuffer, class CompletionHandler >
-    auto
-    async_receive_login(Stream &stream, DynamicBuffer buffer, receive_login_params &params, CompletionHandler &&handler)
+    auto async_server_accept(Stream &stream, DynamicBuffer buffer,
+                             server_accept_login_params &params, CompletionHandler &&handler)
     {
-        using op_type = receive_login_op< Stream, DynamicBuffer >;
+        using op_type = server_accept_op< Stream, DynamicBuffer >;
         return net::async_compose< CompletionHandler, void(error_code) >(
             op_type(stream, buffer, params), handler, stream);
     }
 
     template < class NextLayer, class CompletionHandler >
-    auto async_receive_login(stream< NextLayer > &stream, receive_login_params &params, CompletionHandler &&handler)
+    auto
+    async_server_accept(stream< NextLayer > &stream, server_accept_login_params &params, CompletionHandler &&handler)
     {
         auto op = [&stream, &params, coro = net::coroutine(), compose_buffer = std::vector< char >()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
@@ -248,12 +249,12 @@ namespace minecraft::protocol
                     //
 
                     params.server_login_success.username = params.client_login_start.name;
-                    params.server_login_success.uuid     = to_string(login_op_base::generate_uuid());
+                    params.server_login_success.uuid     = to_string(server_accept_op_base::generate_uuid());
                 }
                 else
                 {
                     params.server_login_success.username = params.client_login_start.name;
-                    params.server_login_success.uuid     = to_string(login_op_base::generate_uuid());
+                    params.server_login_success.uuid     = to_string(server_accept_op_base::generate_uuid());
                 }
 
                 //

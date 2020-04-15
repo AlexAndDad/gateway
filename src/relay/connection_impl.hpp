@@ -1,6 +1,6 @@
 #pragma once
 
-#include "minecraft/protocol/receive_login.hpp"
+#include "minecraft/protocol/server_accept.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "net.hpp"
 
@@ -50,7 +50,7 @@ namespace relay
         stream_type         stream_;
         std::vector< char > compose_buffer_;
 
-        minecraft::protocol::receive_login_params login_params_;
+        minecraft::protocol::server_accept_login_params login_params_;
     };
 
 }   // namespace gateway

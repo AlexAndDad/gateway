@@ -92,7 +92,7 @@ namespace relay
                       << std::endl;
         };
 
-        minecraft::protocol::async_receive_login(
+        minecraft::protocol::async_server_accept(
             stream_,
             this->login_params_,
             bind_executor(get_executor(),

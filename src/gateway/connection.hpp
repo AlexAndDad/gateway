@@ -1,7 +1,7 @@
 #pragma once
 
 #include "connection_impl.hpp"
-#include "minecraft/protocol/receive_login.hpp"
+#include "minecraft/protocol/server_accept.hpp"
 #include "net.hpp"
 #include "polyfill/hexdump.hpp"
 
