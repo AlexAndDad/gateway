@@ -4,6 +4,6 @@
 
 namespace minecraft::server
 {
-    WISE_ENUM_CLASS((play_id, std::int32_t), (chat_message, 0x0f));
+    WISE_ENUM_CLASS((play_id, std::int32_t), (chat_message, 0x0f), (spawn_position, 0x4E));
 
 }
