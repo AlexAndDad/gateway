@@ -32,6 +32,8 @@ namespace minecraft::server
 
     inline void compose(encryption_request const &packet, std::vector< char > &compose_buffer)
     {
+        using minecraft::encode;
+
         auto i1 = std::back_inserter(compose_buffer);
         i1      = encode(variable_length(packet.id()), i1);
         i1      = encode(packet.server_id, i1);

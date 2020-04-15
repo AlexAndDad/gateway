@@ -1,13 +1,12 @@
 #pragma once
 
-#include "minecraft/server/receive_login.hpp"
+#include "connection_impl.hpp"
+#include "minecraft/protocol/receive_login.hpp"
 #include "net.hpp"
 #include "polyfill/hexdump.hpp"
-#include "connection_impl.hpp"
 
 #include <iostream>
 #include <memory>
-
 
 namespace relay
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "minecraft/server/receive_login.hpp"
 #include "minecraft/client/connect.hpp"
+#include "minecraft/protocol/receive_login.hpp"
 #include "net.hpp"
 #include "polyfill/hexdump.hpp"
 
@@ -65,7 +65,7 @@ namespace masquerade {
         socket_type sock_;
         std::vector<char> rx_buffer_;
 
-        minecraft::server::receive_login_params login_params_;
+        minecraft::protocol::receive_login_params login_params_;
 
         // upstream connection
         resolver_type resolver_;

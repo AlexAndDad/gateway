@@ -13,7 +13,7 @@
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-namespace minecraft::server
+namespace minecraft::protocol
 {
     struct receive_login_params
     {

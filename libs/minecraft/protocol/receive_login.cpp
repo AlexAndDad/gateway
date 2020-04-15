@@ -1,6 +1,6 @@
-#include "minecraft/server/receive_login.hpp"
+#include "receive_login.hpp"
 
-namespace minecraft::server
+namespace minecraft::protocol
 {
     boost::uuids::uuid login_op_base::generate_uuid()
     {

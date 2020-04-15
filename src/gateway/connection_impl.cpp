@@ -89,7 +89,7 @@ namespace gateway
             std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
         };
 
-        minecraft::server::async_receive_login(
+        minecraft::protocol::async_receive_login(
             stream_,
             this->login_params_,
             bind_executor(get_executor(),

@@ -80,7 +80,7 @@ namespace masquerade
         login_params_.set_server_id(config_.server_id);
         login_params_.use_security(false);
 
-        minecraft::server::async_receive_login(
+        minecraft::protocol::async_receive_login(
             sock_,
             net::dynamic_buffer(rx_buffer_),
             this->login_params_,
