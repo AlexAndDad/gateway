@@ -1,5 +1,5 @@
 #include "minecraft/client/handshake.hpp"
-#include "minecraft/stream.hpp"
+#include "stream.hpp"
 
 #include <boost/beast/_experimental/test/handler.hpp>
 #include <boost/beast/_experimental/test/stream.hpp>
@@ -13,8 +13,8 @@ TEST_CASE("minecraft::stream")
     using boost::beast::test::run;
     auto ioc = net::io_context();
 
-    auto sender   = stream< test_stream >(test_stream(ioc));
-    auto receiver = stream< test_stream >(connect(sender.next_layer()));
+    auto sender   = protocol::stream< test_stream >(test_stream(ioc));
+    auto receiver = protocol::stream< test_stream >(connect(sender.next_layer()));
 
     error_code  ec;
     std::size_t bytes_transferred = 0;

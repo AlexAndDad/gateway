@@ -4,7 +4,7 @@
 #include "minecraft/security/private_key.hpp"
 #include "net.hpp"
 
-#include <minecraft/stream.hpp>
+#include <minecraft/protocol/stream.hpp>
 
 namespace gateway
 {
@@ -23,7 +23,7 @@ namespace gateway
         using executor_type = net::io_context::executor_type;
         using protocol      = net::ip::tcp;
         using socket_type   = net::basic_stream_socket< protocol, executor_type >;
-        using stream_type   = minecraft::stream< socket_type >;
+        using stream_type   = minecraft::protocol::stream< socket_type >;
 
         explicit connection_impl(connection_config config, socket_type &&sock);
 

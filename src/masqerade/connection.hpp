@@ -29,7 +29,7 @@ namespace masquerade {
         using protocol = net::ip::tcp;
         using socket_type = net::basic_stream_socket<protocol, executor_type>;
         using resolver_type = net::ip::basic_resolver<protocol, executor_type>;
-        using stream_type = minecraft::stream<socket_type>;
+        using stream_type = minecraft::protocol::stream<socket_type>;
 
         explicit connection_impl(connection_config config, socket_type &&sock);
 

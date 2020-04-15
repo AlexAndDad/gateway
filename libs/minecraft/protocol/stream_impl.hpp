@@ -5,7 +5,7 @@
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
 
-namespace minecraft
+namespace minecraft::protocol
 {
 
     struct frame_data
@@ -184,4 +184,4 @@ namespace minecraft
 
 }   // namespace minecraft
 
-#include "minecraft/stream_impl.ipp"
+#include "stream_impl.ipp"

@@ -1,10 +1,10 @@
 #include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
-#include "parse_error.hpp"
+#include "minecraft/parse_error.hpp"
 
 #include <cassert>
 
-namespace minecraft
+namespace minecraft::protocol
 {
     template < class NextLayer >
     stream_impl< NextLayer >::stream_impl(next_layer_type &&next)

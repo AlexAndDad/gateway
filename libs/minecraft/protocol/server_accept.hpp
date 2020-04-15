@@ -8,7 +8,7 @@
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
-#include "minecraft/stream.hpp"
+#include "stream.hpp"
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>

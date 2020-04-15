@@ -1,4 +1,4 @@
-#include "minecraft/stream.hpp"
+#include "minecraft/protocol/stream.hpp"
 
 #include <catch2/catch.hpp>
 

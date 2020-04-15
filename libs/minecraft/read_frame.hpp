@@ -5,7 +5,7 @@
 #pragma once
 
 #include "minecraft/parse.hpp"
-#include "minecraft/stream.hpp"
+#include "minecraft/protocol/stream.hpp"
 #include "net.hpp"
 #include "polyfill/hexdump.hpp"
 
@@ -181,7 +181,7 @@ namespace minecraft
     }
 
     template < class NextLayer, class FrameType, class CompletionHandler >
-    auto async_expect_frame(stream< NextLayer > &s, FrameType &target, CompletionHandler &&handler)
+    auto async_expect_frame(protocol::stream< NextLayer > &s, FrameType &target, CompletionHandler &&handler)
     {
         auto op = [&s, coro = net::coroutine(), &target](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {

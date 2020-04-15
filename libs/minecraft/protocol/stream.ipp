@@ -1,4 +1,4 @@
-namespace minecraft
+namespace minecraft::protocol
 {
     template < class NextLayer >
     template <class CompletionToken>

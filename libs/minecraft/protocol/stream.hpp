@@ -1,8 +1,8 @@
 #pragma once
 
 #include "minecraft/net.hpp"
-#include "minecraft/stream_impl.hpp"
-namespace minecraft
+#include "stream_impl.hpp"
+namespace minecraft::protocol
 {
     template < class NextLayer = net::basic_stream_socket< net::ip::tcp, net::io_context::executor_type > >
     struct stream
@@ -93,4 +93,4 @@ namespace minecraft
     };
 }   // namespace minecraft
 
-#include "minecraft/stream.ipp"
+#include "stream.ipp"
