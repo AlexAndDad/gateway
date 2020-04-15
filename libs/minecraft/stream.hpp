@@ -70,6 +70,10 @@ namespace minecraft
             impl_->set_encryption(secret);
         }
 
+        void protocol_version(protocol_version_type version);
+
+        auto protocol_version() const -> protocol_version_type;
+
         auto next_layer() -> next_layer_type &;
 
         auto close() noexcept -> void;

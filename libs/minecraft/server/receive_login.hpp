@@ -30,17 +30,17 @@ namespace minecraft::server
         bool                             use_security_ = true;
 
         // state
-        client::handshake           client_handshake_frame;
-        client::login_start         client_login_start;
-        server::encryption_request  server_encryption_request;
-        client::encryption_response client_encryption_response;
-        server::login_success       server_login_success;
-        std::vector< std::uint8_t > shared_secret;
-        std::function<void(net::mutable_buffer)> on_rx;
-        std::function<void(net::const_buffer)> on_tx;
-        std::function<void(error_code)> on_fail;
+        client::handshake                          client_handshake_frame;
+        client::login_start                        client_login_start;
+        server::encryption_request                 server_encryption_request;
+        client::encryption_response                client_encryption_response;
+        server::login_success                      server_login_success;
+        std::vector< std::uint8_t >                shared_secret;
+        std::function< void(net::mutable_buffer) > on_rx;
+        std::function< void(net::const_buffer) >   on_tx;
+        std::function< void(error_code) >          on_fail;
 
-        error_code const& log_fail(error_code const& ec)
+        error_code const &log_fail(error_code const &ec)
         {
             if (on_fail)
                 on_fail(ec);
@@ -138,7 +138,7 @@ namespace minecraft::server
 
                 prepare(params_.server_encryption_request, params_.server_key);
                 tx_buffer_.clear();
-                encode(params_.server_encryption_request, std::back_inserter(tx_buffer_));
+                compose(params_.server_encryption_request, tx_buffer_);
                 yield async_write(stream_, net::buffer(tx_buffer_), std::move(self));
                 if (ec.failed())
                     return self.complete(ec);
@@ -147,14 +147,14 @@ namespace minecraft::server
                 if (ec.failed())
                     return self.complete(ec);
 
-                params_.shared_secret =
-                    params_.client_encryption_response.decrypt_secret(params_.server_key, params_.server_encryption_request.verify_token, ec);
+                params_.shared_secret = params_.client_encryption_response.decrypt_secret(
+                    params_.server_key, params_.server_encryption_request.verify_token, ec);
 
                 return self.complete(error::not_implemented);
 
             send_success:
                 tx_buffer_.clear();
-                encode(params_.server_login_success, tx_buffer_);
+                compose(params_.server_login_success, tx_buffer_);
                 yield async_write(stream_, net::buffer(tx_buffer_), std::move(self));
                 return self.complete(ec);
             }
@@ -185,18 +185,22 @@ namespace minecraft::server
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
-                yield stream.async_read_frame(std::move(self));
+                yield async_expect_frame(stream, params.client_handshake_frame, std::move(self));
+
+                if (not ec.failed())
+                    verify(params.client_handshake_frame, ec);
+
                 if (ec.failed())
-                    return self.complete(params.log_fail(ec));
-                params.log_rx(stream.current_frame());
-                if (expect_frame(stream.current_frame(), params.client_handshake_frame, ec).failed())
                     return self.complete(params.log_fail(ec));
 
-                yield stream.async_read_frame(std::move(self));
+                stream.protocol_version(params.client_handshake_frame.protocol_version);
+
+                yield async_expect_frame(stream, params.client_login_start, std::move(self));
+
+                if (not ec.failed())
+                    verify(params.client_login_start, ec);
+
                 if (ec.failed())
-                    return self.complete(params.log_fail(ec));
-                params.log_rx(stream.current_frame());
-                if (expect_frame(stream.current_frame(), params.client_login_start, ec).failed())
                     return self.complete(params.log_fail(ec));
 
                 if (params.use_security())
@@ -213,7 +217,8 @@ namespace minecraft::server
                         auto buf = net::buffer(compose_buffer);
                         params.log_tx(buf);
                         stream.async_write_frame(buf, std::move(self));
-                    };
+                    }
+
                     if (ec.failed())
                         return self.complete(params.log_fail(ec));
 
@@ -221,22 +226,22 @@ namespace minecraft::server
                     // receive encryption response
                     //
 
-                    yield stream.async_read_frame(std::move(self));
-                    if (ec.failed())
-                        return self.complete(params.log_fail(ec));
-                    params.log_rx(stream.current_frame());
-                    if (expect_frame(stream.current_frame(), params.client_encryption_response, ec).failed())
-                        return self.complete(params.log_fail(ec));
-                    params.shared_secret =
-                        params.client_encryption_response.decrypt_secret(params.server_key, params.server_encryption_request.verify_token, ec);
-                    if (ec.failed())
+                    yield async_expect_frame(stream, params.client_encryption_response, std::move(self));
+                    if (ec)
                         return self.complete(params.log_fail(ec));
 
                     //
-                    // set encrypted mode
+                    // decode shared secret
                     //
 
-                    stream.set_encryption(net::buffer(params.shared_secret));
+                    {
+                        auto secret = params.client_encryption_response.decrypt_secret(
+                            params.server_key, params.server_encryption_request.verify_token, ec);
+                        if (ec.failed())
+                            return self.complete(params.log_fail(ec));
+
+                        stream.set_encryption(net::buffer(secret));
+                    }
 
                     //
                     // todo : contact minecraft server here for uuid

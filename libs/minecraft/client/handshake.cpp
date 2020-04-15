@@ -25,4 +25,10 @@ namespace minecraft::client
         return ec;
     }
 
+    auto verify(handshake const& packet, error_code& ec) -> error_code&
+    {
+        packet.validate(ec);
+        return ec;
+    }
+
 }   // namespace minecraft::client

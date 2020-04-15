@@ -21,6 +21,8 @@ namespace minecraft::client
 
         friend void          report_on(std::ostream &os, handshake const &);
         friend std::ostream &operator<<(std::ostream &os, handshake const &arg);
+        friend auto verify(handshake const& packet, error_code& ec) -> error_code&;
+
 
         template < class Iter >
         friend auto parse(Iter first, Iter last, handshake &target, error_code &ec) -> Iter

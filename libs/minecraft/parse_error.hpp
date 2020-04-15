@@ -34,6 +34,11 @@ namespace minecraft
             not_rsa_key = 2,
             decryption_failure = 3,
         };
+
+        enum protocol_error
+        {
+            invalid_name = 1,
+        };
     };
 
     inline auto parse_error_category() -> error_category const &
@@ -76,6 +81,7 @@ namespace minecraft
         } cat;
         return cat;
     }
+
     inline auto login_error_category() -> error_category const &
     {
         static struct : error_category
@@ -99,13 +105,38 @@ namespace minecraft
         return cat;
     }
 
+    inline auto protocol_error_category() -> error_category const &
+    {
+        static struct : error_category
+        {
+            const char *name() const noexcept { return "minecraft protocol error"; }
+
+            std::string message(int value) const
+            {
+                switch (static_cast< error::protocol_error >(value))
+                {
+                case error::protocol_error::invalid_name:
+                    return "invalid player name";
+                }
+                return "unknown code: " + std::to_string(value);
+            }
+        } cat;
+        return cat;
+    }
+
     inline auto make_error_code(error::parse_error e) -> error_code
     {
         return error_code(static_cast< int >(e), parse_error_category());
     }
+
     inline auto make_error_code(error::login_error e) -> error_code
     {
         return error_code(static_cast< int >(e), parse_error_category());
+    }
+
+    inline auto make_error_code(error::protocol_error e) -> error_code
+    {
+        return error_code(static_cast< int >(e), protocol_error_category());
     }
 }   // namespace minecraft
 
@@ -118,6 +149,11 @@ namespace boost::system
 
     template <>
     struct is_error_code_enum< minecraft::error::login_error > : std::true_type
+    {
+    };
+
+    template <>
+    struct is_error_code_enum< minecraft::error::protocol_error > : std::true_type
     {
     };
 }   // namespace boost::system

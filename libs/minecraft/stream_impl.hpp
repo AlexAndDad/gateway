@@ -3,6 +3,7 @@
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
 #include "minecraft/parse.hpp"
+#include "minecraft/protocol_version.hpp"
 
 namespace minecraft
 {
@@ -162,6 +163,8 @@ namespace minecraft
 
 
         next_layer_type next_layer_;
+
+        protocol_version_type protocol_version_ = protocol_version_type::not_set;
 
         int compression_threshold_;
 

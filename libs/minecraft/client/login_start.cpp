@@ -16,4 +16,14 @@ namespace minecraft::client
         return target.size() - original_size;
     }
 
+    auto verify(login_start const& frame, error_code& ec) -> error_code&
+    {
+        ec.clear();
+
+        if (frame.name.size() < 1)
+            ec = error::invalid_name;
+
+        return ec;
+    }
+
 }

@@ -10,9 +10,10 @@ namespace minecraft::client
     struct login_start
     {
         static constexpr auto id() { return client_login_packet ::login_start; }
-        varchar<16>           name;
+        varchar< 16 >         name;
 
-        friend auto compose(login_start const& frame, std::vector<char>& target) -> std::size_t;
+        friend auto compose(login_start const &frame, std::vector< char > &target) -> std::size_t;
+        friend auto verify(login_start const &frame, error_code &ec) -> error_code &;
     };
 
     inline void report_on(std::ostream &os, login_start const &ls) { os << "client::login_start : name=" << ls.name; }
