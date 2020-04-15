@@ -50,13 +50,13 @@ namespace minecraft
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::protocol_version(protocol::protocol_version_type version) -> void
+    auto stream< NextLayer >::protocol_version(protocol::version_type version) -> void
     {
         impl_->protocol_version_ = version;
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::protocol_version() const -> protocol::protocol_version_type
+    auto stream< NextLayer >::protocol_version() const -> protocol::version_type
     {
         return impl_->protocol_version_;
     }

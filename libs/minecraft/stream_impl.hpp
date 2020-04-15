@@ -1,7 +1,7 @@
 #pragma once
 #include "minecraft/encryption_state.hpp"
 #include "minecraft/parse.hpp"
-#include "minecraft/protocol/protocol_version.hpp"
+#include "minecraft/protocol/version.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
 
@@ -164,7 +164,7 @@ namespace minecraft
 
         next_layer_type next_layer_;
 
-        protocol::protocol_version_type protocol_version_ = protocol::protocol_version_type::not_set;
+        protocol::version_type protocol_version_ = protocol::version_type::not_set;
 
         int compression_threshold_;
 
