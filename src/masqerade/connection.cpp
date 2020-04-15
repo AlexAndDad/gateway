@@ -132,7 +132,7 @@ namespace masquerade
         std::cout << "initiating upstream login: " << upstream_sock_.remote_endpoint().address() << ':'
                   << upstream_sock_.remote_endpoint().port() << std::endl;
 
-        minecraft::client::async_connect(upstream_sock_,
+        minecraft::protocol::async_connect(upstream_sock_,
                                          net::dynamic_buffer(upstream_rx_buffer_),
                                          upstream_connect_params_,
                                          bind_executor(get_executor(), [self = shared_from_this()](error_code ec) {

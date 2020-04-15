@@ -7,7 +7,7 @@
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/login_success.hpp"
 
-namespace minecraft::client
+namespace minecraft::protocol
 {
     struct connect_params
     {
