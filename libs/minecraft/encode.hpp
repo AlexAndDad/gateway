@@ -9,6 +9,35 @@
 namespace minecraft
 {
     //
+    // position
+    //
+    template < class Iter, class Integral >
+    Iter write_x_bytes(Iter first, Integral val)
+    {
+        auto size = sizeof(Integral);
+        while (size--)
+        {
+            *first++ = static_cast< std::uint8_t >(val >> (size * 8));
+        }
+        return first;
+    }
+
+    template < class Iter >
+    Iter encode(const position &in, Iter first)
+    {
+        std::uint64_t value = 0;
+        value |= in.x().to_ulong();
+        value <<= 26;
+        value |= in.z().to_ulong();
+        value <<= 26;
+        value |= in.y().to_ulong();
+
+        return write_x_bytes(first, value);
+    }
+
+
+
+    //
     // fixed length integers
     //
     template < class Iter >
