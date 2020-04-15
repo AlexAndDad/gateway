@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <bitset>
 #include <boost/operators.hpp>
 #include <iostream>
+#include <polyfill/bitset_tools.hpp>
 #include <wise_enum.h>
 
 namespace minecraft
@@ -159,5 +161,40 @@ namespace minecraft
     {
         return var< Integral >(i);
     }
+
+    struct position
+    {
+        position() = default;
+
+        position(std::int32_t x, std::int32_t y, std::int32_t z)
+        {
+            x_ = x;
+            y_ = y;
+            z_ = z;
+        }
+
+        friend std::ostream &operator<<(std::ostream &stream, const position &self)
+        {
+            // All bitsets need to be converted to int32_t, this requires the negative bit to be carried.
+
+            stream << "position.x: " << polyfill::bitset_tools::signedBS_to_signed32(self.x_)
+                   << "\nposition.y: " << polyfill::bitset_tools::signedBS_to_signed32(self.y_)
+                   << "\nposition.z: " << polyfill::bitset_tools::signedBS_to_signed32(self.z_);
+            return stream;
+        }
+
+        void set_x(std::int32_t val) { x_ = val; }
+        void set_y(std::int32_t val) { y_ = val; }
+        void set_z(std::int32_t val) { z_ = val; }
+
+        [[nodiscard]] std::bitset< 26 > x() const { return x_; }
+        [[nodiscard]] std::bitset< 12 > y() const { return y_; }
+        [[nodiscard]] std::bitset< 26 > z() const { return z_; }
+
+      private:
+        std::bitset< 26 > x_;
+        std::bitset< 12 > y_;
+        std::bitset< 26 > z_;
+    };
 
 }   // namespace minecraft
