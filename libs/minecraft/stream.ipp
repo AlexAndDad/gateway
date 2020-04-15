@@ -18,6 +18,19 @@ namespace minecraft
     }
 
     template < class NextLayer >
+    auto stream< NextLayer >:: close() noexcept -> void
+    {
+        try
+        {
+            return impl_->close();
+        }
+        catch(...)
+        {
+            // absorb exceptions
+        }
+    }
+
+    template < class NextLayer >
     auto stream< NextLayer >:: current_frame() -> net::mutable_buffer
     {
         return impl_->current_frame();

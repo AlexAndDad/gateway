@@ -154,6 +154,13 @@ namespace minecraft
             return compression_threshold_ >= 0;
         }
 
+        auto set_encryption(net::const_buffer secret) -> void
+        {
+            assert(not encryption_);
+            encryption_.emplace(secret);
+        }
+
+
         next_layer_type next_layer_;
 
         int compression_threshold_;

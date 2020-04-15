@@ -113,6 +113,34 @@ namespace minecraft
         return net::async_compose< CompletionHandler, void(error_code, std::size_t) >(std::move(op), handler, stream);
     }
 
+    template<class FrameType>
+    auto expect_frame(net::const_buffer source, FrameType& target, error_code& ec) -> error_code&
+    {
+        ec.clear();
+
+        var_enum<decltype(target.id())> which;
+        auto first = reinterpret_cast<const char*>(source.data());
+        auto last = first + source.size();
+
+        auto next = parse(first, last, which, ec);
+
+        if (not ec.failed())
+        {
+            if (which == target.id())
+            {
+                next = parse(next, last, target, ec);
+                if (not ec.failed())
+                    if (next != last)
+                        ec = error::invalid_packet;
+            }
+            else
+            {
+                ec = error::unexpected_packet;
+            }
+        }
+        return ec;
+    }
+
     template < class Stream, class DynamicBuffer, class FrameType, class CompletionHandler >
     auto async_expect_frame(Stream &stream, DynamicBuffer buffer, FrameType &target, CompletionHandler &&handler)
     {

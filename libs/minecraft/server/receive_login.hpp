@@ -2,12 +2,13 @@
 #include "minecraft/client/encryption_response.hpp"
 #include "minecraft/client/handshake.hpp"
 #include "minecraft/client/login_start.hpp"
+#include "minecraft/hexdump.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/read_frame.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
-#include "minecraft/hexdump.hpp"
+#include "minecraft/stream.hpp"
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -150,5 +151,73 @@ namespace minecraft::server
         using op_type = receive_login_op< Stream, DynamicBuffer >;
         return net::async_compose< CompletionHandler, void(error_code) >(
             op_type(stream, buffer, params), handler, stream);
+    }
+
+    template < class NextLayer, class CompletionHandler >
+    auto async_receive_login(stream< NextLayer > &stream, receive_login_params &params, CompletionHandler &&handler)
+    {
+        auto op = [&stream, &params, coro = net::coroutine(), compose_buffer = std::vector< char >()](
+                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+#include <boost/asio/yield.hpp>
+            reenter(coro) for (;;)
+            {
+                yield stream.async_read_frame(std::move(self));
+                if (ec.failed())
+                    return self.complete(ec);
+                if (expect_frame(stream.current_frame(), params.client_handshake_frame, ec).failed())
+                    return self.complete(ec);
+
+                yield stream.async_read_frame(std::move(self));
+                if (ec.failed())
+                    return self.complete(ec);
+                if (expect_frame(stream.current_frame(), params.client_login_start, ec).failed())
+                    return self.complete(ec);
+
+                if (not params.use_security())
+                {
+                    prepare(params.server_encryption_request, params.server_key);
+                    compose_buffer.clear();
+                    encode(params.server_encryption_request, std::back_inserter(compose_buffer));
+                    yield
+                    {
+                        auto buf = net::buffer(compose_buffer);
+                        stream.async_write_frame(buf, std::move(self));
+                    };
+                    if (ec.failed())
+                        return self.complete(ec);
+
+                    yield stream.async_read_frame(std::move(self));
+                    if (ec.failed())
+                        return self.complete(ec);
+                    if (expect_frame(stream.current_frame(), params.client_encryption_response, ec).failed())
+                        return self.complete(ec);
+                    params.shared_secret =
+                        params.client_encryption_response.decrypt_secret(params.server_key, params.security_token, ec);
+                    stream.set_encryption(net::buffer(params.shared_secret));
+                    //
+                    // todo : contact minecraft server here for uuid
+                    //
+                    params.server_login_success.username = params.client_login_start.name;
+                    params.server_login_success.uuid     = to_string(login_op_base::generate_uuid());
+                }
+                else
+                {
+                    params.server_login_success.username = params.client_login_start.name;
+                    params.server_login_success.uuid     = to_string(login_op_base::generate_uuid());
+                }
+
+                compose_buffer.clear();
+                encode(params.server_login_success, compose_buffer);
+                yield
+                {
+                    auto buf = net::buffer(compose_buffer);
+                    stream.async_write_frame(buf, std::move(self));
+                }
+                return self.complete(ec);
+            }
+#include <boost/asio/unyield.hpp>
+        };
+
+        return net::async_compose< CompletionHandler, void(error_code) >(std::move(op), handler, stream);
     }
 }   // namespace minecraft::server

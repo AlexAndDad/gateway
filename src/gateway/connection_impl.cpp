@@ -1,10 +1,10 @@
 #include "connection_impl.hpp"
 
 #include "minecraft/security/rsa.hpp"
-#include "minecraft/server/chat_message.hpp"
 #include "minecraft/send_frame.hpp"
-
+#include "minecraft/server/chat_message.hpp"
 #include "polyfill/report.hpp"
+#include "polyfill/hexdump.hpp"
 
 #include <random>
 
@@ -31,8 +31,8 @@ namespace gateway
     }   // namespace
 
     connection_config::connection_config()
-        : server_key()
-        , server_id(generate_server_id())
+    : server_key()
+    , server_id(generate_server_id())
     {
         server_key.assign(minecraft::security::rsa(1024));
     };
@@ -51,8 +51,8 @@ namespace gateway
     // =========================================
 
     connection_impl::connection_impl(connection_config config, socket_type &&sock)
-        : config_(std::move(config))
-        , sock_(std::move(sock))
+    : config_(std::move(config))
+    , stream_(std::move(sock))
     {
     }
 
@@ -66,9 +66,9 @@ namespace gateway
         dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_cancel(); }));
     }
 
-    auto connection_impl::get_executor() -> executor_type { return sock_.get_executor(); }
+    auto connection_impl::get_executor() -> executor_type { return stream_.get_executor(); }
 
-    auto connection_impl::handle_cancel() -> void { sock_.cancel(); }
+    auto connection_impl::handle_cancel() -> void { stream_.close(); }
 
     auto connection_impl::handle_start() -> void
     {
@@ -79,34 +79,36 @@ namespace gateway
         login_params_.use_security(false);
 
         minecraft::server::async_receive_login(
-            sock_,
-            net::dynamic_buffer(rx_buffer_),
+            stream_,
             this->login_params_,
-            bind_executor(get_executor(), [self = this->shared_from_this()](error_code const &ec) {
-                if (ec.failed())
-                {
-                    std::cerr << "login failed: " << polyfill::report(ec) << std::endl;
-                }
-                else
-                {
-                    std::cout << "login complete\n";
-                    auto frame      = minecraft::server::chat_message();
-                    frame.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
-                    frame.position  = minecraft::server::chat_message::chat_position ::system_message;
-                    minecraft::async_send_frame(self->sock_, frame, [](auto...) { std::cout << "chat sent\n"; });
-                    self->initiate_spin();
-                }
-                std::cout << "login state: \n" << self->login_params_ << std::endl;
-            }));
+            bind_executor(get_executor(),
+                          [self = this->shared_from_this()](error_code const &ec) { self->handle_login(ec); }));
+    }
+
+    auto connection_impl::handle_login(error_code const &ec) -> void
+    {
+        if (ec.failed())
+        {
+            std::cerr << "login failed: " << polyfill::report(ec) << std::endl;
+        }
+        else
+        {
+            std::cout << "login complete\n";
+            auto frame      = minecraft::server::chat_message();
+            frame.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
+            frame.position  = minecraft::server::chat_message::chat_position ::system_message;
+            compose_buffer_.clear();
+            compose(frame, compose_buffer_);
+            stream_.async_write_frame(net::buffer(compose_buffer_), [](auto...) { std::cout << "chat sent\n"; });
+            initiate_spin();
+        }
+        std::cout << "login state: \n" << login_params_ << std::endl;
     }
 
     void connection_impl::initiate_spin()
     {
-        minecraft::async_read_frame(
-            sock_,
-            net::dynamic_buffer(rx_buffer_),
-            bind_executor(get_executor(),
-                          [self = shared_from_this()](error_code ec, std::size_t bt) { self->handle_spin(ec, bt); }));
+        stream_.async_read_frame(bind_executor(
+            get_executor(), [self = shared_from_this()](error_code ec, std::size_t bt) { self->handle_spin(ec, bt); }));
     }
 
     void connection_impl::handle_spin(error_code ec, std::size_t bytes_transferrred)
@@ -117,13 +119,17 @@ namespace gateway
         }
         else
         {
-            auto id = std::int32_t();
-            auto i  = minecraft::parse_var(rx_buffer_.begin(), rx_buffer_.end(), id, ec);
+            auto id    = std::int32_t();
+            auto data  = stream_.current_frame();
+            auto first = net::buffers_begin(data);
+            auto last  = net::buffers_end(data);
+            auto i     = minecraft::parse_var(first, last, id, ec);
+
             std::cout << "received frame length: " << bytes_transferrred;
             std::cout << " : type " << std::hex << id << std::endl;
-            net::dynamic_buffer(rx_buffer_).consume(bytes_transferrred);
+            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
             initiate_spin();
         }
     }
 
-}
+}   // namespace gateway

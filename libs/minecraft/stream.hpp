@@ -35,11 +35,19 @@ namespace minecraft
         /// The internal buffer will be available via the current_frame() method
         /// \tparam CompletionToken
         /// \param token
-        /// \return
+        /// \return DEDUCED
         template < class CompletionToken >
         auto async_read_frame(CompletionToken &&token) ->
             typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
 
+        /// Asynchronously write a frame.
+        /// The frame data is assumed to have already been composed by the caller.
+        /// The frame data is copied by the implementation before the internal asynchronous operation starts.
+        /// This is in general not a pesssimisation as almost all minecraft communications are encrypted
+        /// \tparam CompletionToken
+        /// \param frame_data
+        /// \param token
+        /// \return DEDUCED
         template < class CompletionToken >
         auto async_write_frame(net::const_buffer frame_data, CompletionToken &&token) ->
             typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
@@ -51,7 +59,20 @@ namespace minecraft
 
         auto get_executor() const -> executor_type;
 
+        /// Enable encryption and set the shared secret
+        /// \param secret is a net::const buffer containing the shared secret. secret.size() must be exactly 16
+        /// \pre stream is not already encrypted
+        /// \pre no async operations are in progress
+        /// \post all subsequent reads and writes will be encrypted
+        auto set_encryption(net::const_buffer secret) -> void
+        {
+            assert(secret.size() == 16);
+            impl_->set_encryption(secret);
+        }
+
         auto next_layer() -> next_layer_type &;
+
+        auto close() noexcept -> void;
 
       private:
         implementation_type release() { return std::exchange(impl_, nullptr); }

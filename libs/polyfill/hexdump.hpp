@@ -11,9 +11,10 @@
 #include <string_view>
 #include <vector>
 
+#include "polyfill/net.hpp"
+
 namespace polyfill
 {
-
     inline
     auto temp_hex(std::uint8_t val) -> std::string_view
     {
@@ -141,6 +142,7 @@ namespace polyfill
         Container const& c_;
         std::size_t columns_;
     };
+
 
     inline
     std::string hexstring(std::vector<std::uint8_t> const& data)
