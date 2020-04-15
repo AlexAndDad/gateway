@@ -2,7 +2,7 @@
 
 #include <wise_enum/wise_enum.h>
 
-namespace minecraft
+namespace minecraft::protocol
 {
     WISE_ENUM_CLASS((protocol_version_type, std::int32_t), (not_set, 0), (v1_11, 315), (v1_15_2, 578));
 
