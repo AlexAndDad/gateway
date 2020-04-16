@@ -52,6 +52,10 @@ namespace minecraft::protocol
         auto async_write_frame(net::const_buffer frame_data, CompletionToken &&token) ->
             typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
 
+        template < class Packet, class CompletionToken >
+        auto async_write_packet(Packet const &p, CompletionToken &&token) ->
+            typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
+
         /// Return a mutable_buffer representing the data in last frame to be read.
         /// The user may modify the data in this buffer.
         /// The data in the buffer will be valid until the next async_read_frame call
@@ -91,6 +95,6 @@ namespace minecraft::protocol
 
         implementation_type impl_;
     };
-}   // namespace minecraft
+}   // namespace minecraft::protocol
 
 #include "stream.ipp"

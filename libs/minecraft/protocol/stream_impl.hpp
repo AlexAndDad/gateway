@@ -103,6 +103,9 @@ namespace minecraft::protocol
         // has_state if encryption is enabled
         std::optional< encryption_state > encryption_;
 
+        // buffer for composing packet structures into frame extents
+        std::vector<char> compose_buffer;
+
         // transmit state
         std::vector< char > tx_compose_buffer_;
         std::vector< char > tx_compressed_buffer_;

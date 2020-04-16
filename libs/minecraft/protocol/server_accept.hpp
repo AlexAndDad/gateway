@@ -181,7 +181,7 @@ namespace minecraft::protocol
     auto
     async_server_accept(stream< NextLayer > &stream, server_accept_login_params &params, CompletionHandler &&handler)
     {
-        auto op = [&stream, &params, coro = net::coroutine(), compose_buffer = std::vector< char >()](
+        auto op = [&stream, &params, coro = net::coroutine()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
@@ -211,15 +211,7 @@ namespace minecraft::protocol
                     //
 
                     prepare(params.server_encryption_request, params.server_key);
-                    compose_buffer.clear();
-                    compose(params.server_encryption_request, compose_buffer);
-                    yield
-                    {
-                        auto buf = net::buffer(compose_buffer);
-                        params.log_tx(buf);
-                        stream.async_write_frame(buf, std::move(self));
-                    }
-
+                    yield stream.async_write_packet(params.server_encryption_request, std::move(self));
                     if (ec.failed())
                         return self.complete(params.log_fail(ec));
 
@@ -261,14 +253,7 @@ namespace minecraft::protocol
                 // send login success
                 //
 
-                compose_buffer.clear();
-                compose(params.server_login_success, compose_buffer);
-                yield
-                {
-                    auto buf = net::buffer(compose_buffer);
-                    params.log_tx(buf);
-                    stream.async_write_frame(buf, std::move(self));
-                }
+                yield stream.async_write_packet(params.server_login_success, std::move(self));
                 return self.complete(ec);
             }
 #include <boost/asio/unyield.hpp>

@@ -1,11 +1,11 @@
 namespace minecraft::protocol
 {
     template < class NextLayer >
-    template <class CompletionToken>
+    template < class CompletionToken >
     auto stream< NextLayer >::async_read_frame(CompletionToken &&token) ->
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
-        return impl_->async_read_frame(std::forward<CompletionToken>(token));
+        return impl_->async_read_frame(std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
@@ -18,24 +18,34 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >:: close() noexcept -> void
+    template < class Packet, class CompletionToken >
+    auto stream< NextLayer >::async_write_packet(Packet const &p, CompletionToken &&token) ->
+        typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
+    {
+        auto& buffer = impl_->compose_buffer;
+        buffer.clear();
+        compose(p, buffer);
+        return async_write_frame(net::buffer(buffer), std::forward<CompletionToken>(token));
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::close() noexcept -> void
     {
         try
         {
             return impl_->close();
         }
-        catch(...)
+        catch (...)
         {
             // absorb exceptions
         }
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >:: current_frame() -> net::mutable_buffer
+    auto stream< NextLayer >::current_frame() -> net::mutable_buffer
     {
         return impl_->current_frame();
     }
-
 
     template < class NextLayer >
     auto stream< NextLayer >::get_executor() const -> executor_type
@@ -61,5 +71,4 @@ namespace minecraft::protocol
         return impl_->protocol_version_;
     }
 
-
-}   // namespace minecraft
+}   // namespace minecraft::protocol
