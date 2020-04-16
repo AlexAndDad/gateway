@@ -8,9 +8,7 @@
 
 namespace minecraft
 {
-    //
-    // position
-    //
+
     template < class Iter, class Integral >
     Iter write_x_bytes(Iter first, Integral val)
     {
@@ -22,6 +20,32 @@ namespace minecraft
         return first;
     }
 
+
+    //
+    // floating point
+    //
+
+    template < class Iter>
+    Iter encode(const float &in,Iter first){
+
+        BOOST_ASSERT(sizeof(float) == sizeof(std::uint32_t));
+
+        std::uint32_t storage = 0;
+        std::memcpy(&storage,&in,sizeof(float));
+        return write_x_bytes(first,storage);
+
+    }
+
+    template < class Iter>
+    Iter encode(const double &in,Iter first){
+
+    }
+
+
+
+    //
+    // position
+    //
     template < class Iter >
     Iter encode(const position &in, Iter first)
     {
