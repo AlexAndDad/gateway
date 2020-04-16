@@ -163,6 +163,7 @@ namespace minecraft::protocol
         auto get_executor() -> executor_type;
 
         auto next_layer() -> next_layer_type &;
+        auto next_layer() const -> next_layer_type const &;
 
         template < class CompletionToken >
         auto async_read_frame(CompletionToken &&token) ->

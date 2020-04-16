@@ -94,13 +94,20 @@ namespace polyfill
     template < class Stream >
     Stream &operator<<(Stream &os, error_code const &ec)
     {
-        os << "[error_code ";
-        os << ec.message();
-        os << ", code=";
-        os << ec.value();
-        os << ", cat=";
-        os << ec.category().name();
-        os << ']';
+        if (ec.failed())
+        {
+            os << "[error_code ";
+            os << ec.message();
+            os << ", code=";
+            os << ec.value();
+            os << ", cat=";
+            os << ec.category().name();
+            os << ']';
+        }
+        else
+        {
+            os << "[success]";
+        }
         return os;
     }
 

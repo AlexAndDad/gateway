@@ -1,12 +1,14 @@
 #include "connection_impl.hpp"
 
+#include "config/span.hpp"
 #include "minecraft/security/rsa.hpp"
-#include "minecraft/send_frame.hpp"
 #include "minecraft/server/chat_message.hpp"
-#include "polyfill/report.hpp"
+#include "minecraft/server/play_packet.hpp"
 #include "polyfill/hexdump.hpp"
+#include "polyfill/report.hpp"
 
 #include <random>
+#include <spdlog/fmt/bin_to_hex.h>
 
 namespace gateway
 {
@@ -77,17 +79,6 @@ namespace gateway
         login_params_.set_server_key(config_.server_key);
         login_params_.set_server_id(config_.server_id);
         login_params_.use_security(true);
-        login_params_.on_fail = [](error_code ec){
-            std::cout << "handshake: failure: " << polyfill::report(ec) << std::endl;
-        };
-        login_params_.on_tx = [](net::const_buffer data){
-            std::cout << "handshake: send: " << data.size() << '\n';
-            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
-        };
-        login_params_.on_rx = [](net::const_buffer data){
-            std::cout << "handshake: receive: " << data.size() << '\n';
-            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
-        };
 
         minecraft::protocol::async_server_accept(
             stream_,
@@ -96,24 +87,71 @@ namespace gateway
                           [self = this->shared_from_this()](error_code const &ec) { self->handle_login(ec); }));
     }
 
+    template < class NextLayer, class Iter, class CompletionToken >
+    auto
+    async_send_packets(minecraft::protocol::stream< NextLayer > &stream, Iter first, Iter last, CompletionToken &&token)
+    {
+        auto op = [&stream, coro = net::coroutine(), first, last](
+                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+#include <boost/asio/yield.hpp>
+            reenter(coro) for (;;)
+            {
+                if (first == last)
+                    return self.complete(ec);
+                spdlog::info("writing packet: {}", wise_enum::to_string(first->id()));
+                yield
+                {
+                    // since we are mutating self, we must be sure that any
+                    // iterator arithmetic is complete before the yielding call
+                    auto &p = *first++;
+                    stream.async_write_packet(p, std::move(self));
+                }
+                if (ec.failed())
+                    return self.complete(ec);
+            }
+#include <boost/asio/unyield.hpp>
+        };
+
+        return net::async_compose< CompletionToken, void(error_code) >(std::move(op), token, stream);
+    }
+
     auto connection_impl::handle_login(error_code const &ec) -> void
     {
         if (ec.failed())
         {
-            std::cerr << "login failed: " << polyfill::report(ec) << std::endl;
+            spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+            spdlog::info("login state: {}", login_params_);
         }
         else
         {
-            std::cout << "login complete\n";
-            auto frame      = minecraft::server::chat_message();
-            frame.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
-            frame.position  = minecraft::server::chat_message::chat_position ::system_message;
-            compose_buffer_.clear();
-            compose(frame, compose_buffer_);
-            stream_.async_write_frame(net::buffer(compose_buffer_), [](auto...) { std::cout << "chat sent\n"; });
-            initiate_spin();
+            spdlog::info("{}::{}({})", this, __func__, polyfill::report(ec));
+            spdlog::info("login state: {}", login_params_);
+
+            auto messages = std::make_shared< std::vector< minecraft::server::play_packet > >();
+            messages->resize(3);
+            for (int i = 0; i < 3; ++i)
+            {
+                auto &packet     = messages->at(i);
+                auto &actual     = packet.construct< minecraft::server::chat_message >();
+                actual.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
+                actual.position  = minecraft::server::chat_message::chat_position ::system_message;
+            }
+
+            async_send_packets(stream_,
+                               messages->begin(),
+                               messages->end(),
+                               bind_executor(get_executor(), [self = shared_from_this(), messages](error_code ec) {
+                                   if (not ec.failed())
+                                   {
+                                       spdlog::info("{}::{}({})", *self, "async_send_packets", minecraft::report(ec));
+                                       self->initiate_spin();
+                                   }
+                                   else
+                                   {
+                                       spdlog::warn("{}::{}({})", *self, "async_send_packets", minecraft::report(ec));
+                                   }
+                               }));
         }
-        std::cout << "login state: \n" << login_params_ << std::endl;
     }
 
     void connection_impl::initiate_spin()
@@ -126,7 +164,7 @@ namespace gateway
     {
         if (ec.failed())
         {
-            std::cerr << "rx error : " << polyfill::report(ec) << std::endl;
+            spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
         }
         else
         {
@@ -136,9 +174,14 @@ namespace gateway
             auto last  = net::buffers_end(data);
             auto i     = minecraft::parse_var(first, last, id, ec);
 
-            std::cout << "received frame length: " << bytes_transferrred;
-            std::cout << " : type " << std::hex << id << std::endl;
-            std::cout << polyfill::hexdump(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())) << std::endl;
+            spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
+                         this,
+                         __func__,
+                         polyfill::report(ec),
+                         bytes_transferrred,
+                         id,
+                         spdlog::to_hex(config::to_span(data)));
+
             initiate_spin();
         }
     }

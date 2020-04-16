@@ -234,4 +234,10 @@ namespace minecraft::protocol
         return next_layer_;
     }
 
+    template < class NextLayer >
+    auto stream_impl< NextLayer >::next_layer() const -> next_layer_type const &
+    {
+        return next_layer_;
+    }
+
 }   // namespace minecraft

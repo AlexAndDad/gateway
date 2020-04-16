@@ -34,6 +34,21 @@ namespace gateway
         auto get_executor() -> executor_type;
 
       private:
+        template<class Stream>
+        friend Stream& operator<<(Stream& os, connection_impl const& i)
+        {
+            os << "[connection " << minecraft::report(i.stream_.next_layer()) << ']';
+            return os;
+        }
+
+        template<class Stream>
+        friend Stream& operator<<(Stream& os, connection_impl* p)
+        {
+            os << "[connection " << minecraft::report(p->stream_.next_layer()) << ']';
+            return os;
+        }
+
+      private:
         auto handle_start() -> void;
         auto handle_cancel() -> void;
 

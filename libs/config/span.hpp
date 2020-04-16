@@ -9,6 +9,7 @@ namespace config
     struct iter_span
     {
         using iterator   = Iter;
+        using const_iterator = Iter;
         using value_type = typename std::iterator_traits< Iter >::value_type;
 
         constexpr iter_span(Iter first, Iter last)
@@ -41,8 +42,8 @@ namespace config
             return span.end();
     }
 
-    using mutable_byte_span = iter_span< char >;
-    using const_byte_span   = iter_span< const char >;
+    using mutable_byte_span = iter_span< char * >;
+    using const_byte_span   = iter_span< const char * >;
 
     inline auto to_span(net::const_buffer buf)
     {

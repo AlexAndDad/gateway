@@ -79,6 +79,7 @@ namespace minecraft::protocol
         auto protocol_version() const -> protocol::version_type;
 
         auto next_layer() -> next_layer_type &;
+        auto next_layer() const -> next_layer_type const &;
 
         auto close() noexcept -> void;
 

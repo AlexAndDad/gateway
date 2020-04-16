@@ -4,6 +4,7 @@
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/hexdump.hpp"
 #include "minecraft/net.hpp"
+#include "minecraft/report.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
@@ -12,6 +13,7 @@
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <spdlog/spdlog.h>
 
 namespace minecraft::protocol
 {
@@ -30,36 +32,12 @@ namespace minecraft::protocol
         bool                             use_security_ = true;
 
         // state
-        client::handshake                          client_handshake_frame;
-        client::login_start                        client_login_start;
-        server::encryption_request                 server_encryption_request;
-        client::encryption_response                client_encryption_response;
-        server::login_success                      server_login_success;
-        std::vector< std::uint8_t >                shared_secret;
-        std::function< void(net::mutable_buffer) > on_rx;
-        std::function< void(net::const_buffer) >   on_tx;
-        std::function< void(error_code) >          on_fail;
-
-        error_code const &log_fail(error_code const &ec)
-        {
-            if (on_fail)
-                on_fail(ec);
-            return ec;
-        }
-
-        net::mutable_buffer log_rx(net::mutable_buffer buf)
-        {
-            if (on_rx)
-                on_rx(buf);
-            return buf;
-        }
-
-        net::const_buffer log_tx(net::const_buffer buf)
-        {
-            if (on_tx)
-                on_tx(buf);
-            return buf;
-        }
+        client::handshake           client_handshake_frame;
+        client::login_start         client_login_start;
+        server::encryption_request  server_encryption_request;
+        client::encryption_response client_encryption_response;
+        server::login_success       server_login_success;
+        std::vector< std::uint8_t > shared_secret;
 
         friend auto operator<<(std::ostream &os, server_accept_login_params const &arg) -> std::ostream &
         {
@@ -159,18 +137,19 @@ namespace minecraft::protocol
                 return self.complete(ec);
             }
 #include <boost/asio/unyield.hpp>
-
         }
 
-        Stream &              stream_;
-        DynamicBuffer         buffer_;
+        Stream &                    stream_;
+        DynamicBuffer               buffer_;
         server_accept_login_params &params_;
-        std::vector< char >   tx_buffer_;
+        std::vector< char >         tx_buffer_;
     };
 
     template < class Stream, class DynamicBuffer, class CompletionHandler >
-    auto async_server_accept(Stream &stream, DynamicBuffer buffer,
-                             server_accept_login_params &params, CompletionHandler &&handler)
+    auto async_server_accept(Stream &                    stream,
+                             DynamicBuffer               buffer,
+                             server_accept_login_params &params,
+                             CompletionHandler &&        handler)
     {
         using op_type = server_accept_op< Stream, DynamicBuffer >;
         return net::async_compose< CompletionHandler, void(error_code) >(
@@ -183,6 +162,11 @@ namespace minecraft::protocol
     {
         auto op = [&stream, &params, coro = net::coroutine()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+            auto log_fail = [](auto &&context, error_code &ec) -> error_code & {
+                if (ec.failed())
+                    spdlog::warn("{} failed: {}", context, report(ec));
+                return ec;
+            };
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
@@ -192,7 +176,7 @@ namespace minecraft::protocol
                     verify(params.client_handshake_frame, ec);
 
                 if (ec.failed())
-                    return self.complete(params.log_fail(ec));
+                    return self.complete(log_fail("handshake frame", ec));
 
                 stream.protocol_version(params.client_handshake_frame.protocol_version);
 
@@ -202,7 +186,7 @@ namespace minecraft::protocol
                     verify(params.client_login_start, ec);
 
                 if (ec.failed())
-                    return self.complete(params.log_fail(ec));
+                    return self.complete(log_fail("client login start", ec));
 
                 if (params.use_security())
                 {
@@ -213,15 +197,15 @@ namespace minecraft::protocol
                     prepare(params.server_encryption_request, params.server_key);
                     yield stream.async_write_packet(params.server_encryption_request, std::move(self));
                     if (ec.failed())
-                        return self.complete(params.log_fail(ec));
+                        return self.complete(log_fail("server encryption request", ec));
 
                     //
                     // receive encryption response
                     //
 
                     yield async_expect_frame(stream, params.client_encryption_response, std::move(self));
-                    if (ec)
-                        return self.complete(params.log_fail(ec));
+                    if (ec.failed())
+                        return self.complete(log_fail("client encryption response", ec));
 
                     //
                     // decode shared secret
@@ -231,7 +215,7 @@ namespace minecraft::protocol
                         auto secret = params.client_encryption_response.decrypt_secret(
                             params.server_key, params.server_encryption_request.verify_token, ec);
                         if (ec.failed())
-                            return self.complete(params.log_fail(ec));
+                            return self.complete(log_fail("decrypt secret", ec));
 
                         stream.set_encryption(secret);
                     }
@@ -254,11 +238,11 @@ namespace minecraft::protocol
                 //
 
                 yield stream.async_write_packet(params.server_login_success, std::move(self));
-                return self.complete(ec);
+                return self.complete(log_fail("server login success", ec));
             }
 #include <boost/asio/unyield.hpp>
         };
 
         return net::async_compose< CompletionHandler, void(error_code) >(std::move(op), handler, stream);
     }
-}   // namespace minecraft::server
+}   // namespace minecraft::protocol

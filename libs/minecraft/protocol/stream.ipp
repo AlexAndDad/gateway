@@ -60,6 +60,12 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
+    auto stream< NextLayer >::next_layer() const -> next_layer_type const &
+    {
+        return impl_->next_layer();
+    }
+
+    template < class NextLayer >
     auto stream< NextLayer >::protocol_version(protocol::version_type version) -> void
     {
         impl_->protocol_version_ = version;

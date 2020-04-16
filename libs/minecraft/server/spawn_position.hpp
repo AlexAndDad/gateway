@@ -15,17 +15,20 @@ namespace minecraft::server
         friend std::ostream &operator<<(std::ostream &os, spawn_position const &arg);
     };
 
+    inline void compose(spawn_position const& packet, std::vector<char>& target)
+    {
+        auto iter = std::back_inserter(target);
+        iter = encode(variable_length(packet.id()), iter);
+        encode(packet.location, iter);
+    }
+
     template < class Container >
     void encode(spawn_position const &packet, Container &target)
     {
         using minecraft::encode;
-        thread_local static std::vector< std::uint8_t > buf;
+        thread_local static std::vector< char > buf;
         buf.clear();
-
-        auto i1 = std::back_inserter(buf);
-        i1      = encode(packet.id(), i1);
-        encode(packet.location, i1);
-
+        compose(packet, buf);
         return encode_to_container(buf, target);
     }
 
