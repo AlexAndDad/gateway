@@ -8,6 +8,8 @@
 #include <initializer_list>
 #include <optional>
 #include <polyfill/hexdump.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 namespace minecraft::protocol
 {
@@ -92,7 +94,8 @@ namespace minecraft::protocol
     Stream& operator<<(Stream& os, shared_secret const& secret)
     {
         if (secret.has_value())
-            fmt::print(os, "{}", polyfill::hexstring(secret.begin(), secret.end()));
+            fmt::print(os, "{:n}", spdlog::to_hex(secret));
+//        fmt::print(os, "{}", polyfill::hexstring(secret.begin(), secret.end()));
         else
             fmt::print(os, "none");
         return os;

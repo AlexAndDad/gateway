@@ -211,14 +211,12 @@ namespace minecraft::protocol
                     // decode shared secret
                     //
 
-                    {
-                        auto secret = params.client_encryption_response.decrypt_secret(
-                            params.server_key, params.server_encryption_request.verify_token, ec);
-                        if (ec.failed())
-                            return self.complete(log_fail("decrypt secret", ec));
+                    params.secret = params.client_encryption_response.decrypt_secret(
+                        params.server_key, params.server_encryption_request.verify_token, ec);
+                    if (ec.failed())
+                        return self.complete(log_fail("decrypt secret", ec));
 
-                        stream.set_encryption(secret);
-                    }
+                    stream.set_encryption(params.secret);
 
                     //
                     // todo : contact minecraft server here for uuid
