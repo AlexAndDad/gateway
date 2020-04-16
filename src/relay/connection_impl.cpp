@@ -7,6 +7,7 @@
 #include "polyfill/report.hpp"
 
 #include <random>
+#include <spdlog/spdlog.h>
 
 namespace relay
 {
@@ -56,6 +57,7 @@ namespace relay
     , stream_(std::move(sock))
     , upstream_(socket_type(get_executor()))
     {
+        spdlog::info("{} accepted", this);
     }
 
     auto connection_impl::start() -> void

@@ -83,6 +83,7 @@ target_link_libraries(minecraft_lib PUBLIC
         Boost::boost Boost::filesystem Boost::system
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL
+        spdlog::spdlog
         ZLIB::zlib)
 
 target_include_directories(minecraft_lib

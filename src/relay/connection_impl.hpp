@@ -51,6 +51,13 @@ namespace relay
         std::vector< char > compose_buffer_;
 
         minecraft::protocol::server_accept_login_params login_params_;
+
+        template<class Stream>
+        friend Stream& operator<<(Stream& os, connection_impl* p)
+        {
+            os << "[connection " << minecraft::report(p->stream_.next_layer()) << ']';
+            return os;
+        }
     };
 
 }   // namespace relay

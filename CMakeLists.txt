@@ -14,6 +14,9 @@ find_package(Threads REQUIRED)
 hunter_add_package(Boost COMPONENTS filesystem program_options system)
 find_package(Boost COMPONENTS filesystem program_options system REQUIRED CONFIG)
 
+hunter_add_package(spdlog COMPONENTS)
+find_package(spdlog)
+
 hunter_add_package(WiseEnum)
 find_package(WiseEnum)
 

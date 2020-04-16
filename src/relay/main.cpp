@@ -4,6 +4,7 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 namespace relay
 {
@@ -18,28 +19,29 @@ namespace relay
         ioc.run();
     }
 
-}   // namespace masquerade
+}   // namespace relay
 
 int main(int argc, char **argv)
 {
     using polyfill::deduce_return_code;
     using polyfill::explain;
 
+    spdlog::set_level(spdlog::level::trace);
+
     namespace po = boost::program_options;
 
-    std::string upstream_address;
-    std::string upstream_port;
-    std::string listen_port;
+    std::string log_level;
 
     try
     {
         relay::app_config config;
-        auto                   desc = po::options_description();
+        auto              desc = po::options_description();
         desc.add_options()(
             "upstream-host", po::value(&config.upstream_host)->default_value("localhost"), "upstream minecraft server")(
             "upstream-port", po::value(&config.upstream_port)->default_value("25565"), "upstream minecraft port")(
-            "port", po::value(&config.listen_port)->default_value("9000"), "port to listen on")("help,-?",
-                                                                                                "show this help");
+            "port", po::value(&config.listen_port)->default_value("9000"), "port to listen on")(
+            "log-level,L", po::value(&log_level)->default_value("info"), "set the logging level")("help,-?",
+                                                                                                  "show this help");
 
         auto vm = po::variables_map();
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -49,6 +51,17 @@ int main(int argc, char **argv)
             std::exit(0);
         }
         po::notify(vm);
+
+        auto level = spdlog::level::from_str(log_level);
+        auto show_log_level = [&level]
+        {
+            auto lsv   = to_string_view(level);
+            std::cout << "log level = ";
+            std::cout.write(lsv.data(), lsv.size());
+            std::cout << std::endl;
+        };
+        show_log_level();
+        spdlog::set_level(spdlog::level::from_str(log_level));
 
         relay::run(std::move(config));
         return 0;

@@ -63,8 +63,16 @@ namespace relay {
         void
         handle_cancel();
 
+        template<class Stream>
+        friend Stream& operator<<(Stream& os, listener* p)
+        {
+            os << "[listener " << minecraft::report(p->acceptor_) << ']';
+            return os;
+        }
+
         listener_config config_;
         acceptor_type acceptor_;
         connection_cache connections_;
     };
+
 }

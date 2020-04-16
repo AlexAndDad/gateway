@@ -1,6 +1,8 @@
 #pragma once
 #include "polyfill/net.hpp"
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <ostream>
 #include <string>
 
@@ -10,136 +12,96 @@ namespace polyfill
     // common types
     //
 
-    void report_on(std::string &os, error_code const &ec);
+    template < class Stream, class Executor >
+    Stream &operator<<(Stream &os, net::basic_socket_acceptor< net::ip::tcp, Executor > const &acceptor);
 
-    void report_on(std::string &os, net::ip::tcp::endpoint const &ep);
+    template < class Stream, class Executor >
+    Stream &operator<<(Stream &os, net::basic_stream_socket< net::ip::tcp, Executor > const &acceptor);
 
-    template < class Executor >
-    void report_on(std::string &os, net::basic_stream_socket< net::ip::tcp, Executor > &sock);
+    template < class Stream >
+    Stream &operator<<(Stream &os, error_code const &ec);
 
     //
     // reporting
     //
 
-    inline
-    std::string &temp_report_buffer()
-    {
-        static thread_local std::string buf;
-        buf.clear();
-        return buf;
-    }
-
-    template < class X, class = void >
-    struct is_to_stringable : std::false_type
-    {
-    };
-
-    namespace detail
-    {
-        using std::to_string;
-    }   // namespace detail
-
-    template < class X >
-    struct is_to_stringable< X, std::void_t< decltype(detail::to_string(std::declval< X & >())) > >
-    : std::true_type
-    {
-    };
-
-    template < class T >
-    auto report_on(std::string &os, T &x) -> std::enable_if_t<is_to_stringable<T>::value>
-    {
-        os += detail::to_string(x);
-    }
-
-    template < class T >
-    auto report_on(std::string &os, T &x) -> decltype(std::void_t< decltype(to_string(x)) >())
-    {
-        os += to_string(x);
-    }
-
-    template < class X, class = void >
-    struct is_ostreamable : std::false_type
-    {
-    };
-
-    template < class X >
-    struct is_ostreamable< X, std::void_t< decltype(std::declval< std::ostream & >() << std::declval< X & >()) > >
-    : std::true_type
-    {
-    };
-
-    template < class T >
-    auto report_on(std::ostream &os, T &x) -> std::enable_if_t< is_ostreamable< T >::value >
-    {
-        os << x;
-    }
-
-    template < class T >
-    auto report_on(std::ostream &os, T &x) -> std::enable_if_t< not is_ostreamable< T >::value >
-    {
-        auto &buf = temp_report_buffer();
-        report_on(buf, x);
-        os << buf;
-    }
-
     template < class Type >
     struct reporter
     {
-        Type &arg;
+        Type const &arg;
     };
 
     template < class T >
-    auto operator<<(std::ostream &os, reporter< T > const &r)
-        -> std::enable_if_t< is_ostreamable< T >::value, std::ostream & >
+    auto report(T const &arg)
     {
-        os << r.arg;
+        return reporter< T > { arg };
+    }
+
+    template < class Stream, class Type >
+    Stream &operator<<(Stream &os, reporter< Type > const &rep)
+    {
+        os << rep.arg;
         return os;
     }
 
-    template < class T >
-    auto operator<<(std::ostream &os, reporter< T > const &r)
-        -> std::enable_if_t< not is_ostreamable< T >::value, std::ostream & >
+    template < class Type >
+    std::string to_string(reporter< Type > const &rep)
     {
-        report_on(os, r.arg);
-        return os;
+        return fmt::format("{}", rep.arg);
     }
-
-    template<class T>
-    auto to_string(const reporter<T> &r) -> decltype(auto)
-    {
-        auto &buf = temp_report_buffer();
-        report_on(buf, r.arg);
-        return buf;
-    };
-
-    template < class T >
-    auto report(T &&x)
-    {
-        return reporter< T > { x };
-    }
-
-
 }   // namespace polyfill
 
 namespace polyfill
 {
-    template < class Executor >
-    void report_on(std::string &os, net::basic_stream_socket< net::ip::tcp, Executor > &sock)
+    template < class Stream, class Executor >
+    Stream &operator<<(Stream &os, net::basic_socket_acceptor< net::ip::tcp, Executor > const &acceptor)
     {
+        auto ec = error_code();
+        auto ep = acceptor.local_endpoint(ec);
+        os << "[acceptor ";
+        if (ec)
+            os << ec.message();
+        else
+            os << ep;
+        os << ']';
+        return os;
+    }
+
+    template < class Stream, class Executor >
+    Stream &operator<<(Stream &os, net::basic_stream_socket< net::ip::tcp, Executor > const &sock)
+    {
+        os << "[socket ";
         auto ec = error_code();
         auto ep = sock.local_endpoint(ec);
 
         auto write = [&] {
             if (ec)
-                os += ec.message();
+                os << ec.message();
             else
-                report_on(os, ep);
+                os << ep;
         };
 
         write();
-        os += " -> ";
+        os << "->";
         ep = sock.remote_endpoint(ec);
         write();
+
+        os << ']';
+
+        return os;
+    }
+
+    template < class Stream >
+    Stream &operator<<(Stream &os, error_code const &ec)
+    {
+        os << "[error_code ";
+        os << ec.message();
+        os << ", code=";
+        os << ec.value();
+        os << ", cat=";
+        os << ec.category().name();
+        os << ']';
+        return os;
     }
 
 }   // namespace polyfill

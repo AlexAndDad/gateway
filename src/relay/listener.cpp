@@ -1,5 +1,9 @@
 #include "listener.hpp"
 
+#include "minecraft/report.hpp"
+
+#include <spdlog/spdlog.h>
+
 namespace relay
 {
     auto operator<<(std::ostream &os, listener_config const &cfg) -> std::ostream &
@@ -20,10 +24,13 @@ namespace relay
         acceptor_.bind(
             protocol::endpoint(net::ip::make_address("0.0.0.0"), std::uint16_t(::atoi(config_.listen_port.c_str()))));
         acceptor_.listen();
+        spdlog::info("relay: listening on {}", minecraft::report(acceptor_));
     }
 
     void listener::handle_accept(error_code ec, socket_type sock)
     {
+        spdlog::trace("{}::{}({}, {})", this, __func__, minecraft::report(ec), minecraft::report(sock));
+
         if (ec.failed())
         {
             if (ec == net::error::connection_aborted)
@@ -50,6 +57,7 @@ namespace relay
 
     void listener::initiate_accept()
     {
+        spdlog::trace("{} initiating accept", this);
         acceptor_.async_accept(
             [this](error_code const &ec, socket_type sock) { this->handle_accept(ec, std::move(sock)); });
     }
