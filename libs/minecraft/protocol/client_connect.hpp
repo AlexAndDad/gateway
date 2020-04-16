@@ -47,6 +47,20 @@ namespace minecraft::protocol
             return ec;
         }
 
+        error_code& parse_server_key(error_code& ec)
+        {
+            ec.clear();
+            try
+            {
+                server_key.public_key_from_asn1(net::buffer(server_encryption_request.public_key));
+            }
+            catch(system_error& se)
+            {
+                ec = se.code();
+            }
+            return ec;
+        }
+
         // arguments and results
 
         client::handshake           client_handshake;
@@ -54,6 +68,9 @@ namespace minecraft::protocol
         server::encryption_request  server_encryption_request;
         client::encryption_response client_encryption_response;
         server::login_success       server_login_success;
+
+        security::private_key server_key;
+        shared_secret secret;
 
         // active state
 
@@ -143,6 +160,8 @@ namespace minecraft::protocol
                 if (state.which_packet_type.value() == server_login_packet::encryption_request)
                 {
                     // encrypt and send back
+                    state.secret.generate();
+                    state.server_key;
                     // todo encryption
                     +++ HERE +++
 

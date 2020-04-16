@@ -18,7 +18,6 @@ namespace relay
         std::string upstream_host;
         std::string upstream_port;
 
-
         friend auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &;
     };
 
@@ -47,10 +46,11 @@ namespace relay
 
         connection_config config_;
 
-        stream_type         stream_;
+        stream_type         stream_; //! client connection
+        stream_type         upstream_;   //! connection to the server
         std::vector< char > compose_buffer_;
 
         minecraft::protocol::server_accept_login_params login_params_;
     };
 
-}   // namespace gateway
+}   // namespace relay

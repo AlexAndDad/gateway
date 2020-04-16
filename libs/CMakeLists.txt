@@ -59,8 +59,8 @@ target_include_directories(polyfill_lib
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND all_libs config_lib polyfill_lib)
-list(APPEND all_spec_files ${pollyfill_spec_files})
+list(APPEND all_libs polyfill_lib)
+list(APPEND all_spec_files ${polyfill_spec_files})
 
 #
 # minecraft

@@ -8,5 +8,4 @@ namespace minecraft
     using config::error_code;
     using config::system_error;
     using config::error_category;
-    using config::span;
 }

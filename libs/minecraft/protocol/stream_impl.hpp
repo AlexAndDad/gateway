@@ -4,30 +4,30 @@
 #include "minecraft/protocol/version.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/report.hpp"
 
 namespace minecraft::protocol
 {
-
     struct frame_data
     {
-        using store_type = std::vector<char>;
+        using store_type = std::vector< char >;
 
-        std::size_t payload_size = 0; //! the size of the frame read from the input stream
-        std::size_t data_position = 0; //! position in input stream where the frame's data starts
-        store_type payload; //! the input stream
+        std::size_t payload_size  = 0;   //! the size of the frame read from the input stream
+        std::size_t data_position = 0;   //! position in input stream where the frame's data starts
+        store_type  payload;             //! the input stream
 
         /// remove one frame's worth of data from the stream
         void remove_one()
         {
             auto first = payload.begin();
-            auto last = first + std::exchange(data_position, 0) + std::exchange(payload_size, 0);
+            auto last  = first + std::exchange(data_position, 0) + std::exchange(payload_size, 0);
             payload.erase(first, last);
         }
 
         /// erase the stream and metadata
         void reset()
         {
-            payload_size = 0;
+            payload_size  = 0;
             data_position = 0;
             payload.clear();
         }
@@ -35,18 +35,18 @@ namespace minecraft::protocol
         /// decode the frame length from the stream and update the data_position accordingly.
         /// If the parse fails, state is left unchanged.
         /// @pre payload_size and data_position must be zero
-        auto decode_frame_length(error_code &ec) -> error_code&
+        auto decode_frame_length(error_code &ec) -> error_code &
         {
             assert(payload_size == 0);
             assert(data_position == 0);
 
             var_int frame_size;
-            auto first           = payload.begin();
-            auto last            = payload.end();
-            auto next            = parse(first, last, frame_size, ec);
+            auto    first = payload.begin();
+            auto    last  = payload.end();
+            auto    next  = parse(first, last, frame_size, ec);
             if (not ec.failed())
             {
-                payload_size = std::size_t(frame_size.value());
+                payload_size  = std::size_t(frame_size.value());
                 data_position = std::distance(first, next);
             }
             return ec;
@@ -61,14 +61,14 @@ namespace minecraft::protocol
         }
 
         /// point to the first byte of the frame's data
-        auto begin() const -> const char*
+        auto begin() const -> const char *
         {
             assert(not shortfall());
             return payload.data() + data_position;
         }
 
         /// point to the last byte+1 of the frame's data
-        auto end() const -> const char*
+        auto end() const -> const char *
         {
             assert(not shortfall());
             return begin() + payload_size;
@@ -82,7 +82,7 @@ namespace minecraft::protocol
 
         /// How many bytes we are short of having a complete payload
         /// \return
-        auto shortfall() const ->std::size_t
+        auto shortfall() const -> std::size_t
         {
             auto size = payload.size();
             assert(data_position <= size);
@@ -94,12 +94,60 @@ namespace minecraft::protocol
         }
     };
 
+    struct stream_impl_base
+    {
+        protocol::version_type protocol_version_ = protocol::version_type::not_set;
+
+        int compression_threshold_ = -1;
+
+        // has_state if encryption is enabled
+        std::optional< encryption_state > encryption_;
+
+        // transmit state
+        std::vector< char > tx_compose_buffer_;
+        std::vector< char > tx_compressed_buffer_;
+
+        // receive state
+        frame_data          compressed_rx_data_;     // data is always read into the compressed buffer
+        frame_data          uncompressed_rx_data_;   // and optionally uncompressed into here
+        net::mutable_buffer current_frame_data_ = {};
+
+        WISE_ENUM_CLASS_MEMBER(event, error, frame);
+        std::function <void(event, std::string_view)> logger; //optional logger
+
+        // client parameters / discovered by server
+        std::string hostname;
+        std::string port;
+    };
+
+    inline std::ostream &operator<<(std::ostream &os, stream_impl_base const &base)
+    {
+        auto prefix = [first = true]() mutable {
+            if (first)
+            {
+                first = false;
+                return std::string_view("    ");
+            }
+            else
+                return std::string_view("\n    ");
+        };
+        os << prefix() << "protocol version      : " << wise_enum::to_string(base.protocol_version_);
+        os << prefix() << "compression threshold : " << base.compression_threshold_;
+        os << prefix() << "encryption            : " << (base.encryption_ ? "yes" : "no");
+        os << prefix() << "hostname              : " << base.hostname;
+        os << prefix() << "port                  : " << base.port;
+
+        return os;
+    }
+
     template < class NextLayer >
-    struct stream_impl
+    struct stream_impl : stream_impl_base
     {
         using next_layer_type = NextLayer;
 
         using executor_type = typename NextLayer::executor_type;
+
+        auto as_base() -> stream_impl_base& { return *this; }
 
         stream_impl(next_layer_type &&next);
 
@@ -143,45 +191,35 @@ namespace minecraft::protocol
         auto compress_tx_frame(net::const_buffer frame_extent) -> void;
         auto compose_tx_frame_uncompressed(net::const_buffer frame_extent) -> void;
 
-        auto current_frame() -> net::mutable_buffer
-        {
-            return current_frame_data_;
-        }
+        auto current_frame() -> net::mutable_buffer { return current_frame_data_; }
 
         auto decode_frame_length(error_code &ec) -> void;
 
-        bool compression_enabled() const
-        {
-            return compression_threshold_ >= 0;
-        }
+        bool compression_enabled() const { return compression_threshold_ >= 0; }
 
-        auto set_encryption(shared_secret const& secret) -> void
+        auto set_encryption(shared_secret const &secret) -> void
         {
             assert(not encryption_);
             encryption_.emplace(secret);
         }
 
-
         next_layer_type next_layer_;
-
-        protocol::version_type protocol_version_ = protocol::version_type::not_set;
-
-        int compression_threshold_;
-
-        // has_state if encryption is enabled
-        std::optional< encryption_state > encryption_;
-
-        // transmit state
-        std::vector< char > tx_compose_buffer_;
-        std::vector< char > tx_compressed_buffer_;
-
-        // receive state
-        frame_data compressed_rx_data_; // data is always read into the compressed buffer
-        frame_data uncompressed_rx_data_; // and optionally uncompressed into here
-        net::mutable_buffer current_frame_data_ = {};
-
     };
 
-}   // namespace minecraft
+    template<class NextLayer>
+    std::ostream& operator<<(std::ostream& os, stream_impl<NextLayer> &impl)
+    {
+        auto prefix = []()  {
+                return std::string_view("\n    ");
+        };
+
+        os << impl.as_base();
+        os << prefix() << "next_layer : " << report(impl.next_layer_);
+
+        return os;
+    }
+
+
+}   // namespace minecraft::protocol
 
 #include "stream_impl.ipp"

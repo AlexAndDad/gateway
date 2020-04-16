@@ -9,8 +9,6 @@ namespace minecraft::protocol
     template < class NextLayer >
     stream_impl< NextLayer >::stream_impl(next_layer_type &&next)
     : next_layer_(std::move(next))
-    , compression_threshold_(-1)
-    , encryption_()
     {
     }
 

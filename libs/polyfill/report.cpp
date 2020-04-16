@@ -2,23 +2,22 @@
 
 namespace polyfill {
 
-    std::ostream &
-    operator<<(std::ostream &os, error_code_reporter const &ecr)
+    void report_on(std::string& os, net::ip::tcp::endpoint const& ep)
     {
-        report_on(os, ecr.ec);
-        return os;
-    }
-
-    auto
-    report(error_code const&ec) -> error_code_reporter
-    {
-        return error_code_reporter{ec};
+        os.append(ep.address().to_string());
+        os += ':';
+        os.append(std::to_string(ep.port()));
     }
 
     void
-    report_on(std::ostream &os, error_code const &ec)
+    report_on(std::string &os, error_code const &ec)
     {
-        os << "system error: " << ec.message() << " : code=" << ec.value() << " : category=" << ec.category().name();
+        os += "system error: ";
+        os += ec.message();
+        os += " : code=";
+        os += std::to_string(ec.value());
+        os += "category=";
+        os += ec.category().name();
     }
 
 }

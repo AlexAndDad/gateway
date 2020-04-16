@@ -36,6 +36,10 @@ namespace minecraft::protocol
                 throw system_error(error_code(error::invalid_shared_secret));
         }
 
+        /// Generate the shared secret
+        /// @post has_value() == true
+        auto generate() -> void;
+
         template < class Iter >
         void assign(Iter first, Iter last)
         {

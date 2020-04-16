@@ -54,6 +54,7 @@ namespace relay
     connection_impl::connection_impl(connection_config config, socket_type &&sock)
     : config_(std::move(config))
     , stream_(std::move(sock))
+    , upstream_(socket_type(get_executor()))
     {
     }
 

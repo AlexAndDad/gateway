@@ -5,6 +5,8 @@
 #include <catch2/catch.hpp>
 #include <utility>
 
+using namespace std::literals;
+
 TEST_CASE("minecraft::stream_impl")
 {
     using namespace minecraft;
@@ -47,11 +49,31 @@ TEST_CASE("minecraft::stream_impl")
     bytes_transferred = net::read(receiver, net::dynamic_buffer(rx_data), ec);
     CHECK(bytes_transferred == 46);
     CHECK(ec == net::error::eof);
-    auto expected = std::vector< char > {
-        't',    'h', 'e',  ' ',    'c',    'a',    't', ' ', 's',    'a',    't', ' ',    'o',    'n',    ' ', 't',
-        'h',    'e', ' ',  'm',    'a',    't',    '.', '~', '\xbe', '\xB5', 'o', '\xE0', '\xF6', '\xF1', 20,  '\x95',
-        '\xA1', 'c', '\\', '\x89', '\xBF', '\x84', 21,  22,  '\x89', '3',    20,  '\t',   'I',    '\xC3'
-    };
+    auto expected =
+        std::vector< char > { 't',    'h',    'e', ' ',    'c',    'a',    't', ' ',    's',    'a',   't',  ' ',
+                              'o',    'n',    ' ', 't',    'h',    'e',    ' ', 'm',    'a',    't',   '.',  '~',
+                              '\xbe', '\xB5', 'o', '\xE0', '\xF6', '\xF1', 20,  '\x95', '\xA1', 'c',   '\\', '\x89',
+                              '\xBF', '\x84', 21,  22,     '\x89', '3',    20,  '\t',   'I',    '\xC3' };
 
     CHECK(rx_data == expected);
+
+    SECTION("printing")
+    {
+        auto ioc              = net::io_context();
+        using next_layer_type = net::ip::tcp::socket;
+        using impl_type       = minecraft::protocol::stream_impl< next_layer_type >;
+        auto impl             = impl_type(next_layer_type(ioc));
+
+        std::ostringstream oss;
+        oss << '\n' << impl << '\n';
+        auto expected = "\n"
+"    protocol version      : not_set\n"
+"    compression threshold : -1\n"
+"    encryption            : no\n"
+"    hostname              : \n"
+"    port                  : \n"
+"    next_layer : Bad file descriptor -> Bad file descriptor\n"s;
+        CHECK(oss.str().size() == expected.size());
+        CHECK(oss.str() == expected);
+    }
 }
