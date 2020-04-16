@@ -20,12 +20,15 @@ namespace minecraft::client
 
     auto report_on(std::ostream &os, encryption_response const &arg) -> void { os << arg; }
 
-    std::vector< std::uint8_t >
+    protocol::shared_secret
     encryption_response::decrypt_secret(minecraft::security::private_key const &server_key,
                                         std::vector< std::uint8_t > const &     original_verify_token,
                                         error_code &                            ec) const
     {
-        auto output = std::vector< std::uint8_t >();
+        auto result = protocol::shared_secret();
+        static thread_local auto output = std::vector< std::uint8_t >();
+        output.clear();
+        ec.clear();
         try
         {
             auto rsa = EVP_PKEY_get0_RSA(server_key.native_handle());
@@ -47,14 +50,16 @@ namespace minecraft::client
             if (outsize < 0)
                 throw error_code(error::decryption_failure);
             output.resize(outsize);
-            ec.clear();
+
+            auto iter = output.begin();
+            parse(iter, output.end(), result, ec);
         }
         catch (error_code& err)
         {
             ec = err;
         }
 
-        return output;
+        return result;
     }
 
 }   // namespace minecraft::client

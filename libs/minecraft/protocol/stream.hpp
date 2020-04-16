@@ -64,9 +64,9 @@ namespace minecraft::protocol
         /// \pre stream is not already encrypted
         /// \pre no async operations are in progress
         /// \post all subsequent reads and writes will be encrypted
-        auto set_encryption(net::const_buffer secret) -> void
+        auto set_encryption(shared_secret secret) -> void
         {
-            assert(secret.size() == 16);
+            assert(secret.has_value());
             impl_->set_encryption(secret);
         }
 

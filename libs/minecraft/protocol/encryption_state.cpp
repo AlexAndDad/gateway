@@ -7,8 +7,8 @@
 namespace minecraft::protocol
 {
     encryption_state::encryption_state(shared_secret const &secret)
-    : tx_context_(net::buffer(secret), net::buffer(secret))
-    , rx_context_(net::buffer(secret), net::buffer(secret))
+    : tx_context_(buffer(secret), buffer(secret))
+    , rx_context_(buffer(secret), buffer(secret))
     {
     }
 

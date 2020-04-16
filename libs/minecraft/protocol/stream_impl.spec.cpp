@@ -12,7 +12,7 @@ TEST_CASE("minecraft::stream_impl")
     auto ioc = net::io_context();
 
     auto const payload     = std::string("the cat sat on the mat.");
-    auto       secret      = shared_secret { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    auto       secret      = protocol::shared_secret { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     auto       sender_impl = protocol::stream_impl(boost::beast::test::stream(ioc));
     auto       receiver    = connect(sender_impl.next_layer());
 

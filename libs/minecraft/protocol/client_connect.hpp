@@ -144,6 +144,7 @@ namespace minecraft::protocol
                 {
                     // encrypt and send back
                     // todo encryption
+                    +++ HERE +++
 
                     compose(s.async_write_frame(), s.compose_buffer);
                     yield s.async_write_frame(net::buffer(s.compose_buffer), ec);

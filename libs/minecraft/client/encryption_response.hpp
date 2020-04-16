@@ -5,6 +5,7 @@
 #pragma once
 
 #include "minecraft/parse.hpp"
+#include "minecraft/protocol/shared_secret.hpp"
 
 #include <iostream>
 #include <minecraft/packet_id.hpp>
@@ -22,11 +23,11 @@ namespace minecraft::client
         template < class Iter >
         friend auto parse(Iter first, Iter last, encryption_response &arg) -> Iter;
 
-        friend auto                 operator<<(std::ostream &os, encryption_response const &arg) -> std::ostream &;
-        friend auto                 report_on(std::ostream &os, encryption_response const &arg) -> void;
-        std::vector< std::uint8_t > decrypt_secret(minecraft::security::private_key const &server_key,
-                                                   std::vector< std::uint8_t > const &     original_verify_token,
-                                                   error_code &                            ec) const;
+        friend auto             operator<<(std::ostream &os, encryption_response const &arg) -> std::ostream &;
+        friend auto             report_on(std::ostream &os, encryption_response const &arg) -> void;
+        protocol::shared_secret decrypt_secret(minecraft::security::private_key const &server_key,
+                                               std::vector< std::uint8_t > const &     original_verify_token,
+                                               error_code &                            ec) const;
     };
 
     template < class Iter >
@@ -35,7 +36,7 @@ namespace minecraft::client
         using minecraft::parse;
         auto current = parse(first, last, std::tie(arg.shared_secret, arg.verify_token), ec);
         if (not ec.failed() and current != last)
-        ec = error::invalid_packet;
+            ec = error::invalid_packet;
         return ec.failed() ? first : current;
     }
 

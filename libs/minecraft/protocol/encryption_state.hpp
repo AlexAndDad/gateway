@@ -5,7 +5,7 @@
 #pragma once
 #include "minecraft/net.hpp"
 #include "minecraft/security/cipher_context.hpp"
-#include "minecraft/shared_secret.hpp"
+#include "shared_secret.hpp"
 
 #include <cstdint>
 #include <vector>

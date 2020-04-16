@@ -155,7 +155,7 @@ namespace minecraft::protocol
             return compression_threshold_ >= 0;
         }
 
-        auto set_encryption(net::const_buffer secret) -> void
+        auto set_encryption(shared_secret const& secret) -> void
         {
             assert(not encryption_);
             encryption_.emplace(secret);

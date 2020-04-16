@@ -25,14 +25,15 @@ namespace minecraft
             incomplete_parse,
             unexpected_packet,
             invalid_nbt_tag,
+            invalid_shared_secret,
         };
 
         // errors in the minecraft protocol login phase
         enum login_error
         {
             shared_secret_failure = 1,
-            not_rsa_key = 2,
-            decryption_failure = 3,
+            not_rsa_key           = 2,
+            decryption_failure    = 3,
         };
 
         enum protocol_error
@@ -75,6 +76,8 @@ namespace minecraft
                     return "unexpected packet";
                 case error::invalid_nbt_tag:
                     return "invalid nbt tag";
+                case error::invalid_shared_secret:
+                    return "invalid shared secret";
                 }
                 return "unknown code: " + std::to_string(value);
             }

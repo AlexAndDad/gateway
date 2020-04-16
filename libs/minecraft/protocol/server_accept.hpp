@@ -241,7 +241,7 @@ namespace minecraft::protocol
                         if (ec.failed())
                             return self.complete(params.log_fail(ec));
 
-                        stream.set_encryption(net::buffer(secret));
+                        stream.set_encryption(secret);
                     }
 
                     //
