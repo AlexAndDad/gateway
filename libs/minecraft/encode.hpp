@@ -28,7 +28,7 @@ namespace minecraft
     template < class Iter >
     Iter encode(const float &in, Iter first)
     {
-        BOOST_ASSERT(sizeof(float) == sizeof(std::uint32_t));
+        static_assert(sizeof(float) == sizeof(std::uint32_t));
 
         std::uint32_t storage = 0;
         std::memcpy(&storage, &in, sizeof(float));
@@ -38,7 +38,7 @@ namespace minecraft
     template < class Iter >
     Iter encode(const double &in, Iter first)
     {
-        BOOST_ASSERT(sizeof(double) == sizeof(std::uint64_t));
+        static_assert(sizeof(double) == sizeof(std::uint64_t));
 
         std::uint64_t storage = 0;
         std::memcpy(&storage, &in, sizeof(double));
