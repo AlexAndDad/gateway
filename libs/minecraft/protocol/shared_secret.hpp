@@ -4,8 +4,10 @@
 
 #include <array>
 #include <cstdint>
-#include <optional>
+#include <fmt/ostream.h>
 #include <initializer_list>
+#include <optional>
+#include <polyfill/hexdump.hpp>
 
 namespace minecraft::protocol
 {
@@ -85,6 +87,16 @@ namespace minecraft::protocol
       private:
         std::optional< storage_type > opt_val_;
     };
+
+    template<class Stream>
+    Stream& operator<<(Stream& os, shared_secret const& secret)
+    {
+        if (secret.has_value())
+            fmt::print(os, "{}", polyfill::hexstring(secret.begin(), secret.end()));
+        else
+            fmt::print(os, "none");
+        return os;
+    }
 
     inline auto buffer(shared_secret const &secret)
     {

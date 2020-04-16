@@ -72,7 +72,7 @@ TEST_CASE("minecraft::stream_impl")
 "    encryption            : no\n"
 "    hostname              : \n"
 "    port                  : \n"
-"    next_layer : Bad file descriptor -> Bad file descriptor\n"s;
+"    next_layer : [socket [error_code \"Bad file descriptor\",9,\"system\"]->[error_code \"Bad file descriptor\",9,\"system\"]]\n"s;
         CHECK(oss.str().size() == expected.size());
         CHECK(oss.str() == expected);
     }

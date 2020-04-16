@@ -37,7 +37,7 @@ namespace minecraft::protocol
         server::encryption_request  server_encryption_request;
         client::encryption_response client_encryption_response;
         server::login_success       server_login_success;
-        std::vector< std::uint8_t > shared_secret;
+        shared_secret               secret;
 
         friend auto operator<<(std::ostream &os, server_accept_login_params const &arg) -> std::ostream &
         {
@@ -49,7 +49,7 @@ namespace minecraft::protocol
             os << "client login start     :\n" << arg.client_login_start << std::endl;
             os << "server encryption request :\n" << arg.server_encryption_request << std::endl;
             os << "client encryption response :\n" << arg.client_encryption_response << std::endl;
-            os << "shared secret : " << hexstring(arg.shared_secret) << std::endl;
+            os << "shared secret : " << arg.secret << std::endl;
             os << arg.server_login_success;
             return os;
         }
@@ -125,7 +125,7 @@ namespace minecraft::protocol
                 if (ec.failed())
                     return self.complete(ec);
 
-                params_.shared_secret = params_.client_encryption_response.decrypt_secret(
+                params_.secret = params_.client_encryption_response.decrypt_secret(
                     params_.server_key, params_.server_encryption_request.verify_token, ec);
 
                 return self.complete(error::not_implemented);

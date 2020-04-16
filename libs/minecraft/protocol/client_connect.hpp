@@ -161,9 +161,9 @@ namespace minecraft::protocol
                 {
                     // encrypt and send back
                     state.secret.generate();
-                    state.server_key;
+//                    state.server_key;
                     // todo encryption
-                    +++ HERE +++
+//                    +++ HERE +++
 
                     compose(s.async_write_frame(), s.compose_buffer);
                     yield s.async_write_frame(net::buffer(s.compose_buffer), ec);

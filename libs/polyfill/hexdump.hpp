@@ -157,4 +157,17 @@ namespace polyfill
         return result;
     }
 
+    template<class Iter>
+    std::string hexstring(Iter first, Iter last)
+    {
+        std::string result;
+        result.reserve(std::distance(first, last) * 2);
+        while (first != last)
+        {
+            auto t = temp_hex(*first++);
+            result.append(t.begin(), t.end());
+        }
+        return result;
+    }
+
 }

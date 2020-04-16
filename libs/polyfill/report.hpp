@@ -4,23 +4,11 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <ostream>
+#include <iomanip>
 #include <string>
 
 namespace polyfill
 {
-    //
-    // common types
-    //
-
-    template < class Stream, class Executor >
-    Stream &operator<<(Stream &os, net::basic_socket_acceptor< net::ip::tcp, Executor > const &acceptor);
-
-    template < class Stream, class Executor >
-    Stream &operator<<(Stream &os, net::basic_stream_socket< net::ip::tcp, Executor > const &acceptor);
-
-    template < class Stream >
-    Stream &operator<<(Stream &os, error_code const &ec);
-
     //
     // reporting
     //
@@ -28,87 +16,97 @@ namespace polyfill
     template < class Type >
     struct reporter
     {
-        Type const &arg;
+        template < class Stream, class T >
+        Stream &operator()(Stream &s, T &&x) const
+        {
+            s << x;
+            return s;
+        }
     };
 
     template < class T >
-    auto report(T const &arg)
+    struct report_wrapper
     {
-        return reporter< T > { arg };
-    }
+        T arg_;
+    };
 
-    template < class Stream, class Type >
-    Stream &operator<<(Stream &os, reporter< Type > const &rep)
+    template < class T >
+    struct report_wrapper< T & >
     {
-        os << rep.arg;
+        T &arg_;
+    };
+
+    template < class Stream, class T >
+    Stream &operator<<(Stream &os, report_wrapper< T > wrapper)
+    {
+        auto op = reporter< std::decay_t< T > >();
+        op(os, std::forward< T >(wrapper.arg_));
         return os;
     }
 
-    template < class Type >
-    std::string to_string(reporter< Type > const &rep)
+    template < class T >
+    auto report(T &&arg)
     {
-        return fmt::format("{}", rep.arg);
+        return report_wrapper< T > { std::forward< T >(arg) };
     }
 }   // namespace polyfill
 
 namespace polyfill
 {
-    template < class Stream, class Executor >
-    Stream &operator<<(Stream &os, net::basic_socket_acceptor< net::ip::tcp, Executor > const &acceptor)
+    template <>
+    struct reporter< error_code >
     {
-        auto ec = error_code();
-        auto ep = acceptor.local_endpoint(ec);
-        os << "[acceptor ";
-        if (ec)
-            os << ec.message();
-        else
-            os << ep;
-        os << ']';
-        return os;
-    }
+        template < class Stream >
+        void operator()(Stream &os, error_code const &ec) const
+        {
+            if (ec.failed())
+                fmt::print(os, "[error_code {},{},{}]", std::quoted(ec.message()), ec.value(), std::quoted(ec.category().name()));
+            else
+                fmt::print(os, "[success]");
+        }
+    };
 
-    template < class Stream, class Executor >
-    Stream &operator<<(Stream &os, net::basic_stream_socket< net::ip::tcp, Executor > const &sock)
+    template < class Executor >
+    struct reporter< net::basic_socket_acceptor< net::ip::tcp, Executor > >
     {
-        os << "[socket ";
-        auto ec = error_code();
-        auto ep = sock.local_endpoint(ec);
-
-        auto write = [&] {
+        template < class Stream, class T >
+        void operator()(Stream &os, T &&acceptor) const
+        {
+            auto ec = error_code();
+            auto ep = acceptor.local_endpoint(ec);
+            os << "[acceptor ";
             if (ec)
-                os << ec.message();
+                os << report(ec.message());
             else
                 os << ep;
-        };
-
-        write();
-        os << "->";
-        ep = sock.remote_endpoint(ec);
-        write();
-
-        os << ']';
-
-        return os;
-    }
-
-    template < class Stream >
-    Stream &operator<<(Stream &os, error_code const &ec)
-    {
-        if (ec.failed())
-        {
-            os << "[error_code ";
-            os << ec.message();
-            os << ", code=";
-            os << ec.value();
-            os << ", cat=";
-            os << ec.category().name();
             os << ']';
         }
-        else
+    };
+
+    template < class Protocol, class Executor >
+    struct reporter< net::basic_stream_socket< Protocol, Executor > >
+    {
+        template < class Stream, class T >
+        void operator()(Stream &os, T &&sock) const
         {
-            os << "[success]";
+            os << "[socket ";
+            auto ec = error_code();
+            auto ep = sock.local_endpoint(ec);
+
+            auto write = [&] {
+                if (ec)
+                    os << report(ec);
+                else
+                    os << ep;
+            };
+
+            write();
+            os << "->";
+            ep = sock.remote_endpoint(ec);
+            write();
+
+            os << ']';
         }
-        return os;
-    }
+    };
 
 }   // namespace polyfill
