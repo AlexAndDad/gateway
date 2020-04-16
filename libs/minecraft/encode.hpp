@@ -3,12 +3,13 @@
 #include "packet_id.hpp"
 #include "types.hpp"
 
+#include <boost/assert.hpp>
+#include <cstring>
 #include <string>
 #include <vector>
 
 namespace minecraft
 {
-
     template < class Iter, class Integral >
     Iter write_x_bytes(Iter first, Integral val)
     {
@@ -20,27 +21,29 @@ namespace minecraft
         return first;
     }
 
-
     //
     // floating point
     //
 
-    template < class Iter>
-    Iter encode(const float &in,Iter first){
-
+    template < class Iter >
+    Iter encode(const float &in, Iter first)
+    {
         BOOST_ASSERT(sizeof(float) == sizeof(std::uint32_t));
 
         std::uint32_t storage = 0;
-        std::memcpy(&storage,&in,sizeof(float));
-        return write_x_bytes(first,storage);
-
+        std::memcpy(&storage, &in, sizeof(float));
+        return write_x_bytes(first, storage);
     }
 
-    template < class Iter>
-    Iter encode(const double &in,Iter first){
+    template < class Iter >
+    Iter encode(const double &in, Iter first)
+    {
+        BOOST_ASSERT(sizeof(double) == sizeof(std::uint64_t));
 
+        std::uint64_t storage = 0;
+        std::memcpy(&storage, &in, sizeof(double));
+        return write_x_bytes(first, storage);
     }
-
 
 
     //
@@ -58,8 +61,6 @@ namespace minecraft
 
         return write_x_bytes(first, value);
     }
-
-
 
     //
     // fixed length integers
