@@ -1,4 +1,5 @@
 
+add_subdirectory(bot)
 add_subdirectory(gateway)
 add_subdirectory(masqerade)
 add_subdirectory(relay)

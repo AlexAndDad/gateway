@@ -7,7 +7,6 @@
 #include <boost/mp11/tuple.hpp>
 #include <cstdint>
 #include <string>
-#include <wise_enum.h>
 
 namespace minecraft
 {

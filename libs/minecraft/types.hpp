@@ -8,7 +8,7 @@
 #include <boost/operators.hpp>
 #include <iostream>
 #include <polyfill/bitset_tools.hpp>
-#include <wise_enum.h>
+#include <wise_enum/wise_enum.h>
 
 namespace minecraft
 {

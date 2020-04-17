@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wise_enum.h>
+#include <wise_enum/wise_enum.h>
 
 namespace minecraft
 {
