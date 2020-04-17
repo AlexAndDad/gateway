@@ -3,6 +3,7 @@
 #include "minecraft/encode.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/packet_id.hpp"
+#include <fmt/ostream.h>
 
 namespace minecraft::server
 {
@@ -13,7 +14,8 @@ namespace minecraft::server
         varchar< 36 > uuid;
         varchar< 16 > username;
 
-        friend std::ostream &operator<<(std::ostream &os, login_success const &arg);
+        template < class Stream >
+        friend auto operator<<(Stream &os, login_success const &packet) -> Stream &;
 
         template < class Iter >
         friend Iter parse(Iter first, Iter last, login_success &target, error_code &ec)
@@ -24,6 +26,21 @@ namespace minecraft::server
             return ec.failed() ? first : current;
         }
     };
+
+}
+
+namespace minecraft::server
+{
+    template < class Stream >
+    auto operator<<(Stream &os, login_success const &packet) -> Stream &
+    {
+        fmt::print(os,
+                   "[frame [type {}] [uuid {}] [username {}]",
+                   wise_enum::to_string(packet.id()),
+                   packet.uuid,
+                   packet.username);
+        return os;
+    }
 
     inline void compose(login_success const &packet, std::vector< char > &target)
     {

@@ -41,7 +41,7 @@ namespace minecraft::server
     template<class Stream>
     auto operator<<(Stream& os, set_compression const& packet) -> Stream&
     {
-        fmt::print(os, "[[type {}] [threshold {}]]", wise_enum::to_string(packet.id()), packet.threshold);
+        fmt::print(os, "[frame [type {}] [threshold {}]", wise_enum::to_string(packet.id()), packet.threshold.value());
         return os;
     }
 

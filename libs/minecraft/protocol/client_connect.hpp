@@ -206,7 +206,10 @@ namespace minecraft::protocol
 
                 // read any success data here
 
-                log_fail("expect server_login_success");
+                if (not log_fail("expect server_login_success"))
+                    spdlog::info("[client_connect {}] login success {}",
+                                 s.log_id(),
+                                 state.server_login_success);
                 return self.complete(ec);
             }
 #include <boost/asio/unyield.hpp>

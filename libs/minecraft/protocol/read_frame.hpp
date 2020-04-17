@@ -157,19 +157,20 @@ namespace minecraft::protocol
 
         auto next = parse(first, last, which, ec);
 
-        ec = error::unexpected_packet;
         if (not ec.failed())
+        {
+            ec = error::unexpected_packet;
             boost::mp11::tuple_for_each(targets, [&](auto &frame) {
                 if (which.value() == frame.id())
                 {
+                    ec.clear();
                     next = parse(next, last, frame, ec);
                     if (not ec.failed())
                         if (next != last)
                             ec = error::invalid_packet;
-                    if (not ec.failed())
-                        ec.clear();
                 }
             });
+        }
 
         return ec;
     }

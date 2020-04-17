@@ -1,6 +1,7 @@
 #include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/parse_error.hpp"
+#include "minecraft/span.hpp"
 
 #include <cassert>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -68,6 +69,9 @@ namespace minecraft::protocol
                     {
                         // not compressed
                         current_frame_data_ = compressed_rx_data_.get_data();
+                        spdlog::info(FMT_STRING("{}::uncompressed frame={:n}"),
+                                     log_id(),
+                                     spdlog::to_hex(to_span(current_frame_data_)));
                     }
                     else
                     {
@@ -77,6 +81,9 @@ namespace minecraft::protocol
                 else
                 {
                     current_frame_data_ = compressed_rx_data_.get_data();
+                    spdlog::info(FMT_STRING("{}::uncompressed frame={:n}"),
+                                 log_id(),
+                                 spdlog::to_hex(to_span(current_frame_data_)));
                 }
                 return self.complete(ec, current_frame_data_.size());
             }

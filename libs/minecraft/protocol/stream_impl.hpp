@@ -16,7 +16,8 @@ namespace minecraft::protocol
         std::size_t data_position = 0;   //! position in input stream where the frame's data starts
         store_type  payload;             //! the input stream
 
-        /// remove one frame's worth of data from the stream
+        /// remove one frame's worth of data from the stream.
+        /// If the stram is empty, this is a no-op
         void remove_one()
         {
             auto first = payload.begin();
@@ -74,10 +75,15 @@ namespace minecraft::protocol
             return begin() + payload_size;
         }
 
+        /// Consume bytes from the front of the frame area, reducing the length of the frame.
+        /// The main purpose of this function is during compressed mode, when an uncompressed frame is encountered.
+        /// \param n The number of bytes to consume
         void consume(std::size_t n)
         {
+            assert(payload_size);
             assert(not shortfall());
             data_position += n;
+            payload_size -= n;
         }
 
         /// How many bytes we are short of having a complete payload
