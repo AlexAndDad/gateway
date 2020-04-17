@@ -74,6 +74,10 @@ namespace minecraft::protocol
             impl_->set_encryption(secret);
         }
 
+        auto compression_threshold(std::uint32_t threshold) -> void;
+
+        auto compression_threshold() const -> std::uint32_t;
+
         void protocol_version(protocol::version_type version);
 
         auto protocol_version() const -> protocol::version_type;
@@ -82,6 +86,8 @@ namespace minecraft::protocol
         auto next_layer() const -> next_layer_type const &;
 
         auto close() noexcept -> void;
+
+        auto log_id() const -> std::string const &;
 
       private:
         implementation_type release() { return std::exchange(impl_, nullptr); }
@@ -96,6 +102,14 @@ namespace minecraft::protocol
 
         implementation_type impl_;
     };
+
+    template < class Stream, class NextLayer >
+    Stream &operator<<(Stream &os, stream< NextLayer > const &arg)
+    {
+        os << arg.log_id();
+        return os;
+    }
+
 }   // namespace minecraft::protocol
 
 #include "stream.ipp"

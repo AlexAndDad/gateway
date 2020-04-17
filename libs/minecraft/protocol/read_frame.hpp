@@ -10,6 +10,9 @@
 #include "polyfill/hexdump.hpp"
 
 #include <boost/beast/core/bind_handler.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
+#include <spdlog/fmt/ostr.h>
 
 #define MINECRAFT_READ_FRAME_DEBUG 1
 

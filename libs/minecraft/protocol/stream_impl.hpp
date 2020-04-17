@@ -2,9 +2,9 @@
 #include "encryption_state.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/version.hpp"
+#include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
-#include "minecraft/report.hpp"
 
 namespace minecraft::protocol
 {
@@ -104,7 +104,7 @@ namespace minecraft::protocol
         std::optional< encryption_state > encryption_;
 
         // buffer for composing packet structures into frame extents
-        std::vector<char> compose_buffer;
+        std::vector< char > compose_buffer;
 
         // transmit state
         std::vector< char > tx_compose_buffer_;
@@ -116,7 +116,7 @@ namespace minecraft::protocol
         net::mutable_buffer current_frame_data_ = {};
 
         WISE_ENUM_CLASS_MEMBER(event, error, frame);
-        std::function <void(event, std::string_view)> logger; //optional logger
+        std::function< void(event, std::string_view) > logger;   // optional logger
 
         // client parameters / discovered by server
         std::string hostname;
@@ -150,7 +150,7 @@ namespace minecraft::protocol
 
         using executor_type = typename NextLayer::executor_type;
 
-        auto as_base() -> stream_impl_base& { return *this; }
+        auto as_base() -> stream_impl_base & { return *this; }
 
         stream_impl(next_layer_type &&next);
 
@@ -207,22 +207,41 @@ namespace minecraft::protocol
             encryption_.emplace(secret);
         }
 
+        std::string const &log_id()
+        {
+            if (not log_id_.empty())
+                return log_id_;
+
+            struct
+            {
+                error_code                               ec;
+                typename next_layer_type ::endpoint_type ep;
+            } local, remote;
+
+            local.ep = next_layer_.local_endpoint(local.ec);
+
+            remote.ep = next_layer_.remote_endpoint(remote.ec);
+
+            std::string *rep = (local.ec.failed() or remote.ec.failed()) ? std::addressof(this->unconnected_log_id_)
+                                                                         : std::addressof(log_id_);
+            *rep = fmt::format("[stream {}->{}]", report(local.ep), report(remote.ep));
+            return *rep;
+        }
+
         next_layer_type next_layer_;
+        std::string     log_id_, unconnected_log_id_;
     };
 
-    template<class NextLayer>
-    std::ostream& operator<<(std::ostream& os, stream_impl<NextLayer> &impl)
+    template < class NextLayer >
+    std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
     {
-        auto prefix = []()  {
-                return std::string_view("\n    ");
-        };
+        auto prefix = []() { return std::string_view("\n    "); };
 
         os << impl.as_base();
         os << prefix() << "next_layer : " << report(impl.next_layer_);
 
         return os;
     }
-
 
 }   // namespace minecraft::protocol
 

@@ -7,6 +7,7 @@
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
+#include "minecraft/server/set_compression.hpp"
 #include "read_frame.hpp"
 
 namespace minecraft::protocol
@@ -65,6 +66,7 @@ namespace minecraft::protocol
 
         client::handshake           client_handshake;
         client::login_start         client_login_start;
+        server::set_compression     server_set_compression;
         server::encryption_request  server_encryption_request;
         client::encryption_response client_encryption_response;
         server::login_success       server_login_success;
@@ -131,7 +133,9 @@ namespace minecraft::protocol
                     spdlog::warn("[client_connect {}]::{} {}", report(s.next_layer()), context, report(ec));
                 return fail;
             };
-            auto log_info = [&s](auto &&context) { spdlog::warn("[client_connect {}]  {}", report(s.next_layer()), context); };
+            auto log_info = [&s](auto &&context) {
+                spdlog::warn("[client_connect {}]  {}", report(s.next_layer()), context);
+            };
 #include <boost/asio/yield.hpp>
             reenter(coro)
             {
@@ -153,16 +157,27 @@ namespace minecraft::protocol
                 // We will now either receive a logon success or an encryption request
                 //
 
+            wait_server_response:
                 yield s.async_read_frame(std::move(self));
                 if (log_fail("read first server frame"))
                     return self.complete(ec);
 
-                expect_frames(s.current_frame(),
-                              state.which_packet_type,
-                              std::tie(state.server_encryption_request, state.server_login_success),
-                              ec);
+                expect_frames(
+                    s.current_frame(),
+                    state.which_packet_type,
+                    std::tie(state.server_set_compression, state.server_encryption_request, state.server_login_success),
+                    ec);
                 if (log_fail("expect encryption request or login success"))
                     return self.complete(ec);
+
+                if (state.which_packet_type == server_login_packet::set_compression)
+                {
+                    spdlog::info("[client_connect {}] server requests compression {}",
+                                 s.log_id(),
+                                 state.server_set_compression);
+                    s.compression_threshold(state.server_set_compression.threshold.value());
+                    goto wait_server_response;
+                }
 
                 if (state.which_packet_type.value() == server_login_packet::encryption_request)
                 {

@@ -3,6 +3,8 @@
 #include "minecraft/parse_error.hpp"
 
 #include <cassert>
+#include <spdlog/fmt/bin_to_hex.h>
+#include <spdlog/spdlog.h>
 
 namespace minecraft::protocol
 {
@@ -30,11 +32,20 @@ namespace minecraft::protocol
             reenter(coro) for (;;)
             {
                 // first try to use current available data
-                while(compressed_rx_data_.decode_frame_length(ec) == error::incomplete_parse)
+                while (compressed_rx_data_.decode_frame_length(ec) == error::incomplete_parse)
                 {
                     yield this->async_read_more(std::move(self));
                     if (ec.failed())
+                    {
+                        spdlog::error("{}::read_more {} compressed_data={:n}",
+                                      log_id(),
+                                      report(ec),
+                                      spdlog::to_hex(compressed_rx_data_.payload));
                         return self.complete(ec, compressed_rx_data_.payload.size());
+                    }
+                    spdlog::info(FMT_STRING("{}::read_more compressed_data={:n}"),
+                                 log_id(),
+                                 spdlog::to_hex(compressed_rx_data_.payload));
                 }
 
                 while (compressed_rx_data_.shortfall())
@@ -47,7 +58,7 @@ namespace minecraft::protocol
                 if (compression_enabled())
                 {
                     var_int original_length;
-                    auto next = parse(compressed_rx_data_.begin(), compressed_rx_data_.end(), original_length, ec);
+                    auto    next = parse(compressed_rx_data_.begin(), compressed_rx_data_.end(), original_length, ec);
                     if (ec.failed())
                         return self.complete(ec, compressed_rx_data_.payload.size());
 
@@ -56,7 +67,7 @@ namespace minecraft::protocol
                     if (original_length.value() == 0)
                     {
                         // not compressed
-                        current_frame_data_= compressed_rx_data_.get_data();
+                        current_frame_data_ = compressed_rx_data_.get_data();
                     }
                     else
                     {
@@ -107,7 +118,8 @@ namespace minecraft::protocol
                     if (ec)
                         return self.complete(ec, bytes_transferred);
 
-                    encryption_->rx_context_.update(buf.data(0, buf.size()), net::dynamic_buffer(compressed_rx_data_.payload));
+                    encryption_->rx_context_.update(buf.data(0, buf.size()),
+                                                    net::dynamic_buffer(compressed_rx_data_.payload));
                     encryption_->rx_cipher_.clear();
                 }
                 else
@@ -240,4 +252,4 @@ namespace minecraft::protocol
         return next_layer_;
     }
 
-}   // namespace minecraft
+}   // namespace minecraft::protocol

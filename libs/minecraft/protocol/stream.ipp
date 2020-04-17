@@ -22,10 +22,10 @@ namespace minecraft::protocol
     auto stream< NextLayer >::async_write_packet(Packet const &p, CompletionToken &&token) ->
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
-        auto& buffer = impl_->compose_buffer;
+        auto &buffer = impl_->compose_buffer;
         buffer.clear();
         compose(p, buffer);
-        return async_write_frame(net::buffer(buffer), std::forward<CompletionToken>(token));
+        return async_write_frame(net::buffer(buffer), std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
@@ -75,6 +75,24 @@ namespace minecraft::protocol
     auto stream< NextLayer >::protocol_version() const -> protocol::version_type
     {
         return impl_->protocol_version_;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::log_id() const -> const std::string &
+    {
+        return impl_->log_id();
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::compression_threshold(std::uint32_t threshold) -> void
+    {
+        impl_->compression_threshold_ = threshold;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::compression_threshold() const -> std::uint32_t
+    {
+        return impl_->compression_threshold_;
     }
 
 }   // namespace minecraft::protocol
