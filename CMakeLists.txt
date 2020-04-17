@@ -11,8 +11,8 @@ project(GateWay VERSION 0.1.0)
 
 find_package(Threads REQUIRED)
 
-hunter_add_package(Boost COMPONENTS filesystem program_options system)
-find_package(Boost COMPONENTS filesystem program_options system REQUIRED CONFIG)
+hunter_add_package(Boost COMPONENTS filesystem iostreams program_options system)
+find_package(Boost COMPONENTS filesystem iostreams program_options system REQUIRED CONFIG)
 
 hunter_add_package(spdlog COMPONENTS)
 find_package(spdlog)
@@ -23,8 +23,8 @@ find_package(WiseEnum)
 hunter_add_package(OpenSSL)
 find_package(OpenSSL)
 
-hunter_add_package(ZLIB)
-find_package(ZLIB CONFIG REQUIRED)
+#hunter_add_package(ZLIB)
+#find_package(ZLIB CONFIG REQUIRED)
 
 hunter_add_package(Catch)
 find_package(Catch2)

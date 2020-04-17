@@ -59,11 +59,12 @@ namespace minecraft::protocol
                 if (compression_enabled())
                 {
                     var_int original_length;
-                    auto    next = parse(compressed_rx_data_.begin(), compressed_rx_data_.end(), original_length, ec);
+                    auto first = compressed_rx_data_.begin();
+                    auto    next = parse(first, compressed_rx_data_.end(), original_length, ec);
                     if (ec.failed())
                         return self.complete(ec, compressed_rx_data_.payload.size());
 
-                    compressed_rx_data_.consume(std::distance(compressed_rx_data_.begin(), next));
+                    compressed_rx_data_.consume(std::distance(first, next));
 
                     if (original_length.value() == 0)
                     {
@@ -76,6 +77,15 @@ namespace minecraft::protocol
                     else
                     {
                         // decompress here
+                        //decompress(compressed_rx_data_, uncompressed_rx_data_);
+                        current_frame_data_ = compressed_rx_data_.get_data();
+                        spdlog::error(FMT_STRING("{}::compressed frame: packet_length={} offset={} uncompressed_size={} {:n}"),
+                                     log_id(),
+                                      compressed_rx_data_.payload_size,
+                                      compressed_rx_data_.data_position,
+                                      original_length.value(),
+                                     spdlog::to_hex(to_span(current_frame_data_)));
+                        std::abort();
                     }
                 }
                 else

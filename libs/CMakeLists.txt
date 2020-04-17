@@ -80,11 +80,10 @@ list(FILTER minecraft_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 target_link_libraries(minecraft_lib PUBLIC
         config_lib polyfill_lib
-        Boost::boost Boost::filesystem Boost::system
+        Boost::boost Boost::filesystem Boost::iostreams Boost::system
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL
-        spdlog::spdlog
-        ZLIB::zlib)
+        spdlog::spdlog)
 
 target_include_directories(minecraft_lib
         PUBLIC

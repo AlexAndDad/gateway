@@ -213,7 +213,17 @@ namespace minecraft::protocol
             encryption_.emplace(secret);
         }
 
+        template<class Layer = NextLayer, class = void>
         std::string const &log_id()
+        {
+            if (log_id_.empty())
+                log_id_ = "test";
+
+            return log_id_;
+        }
+
+        template<class Layer = NextLayer>
+        auto log_id() -> decltype(std::declval<Layer>().next_layer(), std::declval<std::string const &>())
         {
             if (not log_id_.empty())
                 return log_id_;
@@ -237,6 +247,7 @@ namespace minecraft::protocol
         next_layer_type next_layer_;
         std::string     log_id_, unconnected_log_id_;
     };
+
 
     template < class NextLayer >
     std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)

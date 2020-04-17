@@ -6,6 +6,7 @@
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <catch2/catch.hpp>
 
+
 TEST_CASE("minecraft::stream")
 {
     using namespace minecraft;

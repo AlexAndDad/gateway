@@ -34,6 +34,11 @@ namespace bot
                     connect_state_.connection_args("127.0.0.1", stream_.next_layer().remote_endpoint().port());
                     connect_state_.version(protocol::version_type::v1_11);
                     co_await protocol::async_client_connect(stream_, connect_state_, net::use_awaitable);
+
+                    while(1)
+                    {
+                        co_await stream_.async_read_frame(net::use_awaitable);
+                    }
                 },
                 [](auto...) {});
         }
