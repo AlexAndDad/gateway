@@ -47,14 +47,14 @@ namespace minecraft::protocol
             return ec;
         }
 
-        error_code& parse_server_key(error_code& ec)
+        error_code &parse_server_key(error_code &ec)
         {
             ec.clear();
             try
             {
                 server_key.public_key_from_asn1(net::buffer(server_encryption_request.public_key));
             }
-            catch(system_error& se)
+            catch (system_error &se)
             {
                 ec = se.code();
             }
@@ -70,7 +70,7 @@ namespace minecraft::protocol
         server::login_success       server_login_success;
 
         security::private_key server_key;
-        shared_secret secret;
+        shared_secret         secret;
 
         // active state
 
@@ -125,21 +125,28 @@ namespace minecraft::protocol
     {
         auto op = [&s, &state, coro = net::coroutine()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+            auto log_fail = [&s, &ec](auto &&context) {
+                auto fail = ec.failed();
+                if (fail)
+                    spdlog::warn("[client_connect {}]::{} {}", report(s.next_layer()), context, report(ec));
+                return fail;
+            };
+            auto log_info = [&s](auto &&context) { spdlog::warn("[client_connect {}]  {}", report(s.next_layer()), context); };
 #include <boost/asio/yield.hpp>
             reenter(coro)
             {
                 //
                 // Hello and inform server of protocol version
                 //
-                yield s.async_write_frame(state.client_handshake, std::move(self));
-                if (ec.failed())
+                yield s.async_write_packet(state.client_handshake, std::move(self));
+                if (log_fail("client_handshake"))
                     return self.complete(ec);
 
                 //
                 // send login start frame
                 //
-                yield s.async_write_frame(state.client_login_start, std::move(self));
-                if (ec.failed())
+                yield s.async_write_packet(state.client_login_start, std::move(self));
+                if (log_fail("client_login_start"))
                     return self.complete(ec);
 
                 //
@@ -147,38 +154,44 @@ namespace minecraft::protocol
                 //
 
                 yield s.async_read_frame(std::move(self));
-                if (ec.failed())
+                if (log_fail("read first server frame"))
                     return self.complete(ec);
 
-                if (expect_frames(s.current_frame(),
-                                  state.which_packet_type,
-                                  std::tie(state.server_encryption_request, state.server_login_success),
-                                  ec)
-                        .failed())
+                expect_frames(s.current_frame(),
+                              state.which_packet_type,
+                              std::tie(state.server_encryption_request, state.server_login_success),
+                              ec);
+                if (log_fail("expect encryption request or login success"))
                     return self.complete(ec);
 
                 if (state.which_packet_type.value() == server_login_packet::encryption_request)
                 {
+                    log_info("server encryption request");
+                    validate(state.server_encryption_request, state.server_key, ec);
+                    if (log_fail("validate encryption request"))
+                        return self.complete(ec);
                     // encrypt and send back
                     state.secret.generate();
-//                    state.server_key;
-                    // todo encryption
-//                    +++ HERE +++
-
-                    compose(s.async_write_frame(), s.compose_buffer);
-                    yield s.async_write_frame(net::buffer(s.compose_buffer), ec);
-                    if (ec.failed())
+                    state.server_key.public_encrypt(net::buffer(state.server_encryption_request.verify_token),
+                                                    state.client_encryption_response.verify_token);
+                    state.server_key.public_encrypt(buffer(state.secret),
+                                                    state.client_encryption_response.shared_secret);
+                    yield s.async_write_packet(state.client_encryption_response, std::move(self));
+                    if (log_fail("client encryption response"))
                         return self.complete(ec);
-                    s.set_encryption(net::buffer(s.secret));
+                    spdlog::info("[client_connect {}] encrypting connection with secret: {:n}",
+                                 report(s.next_layer()),
+                                 spdlog::to_hex(state.secret));
+                    s.set_encryption(state.secret);
                     yield s.async_read_frame(std::move(self));
-                    if (ec.failed())
+                    if (log_fail("receive first encrypted frame"))
                         return self.complete(ec);
-                    if (expect_frame(s.current_frame(), state.server_login_success, std::move(self)).failed)
-                        return self.complete(ec);
+                    expect_frame(s.current_frame(), state.server_login_success, ec);
                 }
 
                 // read any success data here
 
+                log_fail("expect server_login_success");
                 return self.complete(ec);
             }
 #include <boost/asio/unyield.hpp>

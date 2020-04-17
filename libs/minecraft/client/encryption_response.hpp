@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include "minecraft/encode.hpp"
+#include "minecraft/packet_id.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/shared_secret.hpp"
+#include "minecraft/security/private_key.hpp"
 
 #include <iostream>
-#include <minecraft/packet_id.hpp>
-#include <minecraft/security/private_key.hpp>
 
 namespace minecraft::client
 {
@@ -29,6 +30,15 @@ namespace minecraft::client
                                                std::vector< std::uint8_t > const &     original_verify_token,
                                                error_code &                            ec) const;
     };
+
+    inline void compose(encryption_response const &packet, std::vector< char > &buffer)
+    {
+        using minecraft::encode;
+        auto iter = back_inserter(buffer);
+        iter      = encode(variable_length(packet.id()), iter);
+        iter      = encode(packet.shared_secret, iter);
+        encode(packet.verify_token, iter);
+    }
 
     template < class Iter >
     auto parse(Iter first, Iter last, encryption_response &arg, error_code &ec) -> Iter

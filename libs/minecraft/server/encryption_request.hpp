@@ -30,6 +30,13 @@ namespace minecraft::server
         }
     };
 
+    /// Check content for integrity and decode the server public key
+    /// \param request
+    /// \param pkey
+    /// \param ec set to error code of last operation or cleared on success
+    /// \return reference to ec
+    error_code& validate(encryption_request const& request, security::private_key& pkey, error_code& ec);
+
     inline void compose(encryption_request const &packet, std::vector< char > &compose_buffer)
     {
         using minecraft::encode;

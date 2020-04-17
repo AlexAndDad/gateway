@@ -144,7 +144,7 @@ namespace minecraft::protocol
 
     template < class Enum, class... FrameTypes >
     auto
-    expect_frames(net::const_buffer source, var< Enum > &which, std::tuple< FrameTypes &... > targets, error_code &ec)
+    expect_frames(net::const_buffer source, var_enum< Enum > &which, std::tuple< FrameTypes &... > targets, error_code &ec)
         -> error_code &
     {
         ec.clear();

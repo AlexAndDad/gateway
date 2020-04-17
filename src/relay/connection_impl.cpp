@@ -1,5 +1,6 @@
 #include "connection_impl.hpp"
 
+#include "minecraft/protocol/client_connect.hpp"
 #include "minecraft/security/rsa.hpp"
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/chat_message.hpp"
@@ -57,6 +58,7 @@ namespace relay
     : config_(std::move(config))
     , stream_(std::move(sock))
     , upstream_(socket_type(get_executor()))
+    , resolver_(get_executor())
     {
         spdlog::info("{} accepted", this);
     }
@@ -112,6 +114,66 @@ namespace relay
         return net::async_compose< CompletionToken, void(error_code) >(std::move(op), token, stream);
     }
 
+    auto connection_impl::initiate_upstream_resove() -> void
+    {
+        spdlog::trace("{}::{}()", this, __func__);
+        resolver_.async_resolve(config_.upstream_host, config_.upstream_port, bind_self([](auto self, auto &&... args) {
+                                    self->handle_upstream_resolve(args...);
+                                }));
+    }
+
+    auto connection_impl::handle_upstream_resolve(error_code ec, protocol::resolver::results_type results) -> void
+    {
+        if (ec.failed())
+        {
+            spdlog::warn("{}::{}({})", this, __func__, minecraft::report(ec));
+        }
+        else
+        {
+            spdlog::info("{}::{}({})", this, __func__, minecraft::report(ec));
+            initiate_upstream_transport(results);
+        }
+    }
+
+    auto connection_impl::initiate_upstream_transport(protocol::resolver::results_type results) -> void
+    {
+        spdlog::trace("{}::{}()", this, __func__);
+        net::async_connect(
+            upstream_.next_layer(), results, bind_self([](auto self, error_code const &ec, auto &&... args) {
+                self->handle_upstream_transport(ec);
+            }));
+    }
+
+    auto connection_impl::handle_upstream_transport(error_code ec) -> void
+    {
+        if (ec.failed())
+        {
+            spdlog::warn("{}::{}({})", this, __func__, minecraft::report(ec));
+        }
+        else
+        {
+            spdlog::info("{}::{}({})", this, __func__, minecraft::report(ec));
+            connect_state_.version(this->login_params_.version());
+            connect_state_.name(this->login_params_.name());
+            connect_state_.connection_args(config_.upstream_host, upstream_.next_layer().remote_endpoint().port());
+
+            minecraft::protocol::async_client_connect(
+                upstream_, connect_state_, bind_self([](auto self, error_code ec) { self->handle_upstream_connect(ec); }));
+        }
+    }
+
+    auto connection_impl::handle_upstream_connect(error_code ec) -> void
+    {
+        if (ec.failed())
+        {
+            spdlog::warn("{}::{}({})", this, __func__, minecraft::report(ec));
+        }
+        else
+        {
+            spdlog::info("{}::{}({})", this, __func__, minecraft::report(ec));
+        }
+    }
+
     auto connection_impl::handle_login(error_code const &ec) -> void
     {
         if (ec.failed())
@@ -121,24 +183,7 @@ namespace relay
         else
         {
             spdlog::info("{}::{}({})", this, __func__, minecraft::report(ec));
-            auto messages = std::make_shared< std::vector< minecraft::server::play_packet > >();
-            messages->resize(3);
-            for (int i = 0; i < 3; ++i)
-            {
-                auto &packet     = messages->at(i);
-                auto &actual     = packet.construct< minecraft::server::chat_message >();
-                actual.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
-                actual.position  = minecraft::server::chat_message::chat_position ::system_message;
-            }
-
-            async_send_packets(stream_,
-                               messages->begin(),
-                               messages->end(),
-                               bind_executor(get_executor(), [self = shared_from_this(), messages](error_code ec) {
-                                   spdlog::info("{} finished sending messages", &*self);
-                               }));
-
-            initiate_spin();
+            initiate_upstream_resove();
         }
         std::cout << "login state: \n" << login_params_ << std::endl;
     }

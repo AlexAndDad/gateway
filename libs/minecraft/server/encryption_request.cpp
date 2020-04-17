@@ -14,6 +14,12 @@ namespace minecraft::server
         return os;
     }
 
+    error_code& validate(encryption_request const& request, security::private_key& pkey, error_code& ec)
+    {
+        pkey.public_key_from_asn1(net::buffer(request.public_key), ec);
+        return ec;
+    }
+
     void prepare(encryption_request &req, minecraft::security::private_key const &ppk)
     {
         static thread_local auto eng = [] {

@@ -19,6 +19,9 @@ namespace minecraft::protocol
 {
     struct server_accept_login_params
     {
+        std::string const& name() const { return client_login_start.name; }
+        version_type version() const { return client_handshake_frame.protocol_version.value(); }
+
         void set_server_key(minecraft::security::private_key k) { server_key = std::move(k); }
 
         void set_server_id(std::string id) { server_encryption_request.server_id = std::move(id); }
