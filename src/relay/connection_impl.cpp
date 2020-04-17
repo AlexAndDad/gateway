@@ -1,15 +1,17 @@
 #include "connection_impl.hpp"
 
 #include "minecraft/protocol/client_connect.hpp"
+#include "minecraft/report.hpp"
 #include "minecraft/security/rsa.hpp"
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/chat_message.hpp"
 #include "minecraft/server/play_packet.hpp"
+#include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
-#include "polyfill/report.hpp"
 
 #include <random>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 namespace relay
 {
@@ -65,7 +67,28 @@ namespace relay
 
     auto connection_impl::start() -> void
     {
-        dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
+        net::co_spawn(
+            get_executor(),
+            [self = shared_from_this()]() -> net::awaitable< void > { co_await self->run(); },
+            [self = shared_from_this()](std::exception_ptr ep) {
+                try
+                {
+                    if (ep)
+                        std::rethrow_exception(ep);
+                }
+                catch (system_error &se)
+                {
+                    auto &&ec = se.code();
+                    if (ec == net::error::operation_aborted)
+                        return;
+                    spdlog::error("{}::{}({})", *self, "run", minecraft::report(ec));
+                }
+                catch (...)
+                {
+                    spdlog::error("{}::{} - exception: ", *self, "run", polyfill::explain());
+                }
+            });
+        //        dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
     }
 
     auto connection_impl::cancel() -> void
@@ -75,7 +98,80 @@ namespace relay
 
     auto connection_impl::get_executor() -> executor_type { return stream_.get_executor(); }
 
-    auto connection_impl::handle_cancel() -> void { stream_.close(); }
+    auto connection_impl::handle_cancel() -> void
+    {
+        stream_.cancel();
+        upstream_.cancel();
+        resolver_.cancel();
+    }
+
+    auto connection_impl::run() -> net::awaitable< void >
+    {
+        //        initiate_read();
+
+        login_params_.set_server_key(config_.server_key);
+        login_params_.set_server_id(config_.server_id);
+        login_params_.use_security(true);
+
+        co_await protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
+        auto results =
+            co_await resolver_.async_resolve(config_.upstream_host, config_.upstream_port, net::use_awaitable);
+
+        auto ep = co_await net::async_connect(upstream_.next_layer(), results, net::use_awaitable);
+        connect_state_.version(this->login_params_.version());
+        connect_state_.name(this->login_params_.name());
+        connect_state_.connection_args(config_.upstream_host, ep.port());
+
+        co_await protocol::async_client_connect(upstream_, connect_state_, net::use_awaitable);
+
+        auto handler = [self = shared_from_this()](auto &&context, std::exception_ptr ep) {
+            try
+            {
+                if (ep)
+                    std::rethrow_exception(ep);
+            }
+            catch (system_error &se)
+            {
+                auto &&ec = se.code();
+                if (ec == net::error::operation_aborted)
+                    return;
+                spdlog::error("{}::{}({})", *self, context, minecraft::report(ec));
+            }
+            catch (...)
+            {
+                spdlog::error("{}::{} - exception: ", *self, context, polyfill::explain());
+            }
+        };
+
+        net::co_spawn(
+            get_executor(),
+            [self = shared_from_this()]() -> net::awaitable< void > { return self->client_to_server(); },
+            [handler](std::exception_ptr ep) { handler("client_to_server", ep); });
+        net::co_spawn(
+            get_executor(),
+            [self = shared_from_this()]() -> net::awaitable< void > { return self->server_to_client(); },
+            [handler](std::exception_ptr ep) { handler("server_to_client", ep); });
+    }
+
+    auto connection_impl::client_to_server() -> net::awaitable<void>
+    {
+        while(1)
+        {
+            co_await stream_.async_read_frame(net::use_awaitable);
+            spdlog::info("{}::{} : {:n}", *this, __func__, spdlog::to_hex(to_span(stream_.current_frame())));
+            co_await upstream_.async_write_frame(stream_.current_frame(), net::use_awaitable);
+        }
+    }
+
+    auto connection_impl::server_to_client() -> net::awaitable<void>
+    {
+        while(1)
+        {
+            co_await upstream_.async_read_frame(net::use_awaitable);
+            spdlog::info("{}::{} : {:n}", *this, __func__, spdlog::to_hex(to_span(stream_.current_frame())));
+            co_await stream_.async_write_frame(stream_.current_frame(), net::use_awaitable);
+        }
+    }
 
     auto connection_impl::handle_start() -> void
     {
@@ -122,7 +218,7 @@ namespace relay
                                 }));
     }
 
-    auto connection_impl::handle_upstream_resolve(error_code ec, protocol::resolver::results_type results) -> void
+    auto connection_impl::handle_upstream_resolve(error_code ec, resolver_type::results_type results) -> void
     {
         if (ec.failed())
         {
@@ -135,7 +231,7 @@ namespace relay
         }
     }
 
-    auto connection_impl::initiate_upstream_transport(protocol::resolver::results_type results) -> void
+    auto connection_impl::initiate_upstream_transport(resolver_type::results_type results) -> void
     {
         spdlog::trace("{}::{}()", this, __func__);
         net::async_connect(
@@ -158,7 +254,9 @@ namespace relay
             connect_state_.connection_args(config_.upstream_host, upstream_.next_layer().remote_endpoint().port());
 
             minecraft::protocol::async_client_connect(
-                upstream_, connect_state_, bind_self([](auto self, error_code ec) { self->handle_upstream_connect(ec); }));
+                upstream_, connect_state_, bind_self([](auto self, error_code ec) {
+                    self->handle_upstream_connect(ec);
+                }));
         }
     }
 

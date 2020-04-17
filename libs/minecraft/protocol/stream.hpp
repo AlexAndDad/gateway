@@ -87,6 +87,8 @@ namespace minecraft::protocol
 
         auto close() noexcept -> void;
 
+        auto cancel() noexcept -> void;
+
         auto log_id() const -> std::string const &;
 
       private:

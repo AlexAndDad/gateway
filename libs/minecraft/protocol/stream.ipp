@@ -41,6 +41,13 @@ namespace minecraft::protocol
         }
     }
 
+    template<class NextLayer>
+    auto stream<NextLayer>::cancel() noexcept -> void
+    {
+        error_code ec;
+        next_layer().cancel(ec);
+    }
+
     template < class NextLayer >
     auto stream< NextLayer >::current_frame() -> net::mutable_buffer
     {

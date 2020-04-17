@@ -2,7 +2,7 @@
 
 #include "connection_impl.hpp"
 #include "minecraft/protocol/server_accept.hpp"
-#include "net.hpp"
+#include "config.hpp"
 #include "polyfill/hexdump.hpp"
 
 #include <iostream>
