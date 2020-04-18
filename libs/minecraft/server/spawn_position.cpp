@@ -17,4 +17,11 @@ namespace minecraft::server
         return first;
     }
 
+    void compose(const spawn_position &packet, std::vector< char > &target)
+    {
+        auto iter = std::back_inserter(target);
+        iter      = encode(variable_length(packet.id()), iter);
+        encode(packet.location, iter);
+    }
+
 }   // namespace minecraft::server
