@@ -4,139 +4,215 @@
 #include "minecraft/parse_error.hpp"
 #include "types.hpp"
 
+#include <boost/endian.hpp>
 #include <boost/mp11/tuple.hpp>
 #include <cstdint>
 #include <string>
 
 namespace minecraft
 {
-    template < class Iter , class SignedType>
+    //
+    // fundamental types
+    //
+
+    inline const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, double &target, error_code &ec)
+    {
+        using value_type          = std::decay_t< decltype(target) >;
+        constexpr auto byte_count = sizeof(value_type);
+
+        if (ec.failed())
+        {
+            if (std::distance(first, last) < byte_count)
+            {
+                ec = error::incomplete_parse;
+            }
+            else
+            {
+                using namespace boost::endian;
+                endian_buffer< order::big, value_type, 8 * byte_count, align::yes > buffer;
+                std::copy(first, first + byte_count, buffer.data());
+                target = buffer.value();
+                first += byte_count;
+            }
+        }
+        return first;
+    }
+
+    inline const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, float &target, error_code &ec)
+    {
+        using value_type          = std::decay_t< decltype(target) >;
+        constexpr auto byte_count = sizeof(value_type);
+
+        if (ec.failed())
+        {
+            if (std::distance(first, last) < byte_count)
+            {
+                ec = error::incomplete_parse;
+            }
+            else
+            {
+                using namespace boost::endian;
+                endian_buffer< order::big, value_type, 8 * byte_count, align::yes > buffer;
+                std::copy(first, first + byte_count, buffer.data());
+                target = buffer.value();
+                first += byte_count;
+            }
+        }
+        return first;
+    }
+
+    template < typename Integral, typename ValueType = std::decay_t< Integral > >
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, Integral &target, error_code &ec)
+        -> std::enable_if_t< std::is_integral_v< ValueType >, const_buffer_iterator >
+    {
+        using namespace boost::endian;
+
+        using unsigned_type       = std::make_unsigned_t< ValueType >;
+        constexpr auto byte_count = sizeof(unsigned_type);
+
+        if (not ec.failed())
+        {
+            if (std::distance(first, last) < byte_count)
+                ec = error::incomplete_parse;
+            else
+            {
+                using namespace boost::endian;
+                endian_buffer< order::big, unsigned_type, 8 * byte_count, align::yes > buffer;
+                std::copy(first, first + byte_count, buffer.data());
+                target = static_cast< Integral >(buffer.value());
+                first += byte_count;
+            }
+        }
+        return first;
+    }
+
+    template < class Iter, class SignedType >
     auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec) -> Iter
     {
         using value_type    = SignedType;
         using unsigned_type = std::make_unsigned_t< value_type >;
 
-        std::size_t   count       = 0;
-        unsigned_type accumulator = 0;
-        Iter          i           = first;
-
-        while (i != last)
-        {
-            auto x = static_cast< unsigned_type >(static_cast< std::uint8_t >(*i++));
-            accumulator |= (x & 0x7fu) << (7 * count);
-            ++count;
-            if (not(x & 0x80u))
-            {
-                ec.clear();
-                result = accumulator;
-                return i;
-            }
-            if (count >= max_var_encoded_bytes< SignedType >())
-            {
-                ec = error::invalid_varint;
-                return first;
-            }
-        }
-        ec = error::incomplete_parse;
-        return first;
-    }
-
-    template < class Iter >
-    auto parse(Iter first, Iter last, std::uint8_t &target, error_code &ec) -> Iter
-    {
-        if (first == last)
-            ec = error::incomplete_parse;
-        else
-        {
-            target = static_cast< std::uint8_t >(*first++);
-            ec.clear();
-        }
-        return first;
-    }
-
-    template < class Iter, class Enum >
-    auto parse(Iter first, Iter last, Enum &target, error_code &ec) -> std::enable_if_t< std::is_enum_v< Enum >, Iter >
-    {
-        auto underlying = std::underlying_type_t<Enum>();
-        auto i = parse(first, last, underlying, ec);
         if (not ec.failed())
-            target = static_cast<Enum>(underlying);
-        return i;
-    }
-
-    template < class Iter >
-    auto parse(Iter first, Iter last, std::uint16_t &target, error_code &ec) -> Iter
-    {
-        if (std::distance(first, last) < 2)
-            ec = error::incomplete_parse;
-        else
         {
-            auto convert = [](char c) {
-                return static_cast< std::uint16_t >(std::uint16_t(static_cast< std::uint8_t >(c)));
-            };
-            auto h = convert(*first++) << 8;
-            auto l = convert(*first++);
-            target = h | l;
-            ec.clear();
+            std::size_t   count       = 0;
+            unsigned_type accumulator = 0;
+            Iter          i           = first;
+
+            while (i != last)
+            {
+                auto x = static_cast< unsigned_type >(static_cast< std::uint8_t >(*i++));
+                accumulator |= (x & 0x7fu) << (7 * count);
+                ++count;
+                if (not(x & 0x80u))
+                {
+                    ec.clear();
+                    result = accumulator;
+                    return i;
+                }
+                if (count >= max_var_encoded_bytes< SignedType >())
+                {
+                    ec = error::invalid_varint;
+                    return first;
+                }
+            }
+            ec = error::incomplete_parse;
         }
         return first;
     }
 
-    template < class Iter >
-    auto
-    parse(Iter first, Iter last, std::vector< std::uint8_t > &target, error_code &ec, std::int32_t byte_limit = 65536)
-        -> Iter
+    inline
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, std::uint8_t &target, error_code &ec) -> const_buffer_iterator
     {
-        auto size    = std::int32_t();
-        auto current = parse_var(first, last, size, ec);
-        if (ec.failed())
-            return first;
-
-        if (size > byte_limit)
+        if (not ec.failed())
         {
-            ec = error::invalid_array;
-            return first;
+            if (first == last)
+                ec = error::incomplete_parse;
+            else
+            {
+                target = static_cast< std::uint8_t >(*first++);
+                ec.clear();
+            }
         }
-
-        target.clear();
-        target.reserve(size);
-        while (current != last && size)
-        {
-            --size;
-            target.push_back(*current++);
-        }
-
-        if (size)
-        {
-            ec = error::incomplete_parse;
-            return first;
-        }
-
-        ec.clear();
-        return current;
+        return first;
     }
 
+    template < class Enum >
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, Enum &target, error_code &ec)
+        -> std::enable_if_t< std::is_enum_v< Enum >, const_buffer_iterator >
+    {
+        if (not ec.failed())
+        {
+            auto underlying = std::underlying_type_t< Enum >();
+            first           = parse(first, last, underlying, ec);
+            if (not ec.failed())
+                target = static_cast< Enum >(underlying);
+        }
+        return first;
+    }
 
+    inline auto parse(const_buffer_iterator        first,
+                      const_buffer_iterator        last,
+                      std::vector< std::uint8_t > &target,
+                      error_code &                 ec,
+                      std::int32_t                 byte_limit = 65536) -> const_buffer_iterator
+    {
+        auto ret = first;
 
-    template < class Iter, class Underlying >
-    Iter parse(Iter first, Iter second, var< Underlying > &target, error_code &ec)
+        auto err = [&ec, ret](auto code) {
+            ec = code;
+            return ret;
+        };
+
+        if (not ec.failed())
+        {
+            auto size = std::int32_t();
+            first     = parse_var(first, last, size, ec);
+            if (not ec.failed())
+            {
+                auto available = static_cast< std::size_t >(std::distance(first, last));
+                if (size > available)
+                    return err(error::incomplete_parse);
+
+                if (size > byte_limit)
+                    return err(error::invalid_array);
+
+                target.clear();
+                target.reserve(size);
+                target.insert(target.end(), first, first + size);
+                first += size;
+                ret = first;
+            }
+        }
+        return ret;
+    }
+
+    template < class Underlying >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator second, var< Underlying > &target, error_code &ec)
     {
         return parse_var(first, second, static_cast< Underlying & >(target), ec);
     }
 
-    template < class Iter, class Enum >
-    Iter parse(Iter first, Iter second, var_enum< Enum > &target, error_code &ec)
+    template < class Enum >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator second, var_enum< Enum > &target, error_code &ec)
     {
-        using underlying = std::underlying_type_t< Enum >;
-        auto accum       = underlying();
-        auto i           = parse_var(first, second, accum, ec);
-        if (!ec.failed())
-            target = static_cast< Enum >(accum);
-        return i;
+        if (not ec.failed())
+        {
+            using underlying = std::underlying_type_t< Enum >;
+            auto accum       = underlying();
+            first            = parse_var(first, second, accum, ec);
+            if (!ec.failed())
+                target = static_cast< Enum >(accum);
+        }
+        return first;
     }
 
-    template<class Iter, class T>
-    Iter parse(Iter first, Iter last, std::optional<T>& opt, error_code& ec)
+    template < class T >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::optional< T > &opt, error_code &ec)
     {
         auto present = std::uint8_t();
         auto current = parse(first, last, present, ec);
@@ -159,54 +235,71 @@ namespace minecraft
         return current;
     }
 
-    template < class Iter, class... Args >
-    Iter parse(Iter first, Iter last, std::tuple< Args &... > args, error_code &ec)
+    template < class... Args >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::tuple< Args &... > args, error_code &ec)
     {
-        ec.clear();
-        auto current = first;
-        boost::mp11::tuple_for_each(args, [&](auto &target) {
-            if (not ec.failed())
-                current = parse(current, last, target, ec);
-        });
-        if (ec.failed())
-            return first;
-        else
-            return current;
+        auto ret = first;
+        boost::mp11::tuple_for_each(args, [&](auto &target) { first = parse(first, last, target, ec); });
+        if (not ec.failed())
+            return ret = first;
+        return ret;
     }
 
-    template < class Iter, std::size_t Limit >
-    Iter parse(Iter first, Iter last, varchar< Limit > &result, error_code &ec)
+    template < std::size_t Limit >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
     {
-        auto size    = std::int32_t();
-        auto current = parse_var(first, last, size, ec);
+        auto ret     = first;
 
-        constexpr auto byte_limit = Limit * 4;
-        if (size > byte_limit)
+        auto size    = std::int32_t();
+        first = parse_var(first, last, size, ec);
+        if (not ec.failed())
         {
-            ec = error::invalid_string;
-        }
-        else
-        {
-            result.reserve(size);
-            while (current != last && size)
+            constexpr auto byte_limit = Limit * 4;
+            auto available = std::distance(first, last);
+            if (size > byte_limit)
+                ec = error::invalid_string;
+            else if(size > available)
+                ec = error::incomplete_parse;
+            else
             {
-                --size;
-                result.push_back(*current++);
+                result.append(first, first + size);
+                first += size;
+            }
+        }
+        if (not ec.failed())
+            ret = first;
+        return ret;
+    }
+
+    inline
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::u16string& result, error_code& ec)
+    {
+        auto ret = first;
+        while(not ec.failed())
+        {
+            std::uint16_t length;
+            first = parse(first, last, length, ec);
+            if (ec.failed()) break;
+
+            auto available = std::distance(first, last);
+            if (available < length * 2) {
+                ec = error::incomplete_parse;
+                break;
             }
 
-            if (size)
-                ec = error::incomplete_parse;
-        }
+            result.resize(length);
+            std::memcpy(result.data(), first, length * 2);
+            first += length * 2;
 
-        if (ec.failed())
-        {
-            result.clear();
-            return first;
+            for (auto& elem : result)
+                boost::endian::big_to_native_inplace(elem);
+
+            ret = first;
+            break;
         }
-        else
-        {
-            return current;
-        }
+        return ret;
     }
 
 }   // namespace minecraft

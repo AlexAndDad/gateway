@@ -8,6 +8,7 @@
 #include "minecraft/server/play_packet.hpp"
 #include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
+#include "minecraft/protocol/old_style_ping.hpp"
 
 #include <random>
 #include <spdlog/spdlog.h>
@@ -107,6 +108,16 @@ namespace relay
 
     auto connection_impl::run() -> net::awaitable< void >
     {
+        // check if it's a ping
+
+        auto is_osp = co_await protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable);
+        if (is_osp)
+        {
+            co_await async_old_style_ping(stream_, net::use_awaitable);
+            co_return ;
+        }
+
+
         //        initiate_read();
 
         login_params_.set_server_key(config_.server_key);
@@ -169,7 +180,7 @@ namespace relay
         {
             co_await upstream_.async_read_frame(net::use_awaitable);
             spdlog::info("{}::{} : {:n}", *this, __func__, spdlog::to_hex(to_span(stream_.current_frame())));
-            co_await stream_.async_write_frame(stream_.current_frame(), net::use_awaitable);
+            co_await stream_.async_write_frame(upstream_.current_frame(), net::use_awaitable);
         }
     }
 

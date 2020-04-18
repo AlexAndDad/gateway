@@ -5,6 +5,7 @@
 #pragma once
 #include "minecraft/server/play_id.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/parse.hpp"
 
 #include <ostream>
 #include <string>
@@ -26,5 +27,8 @@ namespace minecraft::server
 
     std::ostream &operator<<(std::ostream &os, chat_message const &arg);
     std::size_t   compose(chat_message const &arg, std::vector< char > &target);
+
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, chat_message& packet, error_code& ec);
+
 
 }   // namespace minecraft::server

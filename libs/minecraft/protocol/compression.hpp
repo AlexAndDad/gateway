@@ -5,3 +5,4 @@
 #pragma once
 
 #include "minecraft/protocol/compression/inflate_impl.hpp"
+#include "minecraft/protocol/compression/deflate_impl.hpp"

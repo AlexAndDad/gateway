@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <boost/endian/buffers.hpp>
 
 namespace minecraft
 {
@@ -47,25 +48,27 @@ namespace minecraft
     }
 
 
-    //
-    // position
-    //
-    template < class Iter >
-    Iter encode(const position &in, Iter first)
-    {
-        std::uint64_t value = 0;
-        value |= in.x().to_ulong();
-        value <<= 26;
-        value |= in.z().to_ulong();
-        value <<= 26;
-        value |= in.y().to_ulong();
-
-        return write_x_bytes(first, value);
-    }
 
     //
     // fixed length integers
     //
+
+    template < typename Integral, typename Iter, typename ValueType = std::decay_t<Integral>>
+    auto encode(Integral const &arg, Iter first)
+    -> std::enable_if_t<std::is_integral_v<ValueType>, Iter>
+    {
+        using namespace boost::endian;
+
+        using unsigned_type = std::make_unsigned_t<ValueType>;
+
+        auto buf = endian_buffer<order::big, unsigned_type, std::numeric_limits<unsigned_type>::digits, align::yes>(static_cast<unsigned_type>(arg));
+
+        auto from = buf.data();
+        for(std::size_t count = sizeof(unsigned_type) ; count-- ; )
+            *first++ = *from++;
+        return first;
+    }
+
     template < class Iter >
     Iter encode(std::uint8_t const &arg, Iter first)
     {
@@ -78,6 +81,30 @@ namespace minecraft
     {
         *first++ = static_cast< std::uint8_t >(arg >> 8);
         *first++ = static_cast< std::uint8_t >(arg);
+        return first;
+    }
+
+    template < class Iter >
+    Iter encode(std::uint64_t const &arg, Iter first)
+    {
+        auto buf = boost::endian::big_uint64_buf_at(arg);
+        auto from = buf.data();
+        switch(sizeof(std::uint64_t))
+        {
+        case 8:
+            *first++ = *from++;
+            *first++ = *from++;
+            *first++ = *from++;
+            *first++ = *from++;
+        case 4:
+            *first++ = *from++;
+            *first++ = *from++;
+        case 2:
+            *first++ = *from++;
+        case 1:
+            *first++ = *from++;
+        }
+
         return first;
     }
 

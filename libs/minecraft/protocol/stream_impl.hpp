@@ -6,6 +6,7 @@
 #include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/stream_traits.hpp"
 
 namespace minecraft::protocol
 {
@@ -43,8 +44,8 @@ namespace minecraft::protocol
             assert(data_position == 0);
 
             var_int frame_size;
-            auto    first = payload.begin();
-            auto    last  = payload.end();
+            auto    first = static_cast<const_buffer_iterator >(payload.data());
+            auto    last  = first + payload.size();
             auto    next  = parse(first, last, frame_size, ec);
             if (not ec.failed())
             {
@@ -215,35 +216,34 @@ namespace minecraft::protocol
             encryption_.emplace(secret);
         }
 
-        template < class Layer = NextLayer, class = void >
         std::string const &log_id()
         {
-            if (log_id_.empty())
-                log_id_ = "test";
-
-            return log_id_;
-        }
-
-        template < class Layer = NextLayer >
-        auto log_id() -> decltype(std::declval< Layer >().next_layer(), std::declval< std::string const & >())
-        {
-            if (not log_id_.empty())
-                return log_id_;
-
-            struct
+            if constexpr(has_remote_endpoint_v<NextLayer>)
             {
-                error_code                               ec;
-                typename next_layer_type ::endpoint_type ep;
-            } local, remote;
+                if (not log_id_.empty())
+                    return log_id_;
 
-            local.ep = next_layer_.local_endpoint(local.ec);
+                struct
+                {
+                    error_code                               ec;
+                    typename next_layer_type ::endpoint_type ep;
+                } local, remote;
 
-            remote.ep = next_layer_.remote_endpoint(remote.ec);
+                local.ep = next_layer_.local_endpoint(local.ec);
 
-            std::string *rep = (local.ec.failed() or remote.ec.failed()) ? std::addressof(this->unconnected_log_id_)
-                                                                         : std::addressof(log_id_);
-            *rep = fmt::format("[stream {}->{}]", report(local.ep), report(remote.ep));
-            return *rep;
+                remote.ep = next_layer_.remote_endpoint(remote.ec);
+
+                std::string *rep = (local.ec.failed() or remote.ec.failed()) ? std::addressof(this->unconnected_log_id_)
+                                                                             : std::addressof(log_id_);
+                *rep = fmt::format("[stream {}->{}]", report(local.ep), report(remote.ep));
+                return *rep;
+            }
+            else
+            {
+                if (log_id_.empty())
+                    log_id_ = "test";
+                return log_id_;
+            }
         }
 
         next_layer_type next_layer_;

@@ -44,7 +44,7 @@ namespace minecraft::protocol
                                       spdlog::to_hex(compressed_rx_data_.payload));
                         return self.complete(ec, compressed_rx_data_.payload.size());
                     }
-                    spdlog::info(FMT_STRING("{}::read_more compressed_data={:n}"),
+                    spdlog::debug(FMT_STRING("{}::read_more compressed_data={:n}"),
                                  log_id(),
                                  spdlog::to_hex(compressed_rx_data_.payload));
                 }
@@ -59,8 +59,8 @@ namespace minecraft::protocol
                 if (compression_enabled())
                 {
                     var_int original_length;
-                    auto first = compressed_rx_data_.begin();
-                    auto    next = parse(first, compressed_rx_data_.end(), original_length, ec);
+                    auto    first = compressed_rx_data_.begin();
+                    auto    next  = parse(first, compressed_rx_data_.end(), original_length, ec);
                     if (ec.failed())
                         return self.complete(ec, compressed_rx_data_.payload.size());
 
@@ -70,19 +70,20 @@ namespace minecraft::protocol
                     {
                         // not compressed
                         current_frame_data_ = compressed_rx_data_.get_data();
-                        spdlog::info(FMT_STRING("{}::uncompressed frame={:n}"),
+                        spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
                                      log_id(),
                                      spdlog::to_hex(to_span(current_frame_data_)));
                     }
                     else
                     {
-                        uncompressed_rx_data_.payload_size = original_length.value();
+                        uncompressed_rx_data_.payload_size  = original_length.value();
                         uncompressed_rx_data_.data_position = 0;
                         uncompressed_rx_data_.payload.resize(uncompressed_rx_data_.payload_size);
                         ec = inflator_(compressed_rx_data_.get_data(), uncompressed_rx_data_.get_data());
                         if (ec.failed())
                         {
-                            spdlog::error(FMT_STRING("{}::packet inflation failed: packet_length={} offset={} uncompressed_size={} {:n}"),
+                            spdlog::error(FMT_STRING("{}::packet inflation failed: packet_length={} offset={} "
+                                                     "uncompressed_size={} {:n}"),
                                           log_id(),
                                           compressed_rx_data_.payload_size,
                                           compressed_rx_data_.data_position,
@@ -100,7 +101,7 @@ namespace minecraft::protocol
                 else
                 {
                     current_frame_data_ = compressed_rx_data_.get_data();
-                    spdlog::info(FMT_STRING("{}::uncompressed frame={:n}"),
+                    spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
                                  log_id(),
                                  spdlog::to_hex(to_span(current_frame_data_)));
                 }
@@ -211,7 +212,20 @@ namespace minecraft::protocol
             reenter(coro) for (;;)
             {
                 yield this->async_write(net::buffer(tx_compose_buffer_), std::move(self));
-                assert(ec.failed() or bytes_transferred == tx_compose_buffer_.size());
+                if (ec.failed())
+                {
+                    spdlog::error("{}:: write composed frame length={}, data={:n}",
+                                  log_id(),
+                                  tx_compose_buffer_.size(),
+                                  spdlog::to_hex(tx_compose_buffer_));
+                }
+                else
+                {
+                    spdlog::info("{}:: write composed frame length={}, data={:n}",
+                                 log_id(),
+                                 tx_compose_buffer_.size(),
+                                 spdlog::to_hex(tx_compose_buffer_));
+                }
                 tx_compose_buffer_.clear();
                 return self.complete(ec, bytes_transferred);
             }

@@ -74,9 +74,9 @@ namespace minecraft::protocol
             impl_->set_encryption(secret);
         }
 
-        auto compression_threshold(std::uint32_t threshold) -> void;
+        auto compression_threshold(std::int32_t threshold) -> void;
 
-        auto compression_threshold() const -> std::uint32_t;
+        auto compression_threshold() const -> std::int32_t;
 
         void protocol_version(protocol::version_type version);
 

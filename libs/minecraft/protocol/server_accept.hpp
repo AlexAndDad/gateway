@@ -8,6 +8,7 @@
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/server/encryption_request.hpp"
 #include "minecraft/server/login_success.hpp"
+#include "minecraft/server/set_compression.hpp"
 #include "read_frame.hpp"
 #include "stream.hpp"
 
@@ -37,6 +38,7 @@ namespace minecraft::protocol
         // state
         client::handshake           client_handshake_frame;
         client::login_start         client_login_start;
+        server::set_compression     server_set_compression;
         server::encryption_request  server_encryption_request;
         client::encryption_response client_encryption_response;
         server::login_success       server_login_success;
@@ -190,6 +192,12 @@ namespace minecraft::protocol
 
                 if (ec.failed())
                     return self.complete(log_fail("client login start", ec));
+
+                params.server_set_compression.threshold = stream.compression_threshold();
+                yield stream.async_write_packet(params.server_set_compression, std::move(self));
+
+                if (ec.failed())
+                    return self.complete(log_fail("set compression", ec));
 
                 if (params.use_security())
                 {

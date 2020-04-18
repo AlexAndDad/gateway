@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zlib.h>
+#include <wise_enum/wise_enum.h>
 
 namespace minecraft::protocol::compression
 {

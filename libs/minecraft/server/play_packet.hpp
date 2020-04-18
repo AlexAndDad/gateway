@@ -45,6 +45,22 @@ namespace minecraft::server
 
         auto as_variant() const -> play_packet_variant const & { return variant_; }
 
+        template<class Stream>
+        friend Stream& operator<<(Stream& os, play_packet const& arg)
+        {
+            auto visitor = [&os](auto&& actual)
+            {
+                if constexpr (std::is_same_v<std::monostate, std::decay_t<decltype(actual)>>)
+                    os << "empty";
+                else
+                    os << actual;
+            };
+
+            std::visit(visitor, arg.as_variant());
+            return os;
+        }
+
+
         play_packet_variant variant_;
     };
 
@@ -64,8 +80,8 @@ namespace minecraft::server
         std::visit(visitor, p.as_variant());
     }
 
-    template < class Iter >
-    Iter parse(Iter first, Iter last, play_packet &pp, error_code &ec)
+    inline
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, play_packet &pp, error_code &ec)
     {
         var_enum< play_id > which;
         auto                next = parse(first, last, which, ec);

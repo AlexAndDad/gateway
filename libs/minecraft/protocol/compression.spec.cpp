@@ -3,6 +3,8 @@
 
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
 #include <catch2/catch.hpp>
 #include <sstream>
 
@@ -76,41 +78,52 @@ TEST_CASE("minecraft::protocol::compression")
         "21 04 5f bb 83 d4 47 d3 fa 47 74 db 4d e9 60 a4 06 e5 e2 d2 89 89 0c 0e a1 4d 39 69 96 4d 5c a2 25 84 aa f6 "
         "13 b8 0d 66 dc ac 58 73 34 02 1f 77 d6 05 8b 13 fc 07 dc de a3 30");
 
-    struct net_buffer_source : io::source
+    SECTION("compression works")
     {
-        net_buffer_source(net::const_buffer data)
-        : data_(data)
-        {
-        }
+        auto        uncompressed = std::string();
+        std::string uncompressed2;
+        std::string rezipped;
 
-        std::streamsize read(char *s, std::streamsize n)
+        struct net_buffer_source : io::source
         {
-            if (auto available = data_.size())
+            net_buffer_source(net::const_buffer data)
+            : data_(data)
             {
-                auto bytes_transferred =
-                    net::buffer_copy(net::mutable_buffer(s, std::min(static_cast< std::size_t >(n), available)), data_);
-                data_ += bytes_transferred;
-                return static_cast< std::streamsize >(bytes_transferred);
             }
-            return -1;
+
+            std::streamsize read(char *s, std::streamsize n)
+            {
+                if (auto available = data_.size())
+                {
+                    auto bytes_transferred = net::buffer_copy(
+                        net::mutable_buffer(s, std::min(static_cast< std::size_t >(n), available)), data_);
+                    data_ += bytes_transferred;
+                    return static_cast< std::streamsize >(bytes_transferred);
+                }
+                return -1;
+            }
+
+            net::const_buffer data_;
+        };
+
+        io::filtering_streambuf< io::input > in;
+        try
+        {
+            in.push(io::zlib_decompressor());
+            in.push(net_buffer_source(net::buffer(zipped)));
+            io::copy(in, io::back_inserter(uncompressed));
         }
+        catch (std::exception &e)
+        {
+            FAIL(e.what());
+        }
+        CHECK(uncompressed.size() == 1158);
+        CHECK((unsigned char)(uncompressed.at(0)) == 7);
 
-        net::const_buffer data_;
-    };
-
-    auto uncompressed = std::string();
-
-    io::filtering_streambuf< io::input > in;
-    try
-    {
-        in.push(io::zlib_decompressor());
-        in.push(net_buffer_source(net::buffer(zipped)));
-        io::copy(in, io::back_inserter(uncompressed));
+        minecraft::protocol::compression::inflate_impl inflator;
+        uncompressed2.resize(uncompressed.size());
+        auto ec = inflator(net::buffer(zipped), net::buffer(uncompressed2));
+        CHECK(ec.value() == 0);
+        CHECK(uncompressed2 == uncompressed);
     }
-    catch (std::exception &e)
-    {
-        FAIL(e.what());
-    }
-    CHECK(uncompressed.size() == 1158);
-    CHECK((unsigned char)(uncompressed.at(0)) == 7);
 }

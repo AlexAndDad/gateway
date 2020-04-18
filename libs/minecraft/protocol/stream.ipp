@@ -91,13 +91,13 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::compression_threshold(std::uint32_t threshold) -> void
+    auto stream< NextLayer >::compression_threshold(std::int32_t threshold) -> void
     {
         impl_->compression_threshold_ = threshold;
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::compression_threshold() const -> std::uint32_t
+    auto stream< NextLayer >::compression_threshold() const -> std::int32_t
     {
         return impl_->compression_threshold_;
     }

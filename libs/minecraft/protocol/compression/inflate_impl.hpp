@@ -18,6 +18,11 @@ namespace minecraft::protocol::compression
             throw_if_not_ok(inflateInit(&stream_));
         }
 
+        ~inflate_impl()
+        {
+            inflateEnd(&stream_);
+        }
+
         /// Inflate from an input buffer to a vector.
         /// \param source an input_buffer describing the extent of available data
         /// \param dest the dynamic buffer into which to inflate the output

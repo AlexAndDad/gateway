@@ -21,4 +21,15 @@ namespace minecraft::server
         return os;
     }
 
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, chat_message &packet, error_code &ec)
+    {
+        using minecraft::parse;
+
+        first = parse(first, last, packet.json_data, ec);
+        first = parse(first, last, packet.position, ec);
+
+        return first;
+    }
+
 }   // namespace minecraft::server
