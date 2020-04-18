@@ -55,7 +55,7 @@ namespace minecraft
 
     template < typename Integral, typename Iter, typename ValueType = std::decay_t<Integral>>
     auto encode(Integral const &arg, Iter first)
-    -> std::enable_if_t<std::is_integral_v<ValueType>, Iter>
+    -> std::enable_if_t<std::is_integral_v<ValueType> and not std::is_same_v<bool,Integral>, Iter>
     {
         using namespace boost::endian;
 
@@ -66,6 +66,13 @@ namespace minecraft
         auto from = buf.data();
         for(std::size_t count = sizeof(unsigned_type) ; count-- ; )
             *first++ = *from++;
+        return first;
+    }
+
+    template < class Iter >
+    Iter encode(bool const &arg, Iter first)
+    {
+        *first++ = static_cast<std::uint8_t>(arg);
         return first;
     }
 
