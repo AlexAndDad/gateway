@@ -34,27 +34,38 @@ namespace gateway
         auto get_executor() -> executor_type;
 
       private:
-        template<class Stream>
-        friend Stream& operator<<(Stream& os, connection_impl const& i)
+        template < class Stream >
+        friend Stream &operator<<(Stream &os, connection_impl const &i)
         {
             os << "[connection " << minecraft::report(i.stream_.next_layer()) << ']';
             return os;
         }
 
-        template<class Stream>
-        friend Stream& operator<<(Stream& os, connection_impl* p)
+        template < class Stream >
+        friend Stream &operator<<(Stream &os, connection_impl *p)
         {
             os << "[connection " << minecraft::report(p->stream_.next_layer()) << ']';
             return os;
         }
 
       private:
-        auto handle_start() -> void;
+        net::awaitable< void > run();
         auto handle_cancel() -> void;
 
-        auto handle_login(error_code const &ec) -> void;
-        void initiate_spin();
-        void handle_spin(error_code ec, std::size_t bytes_transferrred);
+        template <class Packet>
+        auto async_write_packet(Packet const & p) -> net::awaitable<void>
+        {
+            try
+            {
+                co_await stream_.async_write_packet(p,net::use_awaitable);
+                spdlog::info("{}::{}({})", this, "async_write_packet", minecraft::report(error_code()));
+            }
+            catch (system_error & se)
+            {
+                auto &&ec = se.code();
+                spdlog::warn("{}::{}({})", this, "async_write_packet", minecraft::report(ec));
+            }
+        }
 
         connection_config config_;
 

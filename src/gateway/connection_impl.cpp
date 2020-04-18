@@ -2,10 +2,15 @@
 
 #include "config/span.hpp"
 #include "minecraft/security/rsa.hpp"
+
 #include "minecraft/server/chat_message.hpp"
 #include "minecraft/server/play_packet.hpp"
+#include "minecraft/server/join_game.hpp"
+
+#include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 #include "polyfill/report.hpp"
+
 
 #include <random>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -60,7 +65,128 @@ namespace gateway
 
     auto connection_impl::start() -> void
     {
-        dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
+        net::co_spawn(
+            get_executor(),
+            [self = shared_from_this()]() -> net::awaitable< void > { co_await self->run(); },
+            [self = shared_from_this()](std::exception_ptr ep) {
+                try
+                {
+                    if (ep)
+                        std::rethrow_exception(ep);
+                }
+                catch (system_error &se)
+                {
+                    auto &&ec = se.code();
+                    if (ec == net::error::operation_aborted)
+                        return;
+                    spdlog::error("{}::{}({})", *self, "run", minecraft::report(ec));
+                }
+                catch (...)
+                {
+                    spdlog::error("{}::{} - exception: ", *self, "run", polyfill::explain());
+                }
+            });
+
+        // dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
+    }
+
+    auto connection_impl::run() -> net::awaitable< void >
+    {
+        //        initiate_read();
+
+        login_params_.set_server_key(config_.server_key);
+        login_params_.set_server_id(config_.server_id);
+        login_params_.use_security(true);
+
+        try
+        {
+            co_await minecraft::protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
+            spdlog::info("login state: {}", login_params_);
+        }
+        catch (system_error &se)
+        {
+            auto &&ec = se.code();
+            if (ec.failed())
+            {
+                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+                spdlog::info("login state: {}", login_params_);
+                co_return;
+            }
+        }
+
+        {   // Send join game packet
+            auto packet = minecraft::server::join_game();
+            packet.entity_id = 1;
+            packet.game_mode = minecraft::server::join_game::survival;
+            packet.dimension = minecraft::server::join_game::overworld;
+            packet.hashed_seed = 123412341234;
+            packet.max_players = 20;
+            packet.level_type = "default";
+            packet.view_distance = 16;
+            packet.reduced_debug_info = false;
+            packet.enable_respawn_screen = true;
+            co_await async_write_packet(packet);
+        }
+
+        {   // Send a spawn packet
+            auto pack     = minecraft::server::spawn_position();
+            pack.location = { 0, 60, 0 };
+            co_await async_write_packet(pack);
+        }
+
+        {   // Send a player position and look packet
+            auto pack  = minecraft::server::player_position_and_look();
+            pack.x     = 0;
+            pack.y     = 60;
+            pack.z     = 0;
+            pack.yaw   = 0.0f;
+            pack.pitch = 0.0f;
+            pack.set_flags(false, false, false, false, false);
+            pack.teleport_ID = 666;
+            co_await async_write_packet(pack);
+        }
+
+        {   // Await a teleport confirm packet
+        }
+
+        // Send 3 chat messages
+        for (int i = 0; i < 3; ++i)
+        {
+            auto pack      = minecraft::server::chat_message();
+            pack.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
+            pack.position  = minecraft::server::chat_message::chat_position ::system_message;
+            co_await async_write_packet(pack);
+        }
+
+        // Spin
+        while (true)
+        {
+            try
+            {
+                auto bt = co_await stream_.async_read_frame(net::use_awaitable);
+
+                auto id    = std::int32_t();
+                auto data  = stream_.current_frame();
+                auto buf   = minecraft::to_span(data);
+                auto first = buf.begin();
+                auto last  = buf.end();
+                auto ec    = boost::system::error_code();
+                auto i     = minecraft::parse_var(first, last, id, ec);
+
+                spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
+                             this,
+                             __func__,
+                             polyfill::report(ec),
+                             bt,
+                             id,
+                             spdlog::to_hex(config::to_span(data)));
+            }
+            catch (system_error &se)
+            {
+                auto &&ec = se.code();
+                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+            }
+        }
     }
 
     auto connection_impl::cancel() -> void
@@ -71,21 +197,6 @@ namespace gateway
     auto connection_impl::get_executor() -> executor_type { return stream_.get_executor(); }
 
     auto connection_impl::handle_cancel() -> void { stream_.close(); }
-
-    auto connection_impl::handle_start() -> void
-    {
-        //        initiate_read();
-
-        login_params_.set_server_key(config_.server_key);
-        login_params_.set_server_id(config_.server_id);
-        login_params_.use_security(true);
-
-        minecraft::protocol::async_server_accept(
-            stream_,
-            this->login_params_,
-            bind_executor(get_executor(),
-                          [self = this->shared_from_this()](error_code const &ec) { self->handle_login(ec); }));
-    }
 
     template < class NextLayer, class Iter, class CompletionToken >
     auto
@@ -114,76 +225,4 @@ namespace gateway
 
         return net::async_compose< CompletionToken, void(error_code) >(std::move(op), token, stream);
     }
-
-    auto connection_impl::handle_login(error_code const &ec) -> void
-    {
-        if (ec.failed())
-        {
-            spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-            spdlog::info("login state: {}", login_params_);
-        }
-        else
-        {
-            spdlog::info("{}::{}({})", this, __func__, polyfill::report(ec));
-            spdlog::info("login state: {}", login_params_);
-
-            auto messages = std::make_shared< std::vector< minecraft::server::play_packet > >();
-            messages->resize(3);
-            for (int i = 0; i < 3; ++i)
-            {
-                auto &packet     = messages->at(i);
-                auto &actual     = packet.construct< minecraft::server::chat_message >();
-                actual.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
-                actual.position  = minecraft::server::chat_message::chat_position ::system_message;
-            }
-
-            async_send_packets(stream_,
-                               messages->begin(),
-                               messages->end(),
-                               bind_executor(get_executor(), [self = shared_from_this(), messages](error_code ec) {
-                                   if (not ec.failed())
-                                   {
-                                       spdlog::info("{}::{}({})", *self, "async_send_packets", minecraft::report(ec));
-                                       self->initiate_spin();
-                                   }
-                                   else
-                                   {
-                                       spdlog::warn("{}::{}({})", *self, "async_send_packets", minecraft::report(ec));
-                                   }
-                               }));
-        }
-    }
-
-    void connection_impl::initiate_spin()
-    {
-        stream_.async_read_frame(bind_executor(
-            get_executor(), [self = shared_from_this()](error_code ec, std::size_t bt) { self->handle_spin(ec, bt); }));
-    }
-
-    void connection_impl::handle_spin(error_code ec, std::size_t bytes_transferrred)
-    {
-        if (ec.failed())
-        {
-            spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-        }
-        else
-        {
-            auto id    = std::int32_t();
-            auto data  = stream_.current_frame();
-            auto first = net::buffers_begin(data);
-            auto last  = net::buffers_end(data);
-            auto i     = minecraft::parse_var(first, last, id, ec);
-
-            spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
-                         this,
-                         __func__,
-                         polyfill::report(ec),
-                         bytes_transferrred,
-                         id,
-                         spdlog::to_hex(config::to_span(data)));
-
-            initiate_spin();
-        }
-    }
-
 }   // namespace gateway
