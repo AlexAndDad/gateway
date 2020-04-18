@@ -1,8 +1,9 @@
 #pragma once
 #include "minecraft/encode.hpp"
+#include "minecraft/parse.hpp"
 #include "minecraft/server/play_id.hpp"
 #include "minecraft/types.hpp"
-#include "minecraft/parse.hpp"
+
 #include <bitset>
 
 namespace minecraft::server
@@ -21,6 +22,15 @@ namespace minecraft::server
         std::bitset< 5 > flags;
 
         var_int teleport_ID;
+
+        void set_flags(bool X, bool Y, bool Z, bool Y_ROT, bool X_ROT)
+        {
+            flags.set(0,X);
+            flags.set(1,Y);
+            flags.set(2,Z);
+            flags.set(3,Y_ROT);
+            flags.set(4,X_ROT);
+        }
 
         friend std::ostream &operator<<(std::ostream &os, player_position_and_look const &arg);
     };
