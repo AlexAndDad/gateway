@@ -40,6 +40,12 @@ namespace minecraft
         {
             invalid_name = 1,
         };
+
+        enum ping_error
+        {
+            invalid_payload = 1,
+            invalid_plugin = 2,
+        };
     };
 
     inline auto parse_error_category() -> error_category const &
@@ -127,6 +133,28 @@ namespace minecraft
         return cat;
     }
 
+    inline auto ping_error_category() -> error_category const &
+    {
+        static struct : error_category
+        {
+            const char *name() const noexcept { return "minecraft ping error"; }
+
+            std::string message(int value) const
+            {
+                switch (static_cast< error::ping_error >(value))
+                {
+                case error::ping_error::invalid_payload:
+                    return "invalid payload";
+                case error::ping_error::invalid_plugin:
+                    return "invalid plugin";
+
+                }
+                return "unknown code: " + std::to_string(value);
+            }
+        } cat;
+        return cat;
+    }
+
     inline auto make_error_code(error::parse_error e) -> error_code
     {
         return error_code(static_cast< int >(e), parse_error_category());
@@ -140,6 +168,10 @@ namespace minecraft
     inline auto make_error_code(error::protocol_error e) -> error_code
     {
         return error_code(static_cast< int >(e), protocol_error_category());
+    }
+    inline auto make_error_code(error::ping_error e) -> error_code
+    {
+        return error_code(static_cast< int >(e), ping_error_category());
     }
 }   // namespace minecraft
 
@@ -157,6 +189,11 @@ namespace boost::system
 
     template <>
     struct is_error_code_enum< minecraft::error::protocol_error > : std::true_type
+    {
+    };
+
+    template <>
+    struct is_error_code_enum< minecraft::error::ping_error > : std::true_type
     {
     };
 }   // namespace boost::system

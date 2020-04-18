@@ -21,10 +21,41 @@ namespace minecraft::protocol
             std::uint8_t   payload;     // = 01
             std::uint8_t   plugin;      // = fa
             std::u16string pinghost;
-            std::uint16_t  length_od_rest;
+
             std::uint8_t   protocol_version;   // = 4a
             std::u16string hostname;
             std::uint32_t  port;
+
+            const_buffer_iterator parse_start(const_buffer_iterator first, const_buffer_iterator last, error_code& ec)
+            {
+                using minecraft::parse;
+                first = parse(first, last, packet_id, ec);
+                if (not ec.failed() and packet_id != 254)
+                    ec = error::invalid_packet;
+
+                first = parse(first, last, payload, ec);
+                if (not ec.failed() and payload != 1)
+                    ec = error::invalid_payload;
+
+                first = parse(first, last, plugin, ec);
+                if (not ec.failed() and plugin != 0xfa)
+                    ec = error::invalid_plugin;
+
+
+                if (not ec.failed() and first != last)
+                    ec = error::invalid_packet;
+                return first;
+            }
+            const_buffer_iterator parse_rest(const_buffer_iterator first, const_buffer_iterator last, error_code& ec)
+            {
+                using minecraft::parse;
+                first = parse(first, last, protocol_version, ec);
+                first = parse(first, last, hostname, ec);
+                first = parse(first, last, port, ec);
+                if (not ec.failed() and first != last)
+                    ec = error::invalid_packet;
+                return first;
+            }
         };
     }   // namespace client
 
@@ -84,6 +115,7 @@ namespace minecraft::protocol
                 yield
                 {
                     auto buf = net::buffer(buffer);
+                    buf += 2;
                     net::async_read(stream, buf, std::move(self));
                 }
                 parse(buffer.data(), buffer.data() + buffer.size(), result, ec);
@@ -98,12 +130,16 @@ namespace minecraft::protocol
     struct osp_state
     {
         client::old_style_ping ping;
+
+        std::vector< char > tmpv;
+        std::uint16_t       tmplen;
     };
     template < class NextLayer, class CompletionToken >
     auto async_old_style_ping(stream< NextLayer > &stream, CompletionToken &&token)
     {
         auto op = [&stream, coro = net::coroutine(), state = std::make_unique< osp_state >()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+            using minecraft::parse;
 #include <boost/asio/yield.hpp>
             if (ec.failed())
                 self.complete(ec);
@@ -111,25 +147,39 @@ namespace minecraft::protocol
             {
                 yield
                 {
-                    auto bufs = net::mutable_buffer(&state->ping.packet_id, 1);
+                    state->tmpv.resize(3);
+                    auto bufs = net::buffer(state->tmpv);
                     async_read(stream.next_layer(), bufs, std::move(self));
                 }
+                {
+                    auto first = state->tmpv.data();
+                    auto last = first + 3;
+                    state->ping.parse_start(first, last, ec);
+                }
+                if (ec.failed())
+                    self.complete(ec);
 
-                if (state->ping.packet_id != '\xfe')
-                    return self.complete(error::invalid_packet);
+                yield async_read_be_utf16(stream.next_layer(), state->ping.pinghost, std::move(self));
+
                 yield
                 {
-                    auto bufs = std::array< net::mutable_buffer, 2 > { net::mutable_buffer { &state->ping.payload, 1 },
-                                                                       net::mutable_buffer { &state->ping.plugin, 1 } };
+                    state->tmpv.resize(2);
+                    auto bufs = net::buffer(state->tmpv);
                     async_read(stream.next_layer(), bufs, std::move(self));
                 }
 
-                if (state->ping.payload != 1)
-                    return self.complete(error::invalid_packet);
+                parse(state->tmpv.data(), state->tmpv.data() + 2, state->tmplen, ec);
                 if (state->ping.plugin != 0xfa)
                     return self.complete(error::invalid_packet);
 
-                yield async_read_be_utf16(stream.next_layer(), state->ping.pinghost, std::move(self));
+                yield
+                {
+                    state->tmpv.resize(state->tmplen);
+                    auto bufs = net::buffer(state->tmpv);
+                    async_read(stream.next_layer(), bufs, std::move(self));
+                }
+
+                state->ping.parse_rest(state->tmpv.data(), state->tmpv.data() + state->tmpv.size(), ec);
 
                 self.complete(ec);
             }
