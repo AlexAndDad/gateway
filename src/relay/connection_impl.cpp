@@ -89,7 +89,6 @@ namespace relay
                     spdlog::error("{}::{} - exception: ", *self, "run", polyfill::explain());
                 }
             });
-        //        dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
     }
 
     auto connection_impl::cancel() -> void
