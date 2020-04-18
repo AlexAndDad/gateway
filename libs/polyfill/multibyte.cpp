@@ -2,11 +2,24 @@
 
 namespace polyfill
 {
+    void append(std::u16string const &source, std::string &target)
+    {
+        auto first = source.data();
+        auto last  = first + source.size();
+        utf8::utf16to8(first, last, back_inserter(target));
+    }
+
     void append(std::u16string const &source, std::u8string &target)
     {
         auto first = source.data();
         auto last  = first + source.size();
         utf8::utf16to8(first, last, back_inserter(target));
+    }
+
+    void convert(std::u16string const &source, std::string &target)
+    {
+        target.clear();
+        append(source, target);
     }
 
     void convert(std::u16string const &source, std::u8string &target)

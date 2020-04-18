@@ -6,6 +6,7 @@ namespace polyfill
     //
     // from UTF16 to UTF8
     //
+    void convert(std::u16string const &source, std::string &target);
     void convert(std::u16string const &source, std::u8string &target);
 
     void append(std::u16string const &source, std::u8string &target);

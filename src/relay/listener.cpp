@@ -19,10 +19,24 @@ namespace relay
     : acceptor_(exec)
     , config_(std::move(config))
     {
+        using namespace std::literals;
+        error_code ec;
         acceptor_.open(protocol::v4());
         acceptor_.set_option(socket_type::reuse_address());
-        acceptor_.bind(
-            protocol::endpoint(net::ip::make_address("0.0.0.0"), std::uint16_t(::atoi(config_.listen_port.c_str()))));
+        do
+        {
+            acceptor_.bind(protocol::endpoint(net::ip::make_address("0.0.0.0"),
+                                              std::uint16_t(::atoi(config_.listen_port.c_str()))),
+                           ec);
+            if (not ec.failed())
+                break;
+            if (ec.failed() && ec != net::error::address_in_use)
+                throw system_error(ec);
+            std::cout << ec.message() << std::endl;
+            auto t = net::system_timer (get_executor());
+            t.expires_after(5s);
+            t.wait();
+        } while(ec.failed());
         acceptor_.listen();
         spdlog::info("relay: listening on {}", minecraft::report(acceptor_));
     }

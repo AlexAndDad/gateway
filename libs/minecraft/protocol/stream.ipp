@@ -1,3 +1,5 @@
+#include "minecraft/multibyte.hpp"
+
 namespace minecraft::protocol
 {
     template < class NextLayer >
@@ -111,7 +113,7 @@ namespace minecraft::protocol
     template < class NextLayer >
     auto stream< NextLayer >::server_address(std::u16string const &val) -> void
     {
-        assign(val, impl_->hostname);
+        convert(val, impl_->hostname);
     }
 
     template < class NextLayer >

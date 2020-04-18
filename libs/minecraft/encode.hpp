@@ -114,6 +114,16 @@ namespace minecraft
         return first;
     }
 
+    template<class Iter>
+    Iter encode(std::u16string const& arg, Iter first)
+    {
+        auto len = std::uint16_t(arg.size());
+        first = encode(len, first);
+        for(auto& e : arg)
+            first = encode(e, first);
+        return first;
+    }
+
     //
     // variable length integers
     //

@@ -112,7 +112,9 @@ namespace relay
         auto is_osp = co_await protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable);
         if (is_osp)
         {
+            spdlog::info("old style ping request...");
             co_await async_old_style_ping(stream_, net::use_awaitable);
+            spdlog::info("...responded");
             co_return;
         }
 

@@ -26,7 +26,7 @@ namespace minecraft::protocol
             std::u16string hostname;
             std::uint32_t  port;
 
-            const_buffer_iterator parse_start(const_buffer_iterator first, const_buffer_iterator last, error_code& ec)
+            const_buffer_iterator parse_start(const_buffer_iterator first, const_buffer_iterator last, error_code &ec)
             {
                 using minecraft::parse;
                 first = parse(first, last, packet_id, ec);
@@ -41,12 +41,11 @@ namespace minecraft::protocol
                 if (not ec.failed() and plugin != 0xfa)
                     ec = error::invalid_plugin;
 
-
                 if (not ec.failed() and first != last)
                     ec = error::invalid_packet;
                 return first;
             }
-            const_buffer_iterator parse_rest(const_buffer_iterator first, const_buffer_iterator last, error_code& ec)
+            const_buffer_iterator parse_rest(const_buffer_iterator first, const_buffer_iterator last, error_code &ec)
             {
                 using minecraft::parse;
                 first = parse(first, last, protocol_version, ec);
@@ -131,6 +130,7 @@ namespace minecraft::protocol
     {
         client::old_style_ping ping;
 
+        std::u16string      response;
         std::vector< char > tmpv;
         std::uint16_t       tmplen;
     };
@@ -153,7 +153,7 @@ namespace minecraft::protocol
                 }
                 {
                     auto first = state->tmpv.data();
-                    auto last = first + 3;
+                    auto last  = first + 3;
                     state->ping.parse_start(first, last, ec);
                 }
                 if (ec.failed())
@@ -180,6 +180,35 @@ namespace minecraft::protocol
                 }
 
                 state->ping.parse_rest(state->tmpv.data(), state->tmpv.data() + state->tmpv.size(), ec);
+                if (ec.failed())
+                    self.complete(ec);
+
+                stream.server_address(state->ping.hostname);
+                stream.server_port(state->ping.port);
+
+                //
+                // now send ping response
+                //
+
+                state->tmpv.clear();
+                state->tmpv.push_back(0xff);
+                state->response.clear();
+                state->response.append(u"§1");
+                state->response.push_back(0);
+                state->response.append(u"127");
+                state->response.push_back(0);
+                state->response.append(u"Welcome to Awesomeness");
+                state->response.push_back(0);
+                state->response.append(u"1000000");
+                state->response.push_back(0);
+                state->response.append(u"1000000000");
+                encode(state->response, back_inserter(state->tmpv));
+
+                yield
+                {
+                    auto bufs = net::buffer(state->tmpv);
+                    net::async_write(stream.next_layer(), bufs, std::move(self));
+                }
 
                 self.complete(ec);
             }
