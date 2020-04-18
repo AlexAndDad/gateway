@@ -4,11 +4,11 @@
 #include "types.hpp"
 
 #include <boost/assert.hpp>
+#include <boost/endian/buffers.hpp>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
-#include <boost/endian/buffers.hpp>
 
 namespace minecraft
 {
@@ -47,8 +47,6 @@ namespace minecraft
         return write_x_bytes(first, storage);
     }
 
-
-
     //
     // fixed length integers
     //
@@ -59,12 +57,13 @@ namespace minecraft
     {
         using namespace boost::endian;
 
-        using unsigned_type = std::make_unsigned_t<ValueType>;
+        using unsigned_type = std::make_unsigned_t< ValueType >;
 
-        auto buf = endian_buffer<order::big, unsigned_type, std::numeric_limits<unsigned_type>::digits, align::yes>(static_cast<unsigned_type>(arg));
+        auto buf = endian_buffer< order::big, unsigned_type, std::numeric_limits< unsigned_type >::digits, align::yes >(
+            static_cast< unsigned_type >(arg));
 
         auto from = buf.data();
-        for(std::size_t count = sizeof(unsigned_type) ; count-- ; )
+        for (std::size_t count = sizeof(unsigned_type); count--;)
             *first++ = *from++;
         return first;
     }
@@ -94,9 +93,9 @@ namespace minecraft
     template < class Iter >
     Iter encode(std::uint64_t const &arg, Iter first)
     {
-        auto buf = boost::endian::big_uint64_buf_at(arg);
+        auto buf  = boost::endian::big_uint64_buf_at(arg);
         auto from = buf.data();
-        switch(sizeof(std::uint64_t))
+        switch (sizeof(std::uint64_t))
         {
         case 8:
             *first++ = *from++;
@@ -166,6 +165,14 @@ namespace minecraft
     Iter encode(std::string const &in, Iter first)
     {
         return encode_bytes(in.begin(), in.end(), first);
+    }
+
+    template < class Iter >
+    Iter encode(std::u8string const &in, Iter first)
+    {
+        auto inf = reinterpret_cast< char const * >(in.data());
+        auto inl = inf + in.size();
+        return encode_bytes(inf, inl, first);
     }
 
     template < class Iter >

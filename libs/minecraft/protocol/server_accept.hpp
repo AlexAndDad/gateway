@@ -3,6 +3,7 @@
 #include "minecraft/client/handshake.hpp"
 #include "minecraft/client/login_start.hpp"
 #include "minecraft/hexdump.hpp"
+#include "minecraft/multibyte.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/private_key.hpp"
@@ -20,8 +21,8 @@ namespace minecraft::protocol
 {
     struct server_accept_login_params
     {
-        std::string const& name() const { return client_login_start.name; }
-        version_type version() const { return client_handshake_frame.protocol_version.value(); }
+        std::string const &name() const { return client_login_start.name; }
+        version_type       version() const { return client_handshake_frame.protocol_version.value(); }
 
         void set_server_key(minecraft::security::private_key k) { server_key = std::move(k); }
 
@@ -165,25 +166,32 @@ namespace minecraft::protocol
     auto
     async_server_accept(stream< NextLayer > &stream, server_accept_login_params &params, CompletionHandler &&handler)
     {
-        auto op = [&stream, &params, coro = net::coroutine()](
+        auto op = [context = static_cast< const char * >("entry"), &stream, &params, coro = net::coroutine()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
-            auto log_fail = [](auto &&context, error_code &ec) -> error_code & {
+            auto log_fail = [](auto &&ctx, error_code &ec) -> error_code & {
                 if (ec.failed())
-                    spdlog::warn("{} failed: {}", context, report(ec));
+                    spdlog::warn("{} failed: {}", ctx, report(ec));
                 return ec;
             };
+
+            if (log_fail(context, ec).failed())
+                return self.complete(ec);
+
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
+                context = "handshake";
                 yield async_expect_frame(stream, params.client_handshake_frame, std::move(self));
-
-                if (not ec.failed())
-                    verify(params.client_handshake_frame, ec);
-
-                if (ec.failed())
+                if (verify(params.client_handshake_frame, ec).failed())
                     return self.complete(log_fail("handshake frame", ec));
 
+                // record information sent by player handshake
                 stream.protocol_version(params.client_handshake_frame.protocol_version);
+                stream.server_address(params.client_handshake_frame.server_address);
+                stream.server_port(params.client_handshake_frame.server_port);
+
+
+
 
                 yield async_expect_frame(stream, params.client_login_start, std::move(self));
 

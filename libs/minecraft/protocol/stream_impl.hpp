@@ -129,7 +129,7 @@ namespace minecraft::protocol
 
         // client parameters / discovered by server
         std::string hostname;
-        std::string port;
+        std::uint32_t port;
     };
 
     inline std::ostream &operator<<(std::ostream &os, stream_impl_base const &base)
@@ -146,7 +146,7 @@ namespace minecraft::protocol
         os << prefix() << "protocol version      : " << wise_enum::to_string(base.protocol_version_);
         os << prefix() << "compression threshold : " << base.compression_threshold_;
         os << prefix() << "encryption            : " << (base.encryption_ ? "yes" : "no");
-        os << prefix() << "hostname              : " << base.hostname;
+        os << prefix() << "hostname              : " << report(base.hostname);
         os << prefix() << "port                  : " << base.port;
 
         return os;

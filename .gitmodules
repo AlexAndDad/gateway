@@ -4,3 +4,6 @@
 [submodule "polly"]
 	path = polly
 	url = git@github.com:madmongo1/polly.git
+[submodule "git-deps/utfcpp"]
+	path = git-deps/utfcpp
+	url = git@github.com:AlexAndDad/utfcpp.git

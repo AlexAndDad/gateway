@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <spdlog/spdlog.h>
+#include <utf8cpp/utf8.h>
 
 namespace relay
 {
@@ -26,7 +27,7 @@ int main(int argc, char **argv)
     using polyfill::deduce_return_code;
     using polyfill::explain;
 
-    spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::info);
 
     namespace po = boost::program_options;
 

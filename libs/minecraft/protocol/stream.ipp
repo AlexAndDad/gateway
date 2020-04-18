@@ -102,4 +102,35 @@ namespace minecraft::protocol
         return impl_->compression_threshold_;
     }
 
+    template < class NextLayer >
+    auto stream< NextLayer >::server_address(std::string const &val) -> void
+    {
+        impl_->hostname = val;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::server_address(std::u16string const &val) -> void
+    {
+        assign(val, impl_->hostname);
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::server_address() const -> std::string const &
+    {
+        return impl_->hostname;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::server_port(std::uint16_t val) -> void
+    {
+        impl_->port = val;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::server_port() const -> std::uint16_t
+    {
+        return impl_->port;
+    }
+
+
 }   // namespace minecraft::protocol

@@ -75,8 +75,12 @@ namespace minecraft::protocol
         }
 
         auto compression_threshold(std::int32_t threshold) -> void;
-
         auto compression_threshold() const -> std::int32_t;
+        auto server_address(std::string const &val) -> void;
+        auto server_address(std::u16string const &val) -> void;
+        auto server_address() const -> std::string const &;
+        auto server_port(std::uint16_t) -> void;
+        auto server_port() const -> std::uint16_t;
 
         void protocol_version(protocol::version_type version);
 
@@ -84,6 +88,7 @@ namespace minecraft::protocol
 
         auto next_layer() -> next_layer_type &;
         auto next_layer() const -> next_layer_type const &;
+
 
         auto close() noexcept -> void;
 

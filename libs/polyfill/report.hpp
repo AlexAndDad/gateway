@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <string>
 
+#include <utf8cpp/utf8.h>
+
 namespace polyfill
 {
     //
@@ -106,6 +108,27 @@ namespace polyfill
             write();
 
             os << ']';
+        }
+    };
+
+    template<>
+    struct reporter<std::u8string>
+    {
+        template<class Stream>
+        void operator()(Stream& os, std::u8string const& s) const
+        {
+            auto first = reinterpret_cast<const char*>(s.data());
+            os.write(first, s.size());
+        }
+
+        void operator()(std::wostream& os, std::u8string const& s) const
+        {
+            auto first = s.data();
+            auto last = first + s.size();
+            static thread_local std::wstring w;
+            w.clear();
+            utf8::utf8to32(reinterpret_cast<const char *>(first), reinterpret_cast<const char*>(last), std::back_inserter(w));
+            os << w;
         }
     };
 

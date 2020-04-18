@@ -84,6 +84,7 @@ target_link_libraries(minecraft_lib PUBLIC
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL
         spdlog::spdlog
+        utf8cpp
         ZLIB::zlib)
 
 target_include_directories(minecraft_lib

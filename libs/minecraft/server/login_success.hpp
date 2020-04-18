@@ -4,6 +4,8 @@
 #include "minecraft/net.hpp"
 #include "minecraft/packet_id.hpp"
 #include <fmt/ostream.h>
+#include "minecraft/multibyte.hpp"
+#include "minecraft/report.hpp"
 
 namespace minecraft::server
 {

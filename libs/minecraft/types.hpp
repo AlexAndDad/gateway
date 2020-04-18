@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "minecraft/multibyte.hpp"
+
 #include <bitset>
 #include <boost/operators.hpp>
 #include <iostream>
@@ -148,12 +150,14 @@ namespace minecraft
         return os;
     }
 
+
     template < std::size_t Limit >
     struct varchar : std::string
     {
         using std::string::string;
-
         using std::string::operator=;
+
+        static constexpr std::size_t max_size() { return Limit; }
     };
 
     template < class Enum >
@@ -167,6 +171,5 @@ namespace minecraft
     {
         return var< Integral >(i);
     }
-
 
 }   // namespace minecraft
