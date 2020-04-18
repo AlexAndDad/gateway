@@ -42,18 +42,7 @@ namespace relay
         net::awaitable< void > client_to_server();
         net::awaitable< void > server_to_client();
 
-        auto handle_start() -> void;
         auto handle_cancel() -> void;
-
-        auto initiate_upstream_resove() -> void;
-        auto handle_upstream_resolve(error_code ec, resolver_type::results_type results) -> void;
-        auto initiate_upstream_transport(resolver_type::results_type results) -> void;
-        auto handle_upstream_transport(error_code ec) -> void;
-        auto handle_upstream_connect(error_code ec) -> void;
-
-        auto handle_login(error_code const &ec) -> void;
-        void initiate_spin();
-        void handle_spin(error_code ec, std::size_t bytes_transferrred);
 
         template < class F >
         auto bind_self(F &&f)
