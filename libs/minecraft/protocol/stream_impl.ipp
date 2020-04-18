@@ -76,16 +76,25 @@ namespace minecraft::protocol
                     }
                     else
                     {
-                        // decompress here
-                        //decompress(compressed_rx_data_, uncompressed_rx_data_);
-                        current_frame_data_ = compressed_rx_data_.get_data();
-                        spdlog::error(FMT_STRING("{}::compressed frame: packet_length={} offset={} uncompressed_size={} {:n}"),
+                        uncompressed_rx_data_.payload_size = original_length.value();
+                        uncompressed_rx_data_.data_position = 0;
+                        uncompressed_rx_data_.payload.resize(uncompressed_rx_data_.payload_size);
+                        ec = inflator_(compressed_rx_data_.get_data(), uncompressed_rx_data_.get_data());
+                        if (ec.failed())
+                        {
+                            spdlog::error(FMT_STRING("{}::packet inflation failed: packet_length={} offset={} uncompressed_size={} {:n}"),
+                                          log_id(),
+                                          compressed_rx_data_.payload_size,
+                                          compressed_rx_data_.data_position,
+                                          original_length.value(),
+                                          spdlog::to_hex(to_span(current_frame_data_)));
+                            return self.complete(ec, uncompressed_rx_data_.payload.size());
+                        }
+
+                        current_frame_data_ = uncompressed_rx_data_.get_data();
+                        spdlog::info(FMT_STRING("{}::compressed frame={:n}"),
                                      log_id(),
-                                      compressed_rx_data_.payload_size,
-                                      compressed_rx_data_.data_position,
-                                      original_length.value(),
                                      spdlog::to_hex(to_span(current_frame_data_)));
-                        std::abort();
                     }
                 }
                 else

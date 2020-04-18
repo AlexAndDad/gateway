@@ -23,8 +23,8 @@ find_package(WiseEnum)
 hunter_add_package(OpenSSL)
 find_package(OpenSSL)
 
-#hunter_add_package(ZLIB)
-#find_package(ZLIB CONFIG REQUIRED)
+hunter_add_package(ZLIB)
+find_package(ZLIB CONFIG REQUIRED)
 
 hunter_add_package(Catch)
 find_package(Catch2)

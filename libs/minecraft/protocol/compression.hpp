@@ -4,11 +4,4 @@
 
 #pragma once
 
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-
-namespace minecraft::protocol
-{
-
-}   // namespace minecraft::protocol
-
+#include "minecraft/protocol/compression/inflate_impl.hpp"

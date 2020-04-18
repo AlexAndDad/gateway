@@ -1,6 +1,7 @@
 #pragma once
 #include "encryption_state.hpp"
 #include "minecraft/parse.hpp"
+#include "minecraft/protocol/compression.hpp"
 #include "minecraft/protocol/version.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
@@ -117,7 +118,8 @@ namespace minecraft::protocol
         std::vector< char > tx_compressed_buffer_;
 
         // receive state
-        frame_data          compressed_rx_data_;     // data is always read into the compressed buffer
+        frame_data          compressed_rx_data_;   // data is always read into the compressed buffer
+        compression::inflate_impl  inflator_;
         frame_data          uncompressed_rx_data_;   // and optionally uncompressed into here
         net::mutable_buffer current_frame_data_ = {};
 
@@ -213,7 +215,7 @@ namespace minecraft::protocol
             encryption_.emplace(secret);
         }
 
-        template<class Layer = NextLayer, class = void>
+        template < class Layer = NextLayer, class = void >
         std::string const &log_id()
         {
             if (log_id_.empty())
@@ -222,8 +224,8 @@ namespace minecraft::protocol
             return log_id_;
         }
 
-        template<class Layer = NextLayer>
-        auto log_id() -> decltype(std::declval<Layer>().next_layer(), std::declval<std::string const &>())
+        template < class Layer = NextLayer >
+        auto log_id() -> decltype(std::declval< Layer >().next_layer(), std::declval< std::string const & >())
         {
             if (not log_id_.empty())
                 return log_id_;
@@ -247,7 +249,6 @@ namespace minecraft::protocol
         next_layer_type next_layer_;
         std::string     log_id_, unconnected_log_id_;
     };
-
 
     template < class NextLayer >
     std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
