@@ -60,6 +60,7 @@ namespace gateway
     connection_impl::connection_impl(connection_config config, socket_type &&sock)
     : config_(std::move(config))
     , stream_(std::move(sock))
+    , login_params_(config_.server_id, config_.server_key)
     {
     }
 
@@ -111,10 +112,6 @@ namespace gateway
             }
 
         //        initiate_read();
-
-        login_params_.set_server_key(config_.server_key);
-        login_params_.set_server_id(config_.server_id);
-        login_params_.use_security(true);
 
         try
         {

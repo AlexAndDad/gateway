@@ -2,19 +2,26 @@
 
 #include "minecraft/hexdump.hpp"
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <random>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 namespace minecraft::server
 {
     std::ostream &operator<<(std::ostream &os, encryption_request const &arg)
     {
-        os << "encryption_request.server_id=" << arg.server_id;
-        os << "\nencryption_request.public_key=" << hexstring(arg.public_key);
-        os << "\nencryption_request.verify_token=" << hexstring(arg.verify_token);
+        fmt::print(os,
+                   "[packet [server] [login {}] [server_id {}] [public_key {:n}] [verify_token {:n}]]",
+                   wise_enum::to_string(arg.id()),
+                   arg.server_id,
+                   spdlog::to_hex(arg.public_key),
+                   spdlog::to_hex(arg.verify_token));
         return os;
     }
 
-    error_code& validate(encryption_request const& request, security::private_key& pkey, error_code& ec)
+    error_code &validate(encryption_request const &request, security::private_key &pkey, error_code &ec)
     {
         pkey.public_key_from_asn1(net::buffer(request.public_key), ec);
         return ec;

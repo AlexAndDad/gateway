@@ -16,44 +16,33 @@
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <spdlog/spdlog.h>
+#include <variant>
 
 namespace minecraft::protocol
 {
-    struct server_accept_login_params
+    struct server_accept_state
     {
-        void set_server_key(minecraft::security::private_key k) { server_key = std::move(k); }
+        server_accept_state(std::string const &              server_id,
+                            minecraft::security::private_key pk,
+                            int                              compression_threshold = 256);
 
-        void set_server_id(std::string id) { server_encryption_request.server_id = std::move(id); }
-
-        void use_security(bool tf) { use_security_ = tf; }
-        bool use_security() const { return use_security_; }
-
+        //
         // inputs
-        std::vector< std::uint8_t >      security_token;
+        //
+        std::string                      server_id;
         minecraft::security::private_key server_key;
-        bool                             use_security_ = true;
+        int                              compression_threshold;
 
-        // state
-        client::login_start         client_login_start;
-        server::set_compression     server_set_compression;
-        server::encryption_request  server_encryption_request;
-        client::encryption_response client_encryption_response;
-        server::login_success       server_login_success;
-        shared_secret               secret;
+        // frames
 
-        friend auto operator<<(std::ostream &os, server_accept_login_params const &arg) -> std::ostream &
-        {
-            os << "receive login params :\n";
-            os << " security token        : " << hexstring(arg.security_token) << std::endl;
-            os << " server key            :\n" << arg.server_key.public_pem() << std::endl;
-            os << " use security          : " << arg.use_security() << std::endl;
-            os << "client login start     :\n" << arg.client_login_start << std::endl;
-            os << "server encryption request :\n" << arg.server_encryption_request << std::endl;
-            os << "client encryption response :\n" << arg.client_encryption_response << std::endl;
-            os << "shared secret : " << arg.secret << std::endl;
-            os << arg.server_login_success;
-            return os;
-        }
+        using client_packet_variant = std::variant< client::login_start, client::encryption_response >;
+        using server_packet_variant =
+            std::variant< server::set_compression, server::encryption_request, server::login_success >;
+
+        client_packet_variant client_packet;
+        server_packet_variant server_packet;
+
+        friend auto operator<<(std::ostream &os, server_accept_state const &arg) -> std::ostream &;
     };
 
     struct server_accept_op_base
@@ -61,188 +50,109 @@ namespace minecraft::protocol
         static boost::uuids::uuid generate_uuid();
     };
 
-    template < class Stream, class DynamicBuffer >
-    struct server_accept_op
-    : net::coroutine
-    , server_accept_op_base
-    {
-        server_accept_op(Stream &stream, DynamicBuffer buffer, server_accept_login_params &params)
-        : stream_(stream)
-        , buffer_(buffer)
-        , params_(params)
-        , tx_buffer_()
-        {
-            tx_buffer_.reserve(0x10000);
-        }
-
-        template < class FrameType >
-        static void expect_frame(FrameType &target, net::const_buffer source, error_code &ec)
-        {
-            auto first = reinterpret_cast< std::uint8_t const * >(source.data());
-            auto last  = first + source.size();
-            auto which = target.id();
-            auto n     = parse2(first, last, which, ec);
-            if (!ec.failed())
-                if (which != target.id())
-                    ec = error::unexpected_packet;
-            if (!ec.failed())
-            {
-                first += n;
-                parse(first, last, target, ec);
-            }
-        }
-
-        template < class Self >
-        void operator()(Self &self, error_code ec = {}, std::size_t bytes_transferred = 0)
-        {
-#include <boost/asio/yield.hpp>
-            reenter(this) for (;;)
-            {
-                yield async_expect_frame(stream_, buffer_, params_.client_login_start, std::move(self));
-                if (ec.failed())
-                    return self.complete(ec);
-
-                stream_.player_name(params_.client_login_start.name);
-
-                if (not params_.use_security())
-                {
-                    params_.server_login_success.username = params_.client_login_start.name;
-                    params_.server_login_success.uuid     = to_string(generate_uuid());
-                    goto send_success;
-                }
-
-                prepare(params_.server_encryption_request, params_.server_key);
-                tx_buffer_.clear();
-                compose(params_.server_encryption_request, tx_buffer_);
-                yield async_write(stream_, net::buffer(tx_buffer_), std::move(self));
-                if (ec.failed())
-                    return self.complete(ec);
-
-                yield async_expect_frame(stream_, buffer_, params_.client_encryption_response, std::move(self));
-                if (ec.failed())
-                    return self.complete(ec);
-
-                params_.secret = params_.client_encryption_response.decrypt_secret(
-                    params_.server_key, params_.server_encryption_request.verify_token, ec);
-
-                return self.complete(error::not_implemented);
-
-            send_success:
-                tx_buffer_.clear();
-                compose(params_.server_login_success, tx_buffer_);
-                yield async_write(stream_, net::buffer(tx_buffer_), std::move(self));
-                return self.complete(ec);
-            }
-#include <boost/asio/unyield.hpp>
-        }
-
-        Stream &                    stream_;
-        DynamicBuffer               buffer_;
-        server_accept_login_params &params_;
-        std::vector< char >         tx_buffer_;
-    };
-
-    template < class Stream, class DynamicBuffer, class CompletionHandler >
-    auto async_server_accept(Stream &                    stream,
-                             DynamicBuffer               buffer,
-                             server_accept_login_params &params,
-                             CompletionHandler &&        handler)
-    {
-        using op_type = server_accept_op< Stream, DynamicBuffer >;
-        return net::async_compose< CompletionHandler, void(error_code) >(
-            op_type(stream, buffer, params), handler, stream);
-    }
-
     template < class NextLayer, class CompletionHandler >
-    auto
-    async_server_accept(stream< NextLayer > &stream, server_accept_login_params &params, CompletionHandler &&handler)
+    auto async_server_accept(stream< NextLayer > &stream, server_accept_state &state, CompletionHandler &&handler)
     {
-        auto op = [context = static_cast< const char * >("entry"), &stream, &params, coro = net::coroutine()](
+        auto op = [context = static_cast< const char * >("entry"), &stream, &state, coro = net::coroutine()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
-            auto log_fail = [](auto &&ctx, error_code &ec) -> error_code & {
+            auto log_fail = [&context](error_code &ec) -> error_code & {
                 if (ec.failed())
-                    spdlog::warn("{} failed: {}", ctx, report(ec));
+                    spdlog::warn("{} failed: {}", context, report(ec));
                 return ec;
             };
 
-            if (log_fail(context, ec).failed())
+            if (log_fail(ec).failed())
                 return self.complete(ec);
 
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
                 context = "login start";
-                yield async_expect_frame(stream, params.client_login_start, std::move(self));
 
-                if (not ec.failed())
-                    verify(params.client_login_start, ec);
-
-                if (ec.failed())
-                    return self.complete(log_fail("client login start", ec));
-
-                stream.player_name(params.client_login_start.name);
-
-                context = "set compression";
-
-                params.server_set_compression.threshold = stream.compression_threshold();
-                yield stream.async_write_packet(params.server_set_compression, std::move(self));
-
-                if (ec.failed())
-                    return self.complete(log_fail("set compression", ec));
-
-                if (params.use_security())
+                yield
                 {
-                    //
-                    // send encryption request
-                    //
+                    auto &pkt = state.client_packet.emplace< client::login_start >();
+                    async_expect_frame(stream, pkt, std::move(self));
+                }
 
+                {
+                    auto &logstart = std::get< client::login_start >(state.client_packet);
+                    if (verify(logstart, ec).failed())
+                        return self.complete(log_fail(ec));
+                    stream.player_name(logstart.name);
+                }
+
+                yield
+                {
+                    context       = "set compression";
+                    auto &pkt     = state.server_packet.emplace< server::set_compression >();
+                    pkt.threshold = state.compression_threshold;
+                    stream.async_write_packet(pkt, std::move(self));
+                    // note: set threshold after writing packet
+                    stream.compression_threshold(state.compression_threshold);
+                }
+
+                if (state.server_key.has_rsa_key())
+                {
                     context = "encryption request";
 
-                    prepare(params.server_encryption_request, params.server_key);
-                    yield stream.async_write_packet(params.server_encryption_request, std::move(self));
-                    if (ec.failed())
-                        return self.complete(log_fail("server encryption request", ec));
+                    yield
+                    {
+                        auto &pkt = state.server_packet.emplace< server::encryption_request >();
+                        prepare(pkt, state.server_key);
+                        stream.async_write_packet(pkt, std::move(self));
+                    }
 
                     //
                     // receive encryption response
                     //
 
-                    context = "encryption response";
-                    yield async_expect_frame(stream, params.client_encryption_response, std::move(self));
-                    if (ec.failed())
-                        return self.complete(log_fail("client encryption response", ec));
+                    yield
+                    {
+                        context   = "encryption response";
+                        auto &pkt = state.client_packet.emplace< client::encryption_response >();
+                        async_expect_frame(stream, pkt, std::move(self));
+                    }
 
                     //
                     // decode shared secret
                     //
-
-                    params.secret = params.client_encryption_response.decrypt_secret(
-                        params.server_key, params.server_encryption_request.verify_token, ec);
-                    if (ec.failed())
-                        return self.complete(log_fail("decrypt secret", ec));
-
-                    stream.set_encryption(params.secret);
+                    {
+                        auto &request  = std::get< server::encryption_request >(state.server_packet);
+                        auto &response = std::get< client::encryption_response >(state.client_packet);
+                        auto  secret   = response.decrypt_secret(state.server_key, request.verify_token, ec);
+                        if (log_fail(ec).failed())
+                            return self.complete(ec);
+                        stream.set_encryption(secret);
+                    }
 
                     //
                     // todo : contact minecraft server here for uuid
                     //
-
-                    params.server_login_success.username = params.client_login_start.name;
-                    params.server_login_success.uuid     = to_string(server_accept_op_base::generate_uuid());
+                    yield
+                    {
+                        context      = "success";
+                        auto &pkt    = state.server_packet.emplace< server::login_success >();
+                        pkt.username = stream.player_name();
+                        pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
+                        stream.async_write_packet(pkt, std::move(self));
+                    }
                 }
                 else
                 {
-                    params.server_login_success.username = params.client_login_start.name;
-                    params.server_login_success.uuid     = to_string(server_accept_op_base::generate_uuid());
+                    //
+                    // send login success
+                    //
+                    yield
+                    {
+                        context      = "success";
+                        auto &pkt    = state.server_packet.emplace< server::login_success >();
+                        pkt.username = stream.player_name();
+                        pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
+                        stream.async_write_packet(pkt, std::move(self));
+                    }
                 }
-
-                //
-                // send login success
-                //
-
-                context = "success";
-                yield stream.async_write_packet(params.server_login_success, std::move(self));
-                return self.complete(log_fail("server login success", ec));
+                return self.complete(log_fail(ec));
             }
 #include <boost/asio/unyield.hpp>
         };

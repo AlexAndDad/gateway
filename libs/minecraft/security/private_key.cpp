@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <openssl/pem.h>
+#include <openssl/x509.h>
 #include <stdexcept>
 #include <utility>
 
@@ -75,9 +76,27 @@ namespace minecraft::security
         return result;
     }
 
+    std::vector< std::uint8_t > private_key::private_asn1() const
+    {
+        auto result = std::vector< std::uint8_t >();
+        BIO *mem    = BIO_new(BIO_s_mem());
+        auto rsa    = EVP_PKEY_get0_RSA(native_handle());
+        if (rsa)
+        {
+            if(i2d_RSAPrivateKey_bio(mem, rsa))
+            {
+                BUF_MEM *bptr;
+                BIO_get_mem_ptr(mem, &bptr);
+                result.insert(result.end(), bptr->data, bptr->data + bptr->length);
+            }
+        }
+        BIO_free(mem);
+        return result;
+    }
+
     void private_key::public_key_from_asn1(net::const_buffer asn1)
     {
-        auto iter   = reinterpret_cast< const unsigned char * >(asn1.data());
+        auto iter = reinterpret_cast< const unsigned char * >(asn1.data());
         check_success(d2i_PUBKEY(&handle_, &iter, asn1.size()));
     }
 
@@ -87,11 +106,11 @@ namespace minecraft::security
         {
             public_key_from_asn1(asn1);
         }
-        catch(system_error& se)
+        catch (system_error &se)
         {
             ec = se.code();
         }
-        catch(...)
+        catch (...)
         {
             ec = error::codeless::no_cde;
         }
@@ -99,15 +118,17 @@ namespace minecraft::security
         return ec;
     }
 
-    void private_key::public_encrypt(net::const_buffer plaintext, std::vector<uint8_t> target)
+    bool private_key::has_rsa_key() const { return bool(EVP_PKEY_get0_RSA(native_handle())); }
+
+    void private_key::public_encrypt(net::const_buffer plaintext, std::vector< uint8_t > target)
     {
         auto rsa = EVP_PKEY_get0_RSA(native_handle());
-        if (not rsa) throw system_error(error_code(error::not_rsa));
+        if (not rsa)
+            throw system_error(error_code(error::not_rsa));
         auto pos = target.size();
         target.resize(pos + RSA_size(rsa));
-        auto first = reinterpret_cast<const unsigned char*>(plaintext.data());
+        auto first = reinterpret_cast< const unsigned char * >(plaintext.data());
         check_positive(RSA_public_encrypt(plaintext.size(), first, target.data() + pos, rsa, RSA_PKCS1_PADDING));
     }
-
 
 }   // namespace minecraft::security

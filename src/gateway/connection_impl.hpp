@@ -72,7 +72,7 @@ namespace gateway
         stream_type         stream_;
         std::vector< char > compose_buffer_;
 
-        minecraft::protocol::server_accept_login_params login_params_;
+        minecraft::protocol::server_accept_state login_params_;
     };
 
 }   // namespace gateway

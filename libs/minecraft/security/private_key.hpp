@@ -36,6 +36,8 @@ namespace minecraft::security
 
         void assign(rsa &&r);
 
+        bool has_rsa_key() const;
+
         void public_encrypt(net::const_buffer plaintext, std::vector<uint8_t> target);
 
         native_handle_type dup() const;
@@ -44,6 +46,7 @@ namespace minecraft::security
 
         std::string                 public_pem() const;
         std::vector< std::uint8_t > public_asn1() const;
+        std::vector< std::uint8_t > private_asn1() const;
 
         void public_key_from_asn1(net::const_buffer asn1);
         error_code &public_key_from_asn1(net::const_buffer asn1, error_code &ec);

@@ -59,7 +59,7 @@ namespace relay
         stream_type   upstream_;   //! connection to the server
         resolver_type resolver_;
 
-        minecraft::protocol::server_accept_login_params login_params_;
+        minecraft::protocol::server_accept_state login_params_;
 
         minecraft::protocol::client_connect_state connect_state_;
 
