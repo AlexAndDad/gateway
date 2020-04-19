@@ -25,36 +25,20 @@ namespace minecraft::security
         using native_handle_type = EVP_CIPHER_CTX *;
 
       protected:
-        cipher_context()
-            : handle_(check_success(EVP_CIPHER_CTX_new()))
-        {
-        }
+        cipher_context();
 
       public:
-        cipher_context(cipher_context &&other) noexcept
-        : handle_(other.release())
-        {
-        }
+        cipher_context(cipher_context &&other) noexcept;
 
-        cipher_context &operator=(cipher_context &&other) noexcept
-        {
-            destroy(handle_);
-            handle_ = other.release();
-            return *this;
-        }
+        cipher_context &operator=(cipher_context &&other) noexcept;
 
-        ~cipher_context() { destroy(handle_); }
+        ~cipher_context();
 
-        native_handle_type release() noexcept { return std::exchange(handle_, nullptr); }
-        native_handle_type native_handle() noexcept { return handle_; }
+        native_handle_type release() noexcept;
+        native_handle_type native_handle() noexcept;
 
       private:
-        static void destroy(native_handle_type handle)
-        {
-            if (handle)
-                EVP_CIPHER_CTX_cleanup(handle);
-            EVP_CIPHER_CTX_free(handle);
-        }
+        static void destroy(native_handle_type handle);
 
       private:
         native_handle_type handle_;
@@ -63,130 +47,24 @@ namespace minecraft::security
 
     struct encryption_context : cipher_context
     {
-        encryption_context(net::const_buffer key, net::const_buffer iv)
-        : cipher_context()
-        {
-            assert(key.size() == 16);
-            assert(iv.size() == 16);
-
-            check_success(EVP_EncryptInit_ex(native_handle(),
-                                             EVP_aes_128_cfb8(),
-                                             nullptr,
-                                             reinterpret_cast< std::uint8_t const * >(key.data()),
-                                             reinterpret_cast< std::uint8_t const * >(iv.data())));
-        }
+        encryption_context(net::const_buffer key, net::const_buffer iv);
 
         template < class CipherDynamicBuffer >
-        auto update(net::const_buffer plaintext, CipherDynamicBuffer ciphertext) -> void
-        {
-            static_assert(net::is_dynamic_buffer_v2< CipherDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename CipherDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
-
-            auto input_size = plaintext.size();
-            if (input_size == 0)
-                return;
-
-            auto block_size = EVP_CIPHER_CTX_block_size(native_handle());
-            auto grow_size  = input_size + block_size - 1;
-
-            auto original_output_size = ciphertext.size();
-            ciphertext.grow(grow_size);
-
-            net::mutable_buffer out_buf = ciphertext.data(original_output_size, ciphertext.size());
-
-            int outl = 0;
-            check_success(EVP_EncryptUpdate(native_handle(),
-                                            reinterpret_cast< std::uint8_t * >(out_buf.data()),
-                                            &outl,
-                                            reinterpret_cast< std::uint8_t const * >(plaintext.data()),
-                                            plaintext.size()));
-            ciphertext.shrink(grow_size - outl);
-        }
+        auto update(net::const_buffer plaintext, CipherDynamicBuffer ciphertext) -> void;
 
         template < class CipherDynamicBuffer >
-        auto finalise(CipherDynamicBuffer ciphertext) -> void
-        {
-            static_assert(net::is_dynamic_buffer_v2< CipherDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename CipherDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
-
-            auto block_size = EVP_CIPHER_CTX_block_size(native_handle());
-            auto grow_size  = block_size - 1;
-
-            auto original_output_size = ciphertext.size();
-            ciphertext.grow(grow_size);
-
-            net::mutable_buffer out_buf = ciphertext.data(original_output_size, ciphertext.size());
-
-            int outl = 0;
-            check_success(EVP_EncryptFinal(native_handle(),
-                                           reinterpret_cast< std::uint8_t * >(out_buf.data()),
-                                           &outl));
-            ciphertext.shrink(grow_size - outl);
-        }
+        auto finalise(CipherDynamicBuffer ciphertext) -> void;
     };
 
     struct decryption_context : cipher_context
     {
-        decryption_context(net::const_buffer key, net::const_buffer iv)
-        : cipher_context()
-        {
-            assert(key.size() == 16);
-            assert(iv.size() == 16);
-
-            check_success(EVP_DecryptInit_ex(native_handle(),
-                                             EVP_aes_128_cfb8(),
-                                             nullptr,
-                                             reinterpret_cast< std::uint8_t const * >(key.data()),
-                                             reinterpret_cast< std::uint8_t const * >(iv.data())));
-        }
+        decryption_context(net::const_buffer key, net::const_buffer iv);
 
         template < class PlaintextDynamicBuffer >
-        auto update(net::const_buffer ciphertext, PlaintextDynamicBuffer plaintext) -> void
-        {
-            static_assert(net::is_dynamic_buffer_v2< PlaintextDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename PlaintextDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
-
-            auto input_size = ciphertext.size();
-            if (input_size == 0)
-                return;
-
-            auto block_size = EVP_CIPHER_CTX_block_size(native_handle());
-            auto grow_size  = input_size + block_size - 1;
-
-            auto original_output_size = plaintext.size();
-            plaintext.grow(grow_size);
-
-            net::mutable_buffer out_buf = plaintext.data(original_output_size, plaintext.size());
-
-            int outl = 0;
-            check_success(EVP_DecryptUpdate(native_handle(),
-                                            reinterpret_cast< std::uint8_t * >(out_buf.data()),
-                                            &outl,
-                                            reinterpret_cast< std::uint8_t const * >(ciphertext.data()),
-                                            ciphertext.size()));
-            plaintext.shrink(grow_size - outl);
-        }
+        auto update(net::const_buffer ciphertext, PlaintextDynamicBuffer plaintext) -> void;
 
         template < class PlaintextDynamicBuffer >
-        auto finalise(PlaintextDynamicBuffer plaintext) -> void
-        {
-            static_assert(net::is_dynamic_buffer_v2< PlaintextDynamicBuffer >::value);
-            static_assert(std::is_same_v< typename PlaintextDynamicBuffer::mutable_buffers_type, net::mutable_buffer >);
-
-            auto block_size = EVP_CIPHER_CTX_block_size(native_handle());
-            auto grow_size  = block_size - 1;
-
-            auto original_output_size = plaintext.size();
-            plaintext.grow(grow_size);
-
-            net::mutable_buffer out_buf = plaintext.data(original_output_size, plaintext.size());
-
-            int outl = 0;
-            check_success(EVP_DecryptFinal(native_handle(),
-                                           reinterpret_cast< std::uint8_t * >(out_buf.data()),
-                                           &outl));
-            plaintext.shrink(grow_size - outl);
-        }
+        auto finalise(PlaintextDynamicBuffer plaintext) -> void;
     };
 
 }   // namespace minecraft::security

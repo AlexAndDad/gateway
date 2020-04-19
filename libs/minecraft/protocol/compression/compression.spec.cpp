@@ -1,5 +1,6 @@
 #include "minecraft/net.hpp"
 #include "minecraft/protocol/compression.hpp"
+#include "minecraft/types.hpp"
 
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -7,6 +8,9 @@
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <catch2/catch.hpp>
 #include <sstream>
+
+using namespace std::literals;
+using namespace minecraft;
 
 auto to_val = [](char c) {
     switch (c)
@@ -125,5 +129,37 @@ TEST_CASE("minecraft::protocol::compression")
         auto ec = inflator(net::buffer(zipped), net::buffer(uncompressed2));
         CHECK(ec.value() == 0);
         CHECK(uncompressed2 == uncompressed);
+    }
+
+    SECTION("round trip - multiple through one pair")
+    {
+        auto initials = std::vector {
+            "the cat sat on the mat."s,
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."s,
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."s,
+            "Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of \"de Finibus Bonorum et Malorum\" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, \"Lorem ipsum dolor sit amet..\", comes from a line in section 1.10.32."s,
+            ""s,
+            "1"s,
+            "foo"s
+        };
+
+        protocol::compression::deflate_impl deflator_;
+        protocol::compression::inflate_impl inflator_;
+
+        for (std::size_t i = 0; i < initials.size(); ++i)
+        {
+            INFO("iteration " << i);
+            auto &initial      = initials[i];
+            auto  compressed   = compose_buffer();
+            auto  decompressed = std::string();
+
+            auto ec = deflator_(net::buffer(initial), compressed);
+            REQUIRE(ec == error_code());
+
+            decompressed.resize(initial.size());
+            ec = inflator_(net::buffer(compressed), net::buffer(decompressed));
+            REQUIRE(ec == error_code());
+            REQUIRE(decompressed == initial);
+        }
     }
 }
