@@ -38,8 +38,8 @@ namespace minecraft::protocol
                         return self.complete(ec, compressed_rx_data_.payload.size());
                     }
                     spdlog::debug(FMT_STRING("{}::read_more compressed_data={:n}"),
-                                 log_id(),
-                                 spdlog::to_hex(compressed_rx_data_.payload));
+                                  log_id(),
+                                  spdlog::to_hex(compressed_rx_data_.payload));
                 }
 
                 while (compressed_rx_data_.shortfall())
@@ -64,8 +64,8 @@ namespace minecraft::protocol
                         // not compressed
                         current_frame_data_ = compressed_rx_data_.get_data();
                         spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
-                                     log_id(),
-                                     spdlog::to_hex(to_span(current_frame_data_)));
+                                      log_id(),
+                                      spdlog::to_hex(to_span(current_frame_data_)));
                     }
                     else
                     {
@@ -86,17 +86,17 @@ namespace minecraft::protocol
                         }
 
                         current_frame_data_ = uncompressed_rx_data_.get_data();
-                        spdlog::info(FMT_STRING("{}::compressed frame={:n}"),
-                                     log_id(),
-                                     spdlog::to_hex(to_span(current_frame_data_)));
+                        spdlog::debug(FMT_STRING("{}::compressed frame={:n}"),
+                                      log_id(),
+                                      spdlog::to_hex(to_span(current_frame_data_)));
                     }
                 }
                 else
                 {
                     current_frame_data_ = compressed_rx_data_.get_data();
                     spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
-                                 log_id(),
-                                 spdlog::to_hex(to_span(current_frame_data_)));
+                                  log_id(),
+                                  spdlog::to_hex(to_span(current_frame_data_)));
                 }
                 return self.complete(ec, current_frame_data_.size());
             }
@@ -215,9 +215,9 @@ namespace minecraft::protocol
                 else
                 {
                     spdlog::debug("{}:: write composed frame length={}, data={:n}",
-                                 log_id(),
-                                 tx_compose_buffer_.size(),
-                                 spdlog::to_hex(tx_compose_buffer_));
+                                  log_id(),
+                                  tx_compose_buffer_.size(),
+                                  spdlog::to_hex(tx_compose_buffer_));
                 }
                 tx_compose_buffer_.clear();
                 return self.complete(ec, bytes_transferred);
@@ -234,7 +234,6 @@ namespace minecraft::protocol
     {
         encryption_.emplace(secret);
     }
-
 
     template < class NextLayer >
     auto stream_impl< NextLayer >::get_executor() -> executor_type
@@ -262,6 +261,5 @@ namespace minecraft::protocol
 
         return os;
     }
-
 
 }   // namespace minecraft::protocol

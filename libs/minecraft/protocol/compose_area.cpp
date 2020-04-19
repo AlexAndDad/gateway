@@ -31,7 +31,7 @@ namespace minecraft::protocol
         else
         {
             buffers[1].resize(offset);
-            deflator_(net::buffer(buffers[0]), buffers[1]);
+            deflator_(frame(), buffers[1]);
             buffers[0].swap(buffers[1]);
             prepend(uncompressed_size);
             prepend(frame().size());

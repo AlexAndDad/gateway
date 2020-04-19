@@ -16,8 +16,12 @@ namespace minecraft::protocol
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
         auto& area = impl_->compose_area_;
-        net::buffer_copy(net::buffer(area.prepare()), frame_data);
-        return impl_->async_write(area.commit(impl_->compression_threshold_),std::forward< CompletionToken >(token));
+        auto& input_buffer = area.prepare();
+        auto source = to_span(frame_data);
+        input_buffer.insert(input_buffer.end(), source.begin(), source.end());
+        auto buf = area.commit(impl_->compression_threshold_);
+//        spdlog::info("{} writing a frame: {:n} - {:n}", *this, buf.size(), spdlog::to_hex(to_span(buf)));
+        return impl_->async_write(buf,std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >

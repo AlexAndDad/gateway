@@ -12,8 +12,9 @@ namespace relay
     {
         connection_config();
 
-        minecraft::security::private_key server_key;
-        std::string                      server_id;
+        std::optional< minecraft::security::private_key > server_key;
+        std::string                                       server_id;
+        int                                               compression_threshold;
 
         std::string upstream_host;
         std::string upstream_port;

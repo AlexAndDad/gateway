@@ -40,19 +40,17 @@ namespace gateway
     connection_config::connection_config()
     : server_key()
     , server_id(generate_server_id())
-    {
-//        server_key.assign(minecraft::security::rsa(1024));
+    , compression_threshold(256) {
+        //        server_key.assign(minecraft::security::rsa(1024));
     };
 
     auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &
     {
-        os << "Connection Config:\n"
-              "\tserver id  : "
-           << cfg.server_id
-           << "\n"
-              "\tserver key : "
-           << (polyfill::hexstring(cfg.server_key.has_value() ? cfg.server_key->public_asn1()
-                                                              : std::vector< std::uint8_t >()));
+        fmt::print(
+            "[connection_config [server_id {}] [server_key {:n}] [compression_threshold {}]",
+            cfg.server_id,
+            spdlog::to_hex(cfg.server_key.has_value() ? cfg.server_key->public_asn1() : std::vector< std::uint8_t >()),
+            cfg.compression_threshold);
         return os;
     }
 

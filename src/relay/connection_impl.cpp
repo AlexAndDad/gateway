@@ -42,19 +42,17 @@ namespace relay
     connection_config::connection_config()
     : server_key()
     , server_id(generate_server_id())
-    {
-        server_key.assign(minecraft::security::rsa(1024));
+    , compression_threshold(256) {
+        //        server_key.assign(minecraft::security::rsa(1024));
     };
 
     auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &
     {
-        os << "Connection Config:\n"
-              "\tserver id  : "
-           << cfg.server_id
-           << "\n"
-              "\tserver key : "
-           << polyfill::hexstring(cfg.server_key.public_asn1()) << "\tupstream host : " << cfg.upstream_host
-           << "\tupstream port : " << cfg.upstream_port;
+        fmt::print(
+            "[connection_config [server_id {}] [server_key {:n}] [compression_threshold {}]",
+            cfg.server_id,
+            spdlog::to_hex(cfg.server_key.has_value() ? cfg.server_key->public_asn1() : std::vector< std::uint8_t >()),
+            cfg.compression_threshold);
         return os;
     }
 
@@ -65,9 +63,10 @@ namespace relay
     , stream_(std::move(sock))
     , upstream_(socket_type(get_executor()))
     , resolver_(get_executor())
-    , login_params_(config_.server_id /* server_key , compression_threshold */)
+    , login_params_(config_.server_id, config_.server_key, config_.compression_threshold)
     {
         spdlog::info("{} accepted", this);
+        stream_.next_layer().set_option(protocol_type::no_delay(true));
     }
 
     auto connection_impl::start() -> void
@@ -114,18 +113,21 @@ namespace relay
         // check if it's a ping
 
         if (co_await protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable))
-            co_return spdlog::info("old style ping request..."),
+            co_return spdlog::info("{} old style ping", this),
                 co_await async_old_style_ping(stream_, net::use_awaitable);
 
         if (auto state = co_await protocol::async_server_handshake(stream_, net::use_awaitable); is_status(state))
         {
+            spdlog::info("{} ping handshake - version {}", this, wise_enum::to_string(stream_.protocol_version()));
             co_return co_await async_server_status(stream_, net::use_awaitable);
         }
         else if (is_login(state))
         {
+            spdlog::info("{} login handshake - version {}", stream_, wise_enum::to_string(stream_.protocol_version()));
+            upstream_.protocol_version(stream_.protocol_version());
             co_await protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
 
-            spdlog::info("Welcome! {} on {}", std::quoted(stream_.player_name()), stream_.full_info());
+            spdlog::info("{} Welcome! {} on {}", this, std::quoted(stream_.player_name()), stream_.full_info());
 
             auto results =
                 co_await resolver_.async_resolve(config_.upstream_host, config_.upstream_port, net::use_awaitable);
@@ -136,16 +138,28 @@ namespace relay
             connect_state_.connection_args(config_.upstream_host, ep.port());
 
             co_await protocol::async_client_connect(upstream_, connect_state_, net::use_awaitable);
+            spdlog::info(
+                "{} We are welcome upstream! {} on {}", this, std::quoted(stream_.player_name()), stream_.full_info());
 
             net::co_spawn(
                 get_executor(),
                 [self = shared_from_this()]() -> net::awaitable< void > { return self->client_to_server(); },
-                utils::make_exception_handler(this, "client to server"));
+                [this, ehandler = utils::make_exception_handler(this, "client to server")](std::exception_ptr ep)
+                {
+                    this->upstream_.next_layer().close();
+                    this->stream_.next_layer().close();
+                    ehandler(ep);
+                });
 
             net::co_spawn(
                 get_executor(),
                 [self = shared_from_this()]() -> net::awaitable< void > { return self->server_to_client(); },
-                utils::make_exception_handler(this, "server_to_client"));
+                [this, ehandler = utils::make_exception_handler(this, "server to client")](std::exception_ptr ep)
+                {
+                    this->upstream_.next_layer().close();
+                    this->stream_.next_layer().close();
+                    ehandler(ep);
+                });
         }
         else
             throw std::runtime_error("client requested unrecognised or invalid state");
@@ -156,18 +170,49 @@ namespace relay
         while (1)
         {
             co_await stream_.async_read_frame(net::use_awaitable);
-            spdlog::info("{}::{} : {:n}", *this, __func__, spdlog::to_hex(to_span(stream_.current_frame())));
-            co_await upstream_.async_write_frame(stream_.current_frame(), net::use_awaitable);
+            auto frame = stream_.current_frame();
+
+            int32_t frame_type;
+            auto    span = to_span(stream_.current_frame());
+            auto    ec   = error_code();
+            minecraft::parse_var(span.begin(), span.end(), frame_type, ec);
+            if (ec.failed())
+            {
+                spdlog::error("{}::{} : {}", *this, __func__, report(ec));
+                co_return;
+            }
+            else
+            {
+                spdlog::info("{}::{} : frame type: {:0x} length {:0x}", *this, __func__, frame_type, frame.size());
+                co_await upstream_.async_write_frame(frame, net::use_awaitable);
+            }
         }
     }
 
     auto connection_impl::server_to_client() -> net::awaitable< void >
     {
+        net::system_timer st(get_executor());
         while (1)
         {
             co_await upstream_.async_read_frame(net::use_awaitable);
-            spdlog::info("{}::{} : {:n}", *this, __func__, spdlog::to_hex(to_span(stream_.current_frame())));
-            co_await stream_.async_write_frame(upstream_.current_frame(), net::use_awaitable);
+            auto frame = upstream_.current_frame();
+
+            int32_t frame_type;
+            auto    span = to_span(frame);
+            auto    ec   = error_code();
+            minecraft::parse_var(span.begin(), span.end(), frame_type, ec);
+            if (ec.failed())
+            {
+                spdlog::error("{}::{} : {}", *this, __func__, report(ec));
+                co_return;
+            }
+            else
+            {
+                spdlog::info("{}::{} : frame type: {:0x} length {:0x} {:n}", *this, __func__, frame_type, frame.size(), spdlog::to_hex(to_span(frame)));
+                st.expires_after(500ms);
+                co_await st.async_wait(net::use_awaitable);
+                co_await stream_.async_write_frame(frame, net::use_awaitable);
+            }
         }
     }
 

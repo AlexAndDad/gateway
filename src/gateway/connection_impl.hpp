@@ -14,7 +14,7 @@ namespace gateway
 
         std::optional< minecraft::security::private_key > server_key;
         std::string                                       server_id;
-
+        int                                               compression_threshold;
         friend auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &;
     };
 
