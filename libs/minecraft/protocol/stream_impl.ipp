@@ -1,11 +1,4 @@
-#include "minecraft/encode.hpp"
-#include "minecraft/parse.hpp"
-#include "minecraft/parse_error.hpp"
-#include "minecraft/span.hpp"
-
-#include <cassert>
-#include <spdlog/fmt/bin_to_hex.h>
-#include <spdlog/spdlog.h>
+#include "minecraft/report.hpp"
 
 namespace minecraft::protocol
 {
@@ -260,5 +253,15 @@ namespace minecraft::protocol
     {
         return next_layer_;
     }
+
+    template < class NextLayer >
+    std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
+    {
+        fmt::print(os, "[stream {} [transport {}]", impl.as_base(), report(impl.next_layer_));
+        auto prefix = []() { return std::string_view("\n    "); };
+
+        return os;
+    }
+
 
 }   // namespace minecraft::protocol

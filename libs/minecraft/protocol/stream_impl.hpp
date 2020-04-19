@@ -1,64 +1,10 @@
 #pragma once
-#include "encryption_state.hpp"
-#include "minecraft/parse.hpp"
-#include "minecraft/protocol/compose_area.hpp"
-#include "minecraft/protocol/compression.hpp"
-#include "minecraft/protocol/frame_data.hpp"
-#include "minecraft/protocol/version.hpp"
-#include "minecraft/report.hpp"
-#include "minecraft/security/cipher_context.hpp"
-#include "minecraft/stream_traits.hpp"
-#include "minecraft/types.hpp"
 
-#include <fmt/ostream.h>
+#include "minecraft/protocol/stream_impl_base.hpp"
+#include "minecraft/stream_traits.hpp"
 
 namespace minecraft::protocol
 {
-    struct stream_impl_base
-    {
-        protocol::version_type protocol_version_ = protocol::version_type::not_set;
-
-        int compression_threshold_ = -1;
-
-        // has_state if encryption is enabled
-        std::optional< encryption_state > encryption_;
-
-        // buffer for composing packet structures into frame extents
-        compose_area compose_area_;
-
-        // transmit state
-        std::vector< char > tx_compose_buffer_;
-        std::vector< char > tx_compressed_buffer_;
-
-        // receive state
-        frame_data                compressed_rx_data_;   // data is always read into the compressed buffer
-        compression::inflate_impl inflator_;
-        frame_data                uncompressed_rx_data_;   // and optionally uncompressed into here
-        net::mutable_buffer       current_frame_data_ = {};
-
-        WISE_ENUM_CLASS_MEMBER(event, error, frame);
-        std::function< void(event, std::string_view) > logger;   // optional logger
-
-        // client parameters / discovered by server
-        std::string   hostname;
-        std::string   player_name;
-        std::uint32_t port = 0;
-    };
-
-    inline std::ostream &operator<<(std::ostream &os, stream_impl_base const &base)
-    {
-        fmt::print(os,
-                   "[player_name {}] [protocol {}] [compression {}] [encryption {}] [hostname {}] [port {}]",
-                   base.player_name,
-                   wise_enum::to_string(base.protocol_version_),
-                   base.compression_threshold_,
-                   (base.encryption_ ? "yes" : "no"),
-                   base.hostname,
-                   base.port);
-
-        return os;
-    }
-
     template < class NextLayer >
     struct stream_impl : stream_impl_base
     {
@@ -154,13 +100,7 @@ namespace minecraft::protocol
     };
 
     template < class NextLayer >
-    std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
-    {
-        fmt::print(os, "[stream {} [transport {}]", impl.as_base(), report(impl.next_layer_));
-        auto prefix = []() { return std::string_view("\n    "); };
-
-        return os;
-    }
+    std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl);
 
 }   // namespace minecraft::protocol
 
