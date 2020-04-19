@@ -13,9 +13,9 @@ namespace minecraft::protocol
         return result;
     }
 
-    server_accept_state::server_accept_state(std::string const &              server_id,
-                                             std::optional<minecraft::security::private_key> pk,
-                                             int                              compression_threshold)
+    server_accept_state::server_accept_state(std::string                                       server_id,
+                                             std::optional< minecraft::security::private_key > pk,
+                                             int                                               compression_threshold)
     : server_id(std::move(server_id))
     , server_key(std::move(pk))
     , compression_threshold(compression_threshold)
@@ -24,11 +24,11 @@ namespace minecraft::protocol
 
     auto operator<<(std::ostream &os, server_accept_state const &arg) -> std::ostream &
     {
-        const char *type      = "none";
-        std::vector<std::uint8_t> key_bytes;
+        const char *                type = "none";
+        std::vector< std::uint8_t > key_bytes;
         if (arg.server_key)
         {
-            type = "private";
+            type      = "private";
             key_bytes = arg.server_key->private_asn1();
             if (key_bytes.empty())
             {

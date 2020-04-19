@@ -22,7 +22,7 @@ namespace minecraft::protocol
 {
     struct server_accept_state
     {
-        server_accept_state(std::string const &                               server_id,
+        server_accept_state(std::string                                server_id,
                             std::optional< minecraft::security::private_key > pk                    = {},
                             int                                               compression_threshold = 256);
 

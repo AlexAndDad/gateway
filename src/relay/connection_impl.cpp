@@ -42,8 +42,12 @@ namespace relay
     connection_config::connection_config()
     : server_key()
     , server_id(generate_server_id())
-    , compression_threshold(256) {
-        //        server_key.assign(minecraft::security::rsa(1024));
+    , compression_threshold(256)
+    {
+
+        auto& ppk = server_key.emplace();
+        ppk.assign(minecraft::security::rsa(1024));
+
     };
 
     auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &
@@ -144,8 +148,7 @@ namespace relay
             net::co_spawn(
                 get_executor(),
                 [self = shared_from_this()]() -> net::awaitable< void > { return self->client_to_server(); },
-                [this, ehandler = utils::make_exception_handler(this, "client to server")](std::exception_ptr ep)
-                {
+                [this, ehandler = utils::make_exception_handler(this, "client to server")](std::exception_ptr ep) {
                     this->upstream_.next_layer().close();
                     this->stream_.next_layer().close();
                     ehandler(ep);
@@ -154,8 +157,7 @@ namespace relay
             net::co_spawn(
                 get_executor(),
                 [self = shared_from_this()]() -> net::awaitable< void > { return self->server_to_client(); },
-                [this, ehandler = utils::make_exception_handler(this, "server to client")](std::exception_ptr ep)
-                {
+                [this, ehandler = utils::make_exception_handler(this, "server to client")](std::exception_ptr ep) {
                     this->upstream_.next_layer().close();
                     this->stream_.next_layer().close();
                     ehandler(ep);
@@ -183,7 +185,7 @@ namespace relay
             }
             else
             {
-                spdlog::info("{}::{} : frame type: {:0x} length {:0x}", *this, __func__, frame_type, frame.size());
+                spdlog::trace("{}::{} : frame type: {:0x} length {:0x}", *this, __func__, frame_type, frame.size());
                 co_await upstream_.async_write_frame(frame, net::use_awaitable);
             }
         }
@@ -191,7 +193,7 @@ namespace relay
 
     auto connection_impl::server_to_client() -> net::awaitable< void >
     {
-        net::system_timer st(get_executor());
+        //        net::system_timer st(get_executor());
         while (1)
         {
             co_await upstream_.async_read_frame(net::use_awaitable);
@@ -208,9 +210,10 @@ namespace relay
             }
             else
             {
-                spdlog::info("{}::{} : frame type: {:0x} length {:0x} {:n}", *this, __func__, frame_type, frame.size(), spdlog::to_hex(to_span(frame)));
-                st.expires_after(500ms);
-                co_await st.async_wait(net::use_awaitable);
+                spdlog::trace("{}::{} : frame type: {:0x} length {:0x}", *this, __func__, frame_type, frame.size());
+                //                spdlog::info("{}::{} : frame type: {:0x} length {:0x} {:n}", *this, __func__,
+                //                frame_type, frame.size(), spdlog::to_hex(to_span(frame))); st.expires_after(500ms);
+                //                co_await st.async_wait(net::use_awaitable);
                 co_await stream_.async_write_frame(frame, net::use_awaitable);
             }
         }
