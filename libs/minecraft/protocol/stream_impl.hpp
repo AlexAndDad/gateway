@@ -5,8 +5,9 @@
 #include "minecraft/protocol/version.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
-#include "minecraft/types.hpp"
 #include "minecraft/stream_traits.hpp"
+#include "minecraft/types.hpp"
+#include <fmt/ostream.h>
 
 namespace minecraft::protocol
 {
@@ -44,7 +45,7 @@ namespace minecraft::protocol
             assert(data_position == 0);
 
             var_int frame_size;
-            auto    first = static_cast<const_buffer_iterator >(payload.data());
+            auto    first = static_cast< const_buffer_iterator >(payload.data());
             auto    last  = first + payload.size();
             auto    next  = parse(first, last, frame_size, ec);
             if (not ec.failed())
@@ -119,35 +120,30 @@ namespace minecraft::protocol
         std::vector< char > tx_compressed_buffer_;
 
         // receive state
-        frame_data          compressed_rx_data_;   // data is always read into the compressed buffer
-        compression::inflate_impl  inflator_;
-        frame_data          uncompressed_rx_data_;   // and optionally uncompressed into here
-        net::mutable_buffer current_frame_data_ = {};
+        frame_data                compressed_rx_data_;   // data is always read into the compressed buffer
+        compression::inflate_impl inflator_;
+        frame_data                uncompressed_rx_data_;   // and optionally uncompressed into here
+        net::mutable_buffer       current_frame_data_ = {};
 
         WISE_ENUM_CLASS_MEMBER(event, error, frame);
         std::function< void(event, std::string_view) > logger;   // optional logger
 
         // client parameters / discovered by server
-        std::string hostname;
+        std::string   hostname;
+        std::string   player_name;
         std::uint32_t port = 0;
     };
 
     inline std::ostream &operator<<(std::ostream &os, stream_impl_base const &base)
     {
-        auto prefix = [first = true]() mutable {
-            if (first)
-            {
-                first = false;
-                return std::string_view("    ");
-            }
-            else
-                return std::string_view("\n    ");
-        };
-        os << prefix() << "protocol version      : " << wise_enum::to_string(base.protocol_version_);
-        os << prefix() << "compression threshold : " << base.compression_threshold_;
-        os << prefix() << "encryption            : " << (base.encryption_ ? "yes" : "no");
-        os << prefix() << "hostname              : " << report(base.hostname);
-        os << prefix() << "port                  : " << base.port;
+        fmt::print(os,
+                   "[player_name {}] [protocol {}] [compression {}] [encryption {}] [hostname {}] [port {}]",
+                   base.player_name,
+                   wise_enum::to_string(base.protocol_version_),
+                   base.compression_threshold_,
+                   (base.encryption_ ? "yes" : "no"),
+                   base.hostname,
+                   base.port);
 
         return os;
     }
@@ -218,7 +214,7 @@ namespace minecraft::protocol
 
         std::string const &log_id()
         {
-            if constexpr(has_remote_endpoint_v<NextLayer>)
+            if constexpr (has_remote_endpoint_v< NextLayer >)
             {
                 if (not log_id_.empty())
                     return log_id_;
@@ -253,10 +249,8 @@ namespace minecraft::protocol
     template < class NextLayer >
     std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
     {
+        fmt::print(os, "[stream {} [transport {}]", impl.as_base(), report(impl.next_layer_));
         auto prefix = []() { return std::string_view("\n    "); };
-
-        os << impl.as_base();
-        os << prefix() << "next_layer : " << report(impl.next_layer_);
 
         return os;
     }

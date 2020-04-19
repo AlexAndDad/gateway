@@ -221,7 +221,7 @@ namespace minecraft::protocol
                 }
                 else
                 {
-                    spdlog::info("{}:: write composed frame length={}, data={:n}",
+                    spdlog::debug("{}:: write composed frame length={}, data={:n}",
                                  log_id(),
                                  tx_compose_buffer_.size(),
                                  spdlog::to_hex(tx_compose_buffer_));

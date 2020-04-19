@@ -75,6 +75,18 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
+    auto stream< NextLayer >::player_name(std::string const &val) -> void
+    {
+        impl_->player_name = val;
+    }
+
+    template < class NextLayer >
+    auto stream< NextLayer >::player_name() const -> std::string const&
+    {
+        return impl_->player_name;
+    }
+
+    template < class NextLayer >
     auto stream< NextLayer >::protocol_version(protocol::version_type version) -> void
     {
         impl_->protocol_version_ = version;

@@ -9,6 +9,7 @@
 #include "minecraft/send_frame.hpp"
 #include "minecraft/server/chat_message.hpp"
 #include "minecraft/server/play_packet.hpp"
+#include "minecraft/utils/exception_handler.hpp"
 #include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 
@@ -111,72 +112,46 @@ namespace relay
     {
         // check if it's a ping
 
-        auto is_osp = co_await protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable);
-        if (is_osp)
-        {
-            spdlog::info("old style ping request...");
-            co_await async_old_style_ping(stream_, net::use_awaitable);
-            spdlog::info("...responded");
-            co_return;
-        }
+        if (co_await protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable))
+            co_return spdlog::info("old style ping request..."),
+                co_await async_old_style_ping(stream_, net::use_awaitable);
 
-        auto next_state = co_await protocol::async_server_handshake(stream_, net::use_awaitable);
-
-        switch (next_state)
+        if (auto state = co_await protocol::async_server_handshake(stream_, net::use_awaitable); is_status(state))
         {
-        case protocol::connection_state::login:
-            break;
-        case protocol::connection_state::status:
             co_return co_await async_server_status(stream_, net::use_awaitable);
-        default:
-            spdlog::error("logic error");
-            co_return;
         }
+        else if (is_login(state))
+        {
+            login_params_.set_server_key(config_.server_key);
+            login_params_.set_server_id(config_.server_id);
+            login_params_.use_security(true);
 
-        //        initiate_read();
+            co_await protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
 
-        login_params_.set_server_key(config_.server_key);
-        login_params_.set_server_id(config_.server_id);
-        login_params_.use_security(true);
+            spdlog::info("Welcome! {} on {}", std::quoted(stream_.player_name()), stream_.full_info());
 
-        co_await protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
-        auto results =
-            co_await resolver_.async_resolve(config_.upstream_host, config_.upstream_port, net::use_awaitable);
+            auto results =
+                co_await resolver_.async_resolve(config_.upstream_host, config_.upstream_port, net::use_awaitable);
 
-        auto ep = co_await net::async_connect(upstream_.next_layer(), results, net::use_awaitable);
-        connect_state_.version(this->login_params_.version());
-        connect_state_.name(this->login_params_.name());
-        connect_state_.connection_args(config_.upstream_host, ep.port());
+            auto ep = co_await net::async_connect(upstream_.next_layer(), results, net::use_awaitable);
+            connect_state_.version(stream_.protocol_version());
+            connect_state_.name(stream_.player_name());
+            connect_state_.connection_args(config_.upstream_host, ep.port());
 
-        co_await protocol::async_client_connect(upstream_, connect_state_, net::use_awaitable);
+            co_await protocol::async_client_connect(upstream_, connect_state_, net::use_awaitable);
 
-        auto handler = [self = shared_from_this()](auto &&context, std::exception_ptr ep) {
-            try
-            {
-                if (ep)
-                    std::rethrow_exception(ep);
-            }
-            catch (system_error &se)
-            {
-                auto &&ec = se.code();
-                if (ec == net::error::operation_aborted)
-                    return;
-                spdlog::error("{}::{}({})", *self, context, minecraft::report(ec));
-            }
-            catch (...)
-            {
-                spdlog::error("{}::{} - exception: ", *self, context, polyfill::explain());
-            }
-        };
+            net::co_spawn(
+                get_executor(),
+                [self = shared_from_this()]() -> net::awaitable< void > { return self->client_to_server(); },
+                utils::make_exception_handler(this, "client to server"));
 
-        net::co_spawn(
-            get_executor(),
-            [self = shared_from_this()]() -> net::awaitable< void > { return self->client_to_server(); },
-            [handler](std::exception_ptr ep) { handler("client_to_server", ep); });
-        net::co_spawn(
-            get_executor(),
-            [self = shared_from_this()]() -> net::awaitable< void > { return self->server_to_client(); },
-            [handler](std::exception_ptr ep) { handler("server_to_client", ep); });
+            net::co_spawn(
+                get_executor(),
+                [self = shared_from_this()]() -> net::awaitable< void > { return self->server_to_client(); },
+                utils::make_exception_handler(this, "server_to_client"));
+        }
+        else
+            throw std::runtime_error("client requested unrecognised or invalid state");
     }
 
     auto connection_impl::client_to_server() -> net::awaitable< void >

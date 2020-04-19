@@ -76,25 +76,29 @@ namespace minecraft::protocol
 
         auto compression_threshold(std::int32_t threshold) -> void;
         auto compression_threshold() const -> std::int32_t;
+        auto player_name(std::string const &val) -> void;
+        auto player_name() const -> std::string const &;
+        void protocol_version(protocol::version_type version);
+        auto protocol_version() const -> protocol::version_type;
         auto server_address(std::string const &val) -> void;
         auto server_address(std::u16string const &val) -> void;
         auto server_address() const -> std::string const &;
         auto server_port(std::uint16_t) -> void;
         auto server_port() const -> std::uint16_t;
 
-        void protocol_version(protocol::version_type version);
-
-        auto protocol_version() const -> protocol::version_type;
-
         auto next_layer() -> next_layer_type &;
         auto next_layer() const -> next_layer_type const &;
-
 
         auto close() noexcept -> void;
 
         auto cancel() noexcept -> void;
 
         auto log_id() const -> std::string const &;
+
+        implementation_class & full_info() const
+        {
+            return *impl_;
+        }
 
       private:
         implementation_type release() { return std::exchange(impl_, nullptr); }
@@ -106,6 +110,7 @@ namespace minecraft::protocol
             impl->close();
             delete impl;
         }
+
 
         implementation_type impl_;
     };

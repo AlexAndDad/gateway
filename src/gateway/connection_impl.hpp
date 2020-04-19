@@ -20,10 +20,10 @@ namespace gateway
 
     struct connection_impl : std::enable_shared_from_this< connection_impl >
     {
-        using executor_type = net::io_context::executor_type;
-        using protocol      = net::ip::tcp;
-        using socket_type   = net::basic_stream_socket< protocol, executor_type >;
-        using stream_type   = minecraft::protocol::stream< socket_type >;
+        using executor_type      = net::io_context::executor_type;
+        using transport_protocol = net::ip::tcp;
+        using socket_type        = net::basic_stream_socket< transport_protocol, executor_type >;
+        using stream_type        = minecraft::protocol::stream< socket_type >;
 
         explicit connection_impl(connection_config config, socket_type &&sock);
 
@@ -50,17 +50,17 @@ namespace gateway
 
       private:
         net::awaitable< void > run();
-        auto handle_cancel() -> void;
+        auto                   handle_cancel() -> void;
 
-        template <class Packet>
-        auto async_write_packet(Packet const & p) -> net::awaitable<void>
+        template < class Packet >
+        auto async_write_packet(Packet const &p) -> net::awaitable< void >
         {
             try
             {
-                co_await stream_.async_write_packet(p,net::use_awaitable);
+                co_await stream_.async_write_packet(p, net::use_awaitable);
                 spdlog::info("{}::{}({})", this, "async_write_packet", minecraft::report(error_code()));
             }
-            catch (system_error & se)
+            catch (system_error &se)
             {
                 auto &&ec = se.code();
                 spdlog::warn("{}::{}({})", this, "async_write_packet", minecraft::report(ec));

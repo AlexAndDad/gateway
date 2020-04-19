@@ -1,16 +1,16 @@
 #include "connection_impl.hpp"
 
 #include "config/span.hpp"
+#include "minecraft/protocol/old_style_ping.hpp"
+#include "minecraft/protocol/server_handshake.hpp"
+#include "minecraft/protocol/server_status.hpp"
 #include "minecraft/security/rsa.hpp"
-
 #include "minecraft/server/chat_message.hpp"
-#include "minecraft/server/play_packet.hpp"
 #include "minecraft/server/join_game.hpp"
-
+#include "minecraft/server/play_packet.hpp"
 #include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 #include "polyfill/report.hpp"
-
 
 #include <random>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -92,6 +92,24 @@ namespace gateway
 
     auto connection_impl::run() -> net::awaitable< void >
     {
+        //
+        // handle handshake and/or server ping
+        //
+
+        if (co_await minecraft::protocol::async_is_old_style_ping(stream_.next_layer(), net::use_awaitable))
+            co_return spdlog::info("old style ping request..."),
+                co_await async_old_style_ping(stream_, net::use_awaitable);
+        else
+            switch (co_await minecraft::protocol::async_server_handshake(stream_, net::use_awaitable))
+            {
+            case minecraft::protocol::connection_state::status:
+                co_return co_await minecraft::protocol::async_server_status(stream_, net::use_awaitable);
+            default:
+                co_return spdlog::error("logic error"), void();
+            case minecraft::protocol::connection_state::login:
+                break;
+            }
+
         //        initiate_read();
 
         login_params_.set_server_key(config_.server_key);
@@ -101,29 +119,33 @@ namespace gateway
         try
         {
             co_await minecraft::protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
-            spdlog::info("login state: {}", login_params_);
+            spdlog::info("Welcome! {} on {}", std::quoted(stream_.player_name()), stream_.full_info());
         }
         catch (system_error &se)
         {
             auto &&ec = se.code();
             if (ec.failed())
             {
-                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-                spdlog::info("login state: {}", login_params_);
+                spdlog::error("{}::{}({}) on {} with params {}",
+                              this,
+                              __func__,
+                              polyfill::report(ec),
+                              stream_.full_info(),
+                              login_params_);
                 co_return;
             }
         }
 
         {   // Send join game packet
-            auto packet = minecraft::server::join_game();
-            packet.entity_id = 1;
-            packet.game_mode = minecraft::server::join_game::survival;
-            packet.dimension = minecraft::server::join_game::overworld;
-            packet.hashed_seed = 123412341234;
-            packet.max_players = 20;
-            packet.level_type = "default";
-            packet.view_distance = 16;
-            packet.reduced_debug_info = false;
+            auto packet                  = minecraft::server::join_game();
+            packet.entity_id             = 1;
+            packet.game_mode             = minecraft::server::join_game::survival;
+            packet.dimension             = minecraft::server::join_game::overworld;
+            packet.hashed_seed           = 123412341234;
+            packet.max_players           = 20;
+            packet.level_type            = "default";
+            packet.view_distance         = 16;
+            packet.reduced_debug_info    = false;
             packet.enable_respawn_screen = true;
             co_await async_write_packet(packet);
         }

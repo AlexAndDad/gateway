@@ -65,14 +65,11 @@ TEST_CASE("minecraft::stream_impl")
         auto impl             = impl_type(next_layer_type(ioc));
 
         std::ostringstream oss;
-        oss << '\n' << impl << '\n';
-        auto expected = "\n"
-"    protocol version      : not_set\n"
-"    compression threshold : -1\n"
-"    encryption            : no\n"
-"    hostname              : \n"
-"    port                  : 0\n"
-"    next_layer : [socket [error_code \"Bad file descriptor\",9,\"system\"]->[error_code \"Bad file descriptor\",9,\"system\"]]\n"s;
+        oss << impl;
+        auto expected =
+            "[stream [player_name ] [protocol not_set] [compression -1] [encryption no] [hostname ] [port 0]"
+            " [transport [socket [error_code \"Bad file descriptor\",9,\"system\"]"
+            "->[error_code \"Bad file descriptor\",9,\"system\"]]]"s;
         CHECK(oss.str().size() == expected.size());
         CHECK(oss.str() == expected);
     }

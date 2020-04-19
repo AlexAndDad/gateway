@@ -21,9 +21,6 @@ namespace minecraft::protocol
 {
     struct server_accept_login_params
     {
-        std::string const &name() const { return client_login_start.name; }
-        version_type       version() const { return client_handshake_frame.protocol_version.value(); }
-
         void set_server_key(minecraft::security::private_key k) { server_key = std::move(k); }
 
         void set_server_id(std::string id) { server_encryption_request.server_id = std::move(id); }
@@ -37,7 +34,6 @@ namespace minecraft::protocol
         bool                             use_security_ = true;
 
         // state
-        client::handshake           client_handshake_frame;
         client::login_start         client_login_start;
         server::set_compression     server_set_compression;
         server::encryption_request  server_encryption_request;
@@ -51,7 +47,6 @@ namespace minecraft::protocol
             os << " security token        : " << hexstring(arg.security_token) << std::endl;
             os << " server key            :\n" << arg.server_key.public_pem() << std::endl;
             os << " use security          : " << arg.use_security() << std::endl;
-            os << "client handshake frame :\n" << arg.client_handshake_frame << std::endl;
             os << "client login start     :\n" << arg.client_login_start << std::endl;
             os << "server encryption request :\n" << arg.server_encryption_request << std::endl;
             os << "client encryption response :\n" << arg.client_encryption_response << std::endl;
@@ -103,15 +98,11 @@ namespace minecraft::protocol
 #include <boost/asio/yield.hpp>
             reenter(this) for (;;)
             {
-                yield async_expect_frame(stream_, buffer_, params_.client_handshake_frame, std::move(self));
-                if (ec.failed())
-                    return self.complete(ec);
-                if (params_.client_handshake_frame.validate(ec).failed())
-                    return self.complete(ec);
-
                 yield async_expect_frame(stream_, buffer_, params_.client_login_start, std::move(self));
                 if (ec.failed())
                     return self.complete(ec);
+
+                stream_.player_name(params_.client_login_start.name);
 
                 if (not params_.use_security())
                 {
@@ -180,19 +171,7 @@ namespace minecraft::protocol
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
-                context = "handshake";
-                yield async_expect_frame(stream, params.client_handshake_frame, std::move(self));
-                if (verify(params.client_handshake_frame, ec).failed())
-                    return self.complete(log_fail("handshake frame", ec));
-
-                // record information sent by player handshake
-                stream.protocol_version(params.client_handshake_frame.protocol_version);
-                stream.server_address(params.client_handshake_frame.server_address);
-                stream.server_port(params.client_handshake_frame.server_port);
-
-
-
-
+                context = "login start";
                 yield async_expect_frame(stream, params.client_login_start, std::move(self));
 
                 if (not ec.failed())
@@ -200,6 +179,10 @@ namespace minecraft::protocol
 
                 if (ec.failed())
                     return self.complete(log_fail("client login start", ec));
+
+                stream.player_name(params.client_login_start.name);
+
+                context = "set compression";
 
                 params.server_set_compression.threshold = stream.compression_threshold();
                 yield stream.async_write_packet(params.server_set_compression, std::move(self));
@@ -213,6 +196,8 @@ namespace minecraft::protocol
                     // send encryption request
                     //
 
+                    context = "encryption request";
+
                     prepare(params.server_encryption_request, params.server_key);
                     yield stream.async_write_packet(params.server_encryption_request, std::move(self));
                     if (ec.failed())
@@ -222,6 +207,7 @@ namespace minecraft::protocol
                     // receive encryption response
                     //
 
+                    context = "encryption response";
                     yield async_expect_frame(stream, params.client_encryption_response, std::move(self));
                     if (ec.failed())
                         return self.complete(log_fail("client encryption response", ec));
@@ -254,6 +240,7 @@ namespace minecraft::protocol
                 // send login success
                 //
 
+                context = "success";
                 yield stream.async_write_packet(params.server_login_success, std::move(self));
                 return self.complete(log_fail("server login success", ec));
             }
