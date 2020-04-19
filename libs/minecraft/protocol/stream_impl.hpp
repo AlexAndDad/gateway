@@ -1,110 +1,19 @@
 #pragma once
 #include "encryption_state.hpp"
 #include "minecraft/parse.hpp"
-#include "minecraft/protocol/compression.hpp"
-#include "minecraft/protocol/version.hpp"
 #include "minecraft/protocol/compose_area.hpp"
+#include "minecraft/protocol/compression.hpp"
+#include "minecraft/protocol/frame_data.hpp"
+#include "minecraft/protocol/version.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/stream_traits.hpp"
 #include "minecraft/types.hpp"
+
 #include <fmt/ostream.h>
 
 namespace minecraft::protocol
 {
-
-    struct frame_data
-    {
-        using store_type = std::vector< char >;
-
-        std::size_t payload_size  = 0;   //! the size of the frame read from the input stream
-        std::size_t data_position = 0;   //! position in input stream where the frame's data starts
-        store_type  payload;             //! the input stream
-
-        /// remove one frame's worth of data from the stream.
-        /// If the stram is empty, this is a no-op
-        void remove_one()
-        {
-            auto first = payload.begin();
-            auto last  = first + std::exchange(data_position, 0) + std::exchange(payload_size, 0);
-            payload.erase(first, last);
-        }
-
-        /// erase the stream and metadata
-        void reset()
-        {
-            payload_size  = 0;
-            data_position = 0;
-            payload.clear();
-        }
-
-        /// decode the frame length from the stream and update the data_position accordingly.
-        /// If the parse fails, state is left unchanged.
-        /// @pre payload_size and data_position must be zero
-        auto decode_frame_length(error_code &ec) -> error_code &
-        {
-            assert(payload_size == 0);
-            assert(data_position == 0);
-
-            var_int frame_size;
-            auto    first = static_cast< const_buffer_iterator >(payload.data());
-            auto    last  = first + payload.size();
-            auto    next  = parse(first, last, frame_size, ec);
-            if (not ec.failed())
-            {
-                payload_size  = std::size_t(frame_size.value());
-                data_position = std::distance(first, next);
-            }
-            return ec;
-        }
-
-        /// create a net buffer bounding the frame's data
-        auto get_data() -> net::mutable_buffer
-        {
-            assert(not shortfall());
-            auto result = net::buffer(payload.data() + data_position, payload_size);
-            return result;
-        }
-
-        /// point to the first byte of the frame's data
-        auto begin() const -> const char *
-        {
-            assert(not shortfall());
-            return payload.data() + data_position;
-        }
-
-        /// point to the last byte+1 of the frame's data
-        auto end() const -> const char *
-        {
-            assert(not shortfall());
-            return begin() + payload_size;
-        }
-
-        /// Consume bytes from the front of the frame area, reducing the length of the frame.
-        /// The main purpose of this function is during compressed mode, when an uncompressed frame is encountered.
-        /// \param n The number of bytes to consume
-        void consume(std::size_t n)
-        {
-            assert(payload_size);
-            assert(not shortfall());
-            data_position += n;
-            payload_size -= n;
-        }
-
-        /// How many bytes we are short of having a complete payload
-        /// \return
-        auto shortfall() const -> std::size_t
-        {
-            auto size = payload.size();
-            assert(data_position <= size);
-            size -= data_position;
-            if (size >= payload_size)
-                return 0;
-            else
-                return payload_size - size;
-        }
-    };
-
     struct stream_impl_base
     {
         protocol::version_type protocol_version_ = protocol::version_type::not_set;

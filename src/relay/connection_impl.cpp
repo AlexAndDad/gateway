@@ -65,6 +65,7 @@ namespace relay
     , stream_(std::move(sock))
     , upstream_(socket_type(get_executor()))
     , resolver_(get_executor())
+    , login_params_(config_.server_id /* server_key , compression_threshold */)
     {
         spdlog::info("{} accepted", this);
     }
@@ -122,10 +123,6 @@ namespace relay
         }
         else if (is_login(state))
         {
-            login_params_.set_server_key(config_.server_key);
-            login_params_.set_server_id(config_.server_id);
-            login_params_.use_security(true);
-
             co_await protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
 
             spdlog::info("Welcome! {} on {}", std::quoted(stream_.player_name()), stream_.full_info());
