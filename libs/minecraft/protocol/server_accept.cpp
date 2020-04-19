@@ -14,7 +14,7 @@ namespace minecraft::protocol
     }
 
     server_accept_state::server_accept_state(std::string const &              server_id,
-                                             minecraft::security::private_key pk,
+                                             std::optional<minecraft::security::private_key> pk,
                                              int                              compression_threshold)
     : server_id(std::move(server_id))
     , server_key(std::move(pk))
@@ -24,15 +24,18 @@ namespace minecraft::protocol
 
     auto operator<<(std::ostream &os, server_accept_state const &arg) -> std::ostream &
     {
-        const char *type      = "private";
-        auto        key_bytes = arg.server_key.private_asn1();
-        if (key_bytes.empty())
+        const char *type      = "none";
+        std::vector<std::uint8_t> key_bytes;
+        if (arg.server_key)
         {
-            type      = "public";
-            key_bytes = arg.server_key.private_asn1();
+            type = "private";
+            key_bytes = arg.server_key->private_asn1();
+            if (key_bytes.empty())
+            {
+                type      = "public";
+                key_bytes = arg.server_key->private_asn1();
+            }
         }
-        if (key_bytes.empty())
-            type = "none";
 
         fmt::print(os,
                    "[server_accept_state [server_id {}] [compression {}] [server_key {} {:n}] [server_packet {}] "

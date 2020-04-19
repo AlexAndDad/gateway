@@ -27,21 +27,28 @@ namespace minecraft::server
         return ec;
     }
 
-    void prepare(encryption_request &req, minecraft::security::private_key const &ppk)
+    namespace
     {
-        static thread_local auto eng = [] {
-            auto rng = std::random_device();
-            auto seq = std::seed_seq { rng(), rng(), rng(), rng(), rng() };
-            auto eng = std::default_random_engine(seq);
-            return eng;
-        }();
+        void generate_verify_token(std::vector< std::uint8_t > &tok)
+        {
+            static thread_local auto eng = [] {
+                auto rng = std::random_device();
+                auto seq = std::seed_seq { rng(), rng(), rng(), rng(), rng() };
+                auto eng = std::default_random_engine(seq);
+                return eng;
+            }();
 
-        auto dist = std::uniform_int_distribution< std::uint32_t >(0, 255);
+            auto dist = std::uniform_int_distribution< std::uint32_t >(0, 255);
 
-        auto &tok = req.verify_token;
-        tok.resize(4);
-        std::generate(tok.begin(), tok.end(), [&] { return dist(eng); });
+            tok.resize(4);
+            std::generate(tok.begin(), tok.end(), [&] { return dist(eng); });
+        }
+    }
 
+    void prepare(encryption_request &req, std::string const& server_id, minecraft::security::private_key const &ppk)
+    {
+        generate_verify_token(req.verify_token);
+        req.server_id = server_id;
         req.public_key = ppk.public_asn1();
     }
 

@@ -3,6 +3,7 @@
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/compression.hpp"
 #include "minecraft/protocol/version.hpp"
+#include "minecraft/protocol/compose_area.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/cipher_context.hpp"
 #include "minecraft/stream_traits.hpp"
@@ -11,6 +12,7 @@
 
 namespace minecraft::protocol
 {
+
     struct frame_data
     {
         using store_type = std::vector< char >;
@@ -113,7 +115,7 @@ namespace minecraft::protocol
         std::optional< encryption_state > encryption_;
 
         // buffer for composing packet structures into frame extents
-        std::vector< char > compose_buffer;
+        compose_area compose_area_;
 
         // transmit state
         std::vector< char > tx_compose_buffer_;
@@ -195,10 +197,6 @@ namespace minecraft::protocol
         template < class MutableBufferSequence, class CompletionToken >
         auto async_read_some(MutableBufferSequence const &sequence, CompletionToken &&token) ->
             typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
-
-        auto compose_tx_frame(net::const_buffer frame_extent) -> void;
-        auto compress_tx_frame(net::const_buffer frame_extent) -> void;
-        auto compose_tx_frame_uncompressed(net::const_buffer frame_extent) -> void;
 
         auto current_frame() -> net::mutable_buffer { return current_frame_data_; }
 

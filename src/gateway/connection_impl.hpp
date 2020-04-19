@@ -12,8 +12,8 @@ namespace gateway
     {
         connection_config();
 
-        minecraft::security::private_key server_key;
-        std::string                      server_id;
+        std::optional< minecraft::security::private_key > server_key;
+        std::string                                       server_id;
 
         friend auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &;
     };

@@ -22,16 +22,16 @@ namespace minecraft::protocol
 {
     struct server_accept_state
     {
-        server_accept_state(std::string const &              server_id,
-                            minecraft::security::private_key pk,
-                            int                              compression_threshold = 256);
+        server_accept_state(std::string const &                               server_id,
+                            std::optional< minecraft::security::private_key > pk                    = {},
+                            int                                               compression_threshold = 256);
 
         //
         // inputs
         //
-        std::string                      server_id;
-        minecraft::security::private_key server_key;
-        int                              compression_threshold;
+        std::string                                       server_id;
+        std::optional< minecraft::security::private_key > server_key;
+        int                                               compression_threshold;
 
         // frames
 
@@ -82,24 +82,14 @@ namespace minecraft::protocol
                     stream.player_name(logstart.name);
                 }
 
-                yield
-                {
-                    context       = "set compression";
-                    auto &pkt     = state.server_packet.emplace< server::set_compression >();
-                    pkt.threshold = state.compression_threshold;
-                    stream.async_write_packet(pkt, std::move(self));
-                    // note: set threshold after writing packet
-                    stream.compression_threshold(state.compression_threshold);
-                }
-
-                if (state.server_key.has_rsa_key())
+                if (state.server_key.has_value())
                 {
                     context = "encryption request";
 
                     yield
                     {
                         auto &pkt = state.server_packet.emplace< server::encryption_request >();
-                        prepare(pkt, state.server_key);
+                        prepare(pkt, state.server_id, *state.server_key);
                         stream.async_write_packet(pkt, std::move(self));
                     }
 
@@ -120,7 +110,7 @@ namespace minecraft::protocol
                     {
                         auto &request  = std::get< server::encryption_request >(state.server_packet);
                         auto &response = std::get< client::encryption_response >(state.client_packet);
-                        auto  secret   = response.decrypt_secret(state.server_key, request.verify_token, ec);
+                        auto  secret   = response.decrypt_secret(*state.server_key, request.verify_token, ec);
                         if (log_fail(ec).failed())
                             return self.complete(ec);
                         stream.set_encryption(secret);
@@ -129,28 +119,29 @@ namespace minecraft::protocol
                     //
                     // todo : contact minecraft server here for uuid
                     //
-                    yield
-                    {
-                        context      = "success";
-                        auto &pkt    = state.server_packet.emplace< server::login_success >();
-                        pkt.username = stream.player_name();
-                        pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
-                        stream.async_write_packet(pkt, std::move(self));
-                    }
                 }
-                else
+
+                yield
                 {
-                    //
-                    // send login success
-                    //
-                    yield
-                    {
-                        context      = "success";
-                        auto &pkt    = state.server_packet.emplace< server::login_success >();
-                        pkt.username = stream.player_name();
-                        pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
-                        stream.async_write_packet(pkt, std::move(self));
-                    }
+                    context       = "set compression";
+                    auto &pkt     = state.server_packet.emplace< server::set_compression >();
+                    pkt.threshold = state.compression_threshold;
+                    stream.async_write_packet(pkt, std::move(self));
+                }
+
+                // note: set threshold after writing packet
+                stream.compression_threshold(state.compression_threshold);
+
+                //
+                // send login success
+                //
+                yield
+                {
+                    context      = "success";
+                    auto &pkt    = state.server_packet.emplace< server::login_success >();
+                    pkt.username = stream.player_name();
+                    pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
+                    stream.async_write_packet(pkt, std::move(self));
                 }
                 return self.complete(log_fail(ec));
             }

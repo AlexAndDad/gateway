@@ -14,6 +14,8 @@ namespace gateway {
             return *this;
         }
 
+        std::string listen_port = "25565";
+
         friend auto operator<<(std::ostream& os, listener_config const& cfg) -> std::ostream&;
     };
 

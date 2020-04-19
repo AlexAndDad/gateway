@@ -242,37 +242,6 @@ namespace minecraft::protocol
         encryption_.emplace(secret);
     }
 
-    template < class NextLayer >
-    auto stream_impl< NextLayer >::compose_tx_frame(net::const_buffer frame_extent) -> void
-    {
-        assert(tx_compose_buffer_.empty());
-        if (compression_threshold_ >= 0 and frame_extent.size() > compression_threshold_)
-        {
-            compress_tx_frame(frame_extent);
-            compose_tx_frame_uncompressed(net::buffer(tx_compressed_buffer_));
-        }
-        else
-        {
-            compose_tx_frame_uncompressed(frame_extent);
-        }
-    }
-
-    template < class NextLayer >
-    auto stream_impl< NextLayer >::compose_tx_frame_uncompressed(net::const_buffer frame_extent) -> void
-    {
-        auto frame_length = var_int(frame_extent.size());
-        tx_compose_buffer_.resize(max_encoded_bytes(frame_length) + frame_extent.size());
-        auto iter = tx_compose_buffer_.data();
-        iter      = encode(frame_length, iter);
-        iter += net::buffer_copy(net::buffer(iter, frame_extent.size()), frame_extent);
-        tx_compose_buffer_.resize(std::distance(tx_compose_buffer_.data(), iter));
-    }
-
-    template < class NextLayer >
-    auto stream_impl< NextLayer >::compress_tx_frame(net::const_buffer frame_extent) -> void
-    {
-        assert(!"write me");
-    }
 
     template < class NextLayer >
     auto stream_impl< NextLayer >::get_executor() -> executor_type

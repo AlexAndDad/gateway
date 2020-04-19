@@ -21,7 +21,7 @@ namespace minecraft::server
 
         friend std::ostream &operator<<(std::ostream &os, encryption_request const &arg);
 
-        friend void prepare(encryption_request &req, minecraft::security::private_key const &ppk);
+        friend void prepare(encryption_request &req, std::string const& server_id, minecraft::security::private_key const &ppk);
 
         template < class Self >
         static auto as_tuple(Self &self)

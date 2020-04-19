@@ -15,8 +15,9 @@ namespace minecraft::protocol
     auto stream< NextLayer >::async_write_frame(net::const_buffer frame_data, CompletionToken &&token) ->
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
-        impl_->compose_tx_frame(frame_data);
-        return impl_->async_write_composed_frame(std::forward< CompletionToken >(token));
+        auto& area = impl_->compose_area_;
+        net::buffer_copy(net::buffer(area.prepare()), frame_data);
+        return impl_->async_write(area.commit(impl_->compression_threshold_),std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
@@ -24,10 +25,9 @@ namespace minecraft::protocol
     auto stream< NextLayer >::async_write_packet(Packet const &p, CompletionToken &&token) ->
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
-        auto &buffer = impl_->compose_buffer;
-        buffer.clear();
-        compose(p, buffer);
-        return async_write_frame(net::buffer(buffer), std::forward< CompletionToken >(token));
+        auto &area = impl_->compose_area_;
+        compose(p, area.prepare());
+        return impl_->async_write(area.commit(impl_->compression_threshold_), std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
@@ -43,8 +43,8 @@ namespace minecraft::protocol
         }
     }
 
-    template<class NextLayer>
-    auto stream<NextLayer>::cancel() noexcept -> void
+    template < class NextLayer >
+    auto stream< NextLayer >::cancel() noexcept -> void
     {
         error_code ec;
         next_layer().cancel(ec);
@@ -81,7 +81,7 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::player_name() const -> std::string const&
+    auto stream< NextLayer >::player_name() const -> std::string const &
     {
         return impl_->player_name;
     }
@@ -145,6 +145,5 @@ namespace minecraft::protocol
     {
         return impl_->port;
     }
-
 
 }   // namespace minecraft::protocol
