@@ -52,7 +52,7 @@ namespace minecraft
         Stream &operator<<(Stream &os, status_ping const &packet)
         {
             fmt::print(
-                os, "[status [from client] [type {}] [payload {}]", wise_enum::to_string(packet.id()), packet.payload);
+                os, "[status [from client] [type {}] [payload {}]]", wise_enum::to_string(packet.id()), packet.payload);
             return os;
         }
 
@@ -92,7 +92,7 @@ namespace minecraft
         template < class Stream >
         Stream &operator<<(Stream &os, status_response const &packet)
         {
-            fmt::print(os, "[status [from server] [type {}] [json {}]", wise_enum::to_string(packet.id()), packet.json);
+            fmt::print(os, "[status [from server] [type {}] [json {}]]", wise_enum::to_string(packet.id()), packet.json);
             return os;
         }
 
@@ -126,7 +126,7 @@ namespace minecraft
         Stream &operator<<(Stream &os, status_pong const &packet)
         {
             fmt::print(
-                os, "[status [from server] [type {}] [payload {}]", wise_enum::to_string(packet.id()), packet.payload);
+                os, "[status [from server] [type {}] [payload {}]]", wise_enum::to_string(packet.id()), packet.payload);
             return os;
         }
 

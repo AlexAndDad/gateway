@@ -204,7 +204,7 @@ namespace minecraft
             using underlying = std::underlying_type_t< Enum >;
             auto accum       = underlying();
             first            = parse_var(first, second, accum, ec);
-            if (!ec.failed())
+            if (not ec.failed())
                 target = static_cast< Enum >(accum);
         }
         return first;

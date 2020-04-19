@@ -20,7 +20,7 @@ namespace minecraft::client
     {
         if (not verify(protocol_version))
             ec = error::invalid_protocol;
-        else if (next_state != protocol::connection_state::login)
+        else if (not verify(next_state))
             ec = error::invalid_packet;
         return ec;
     }
