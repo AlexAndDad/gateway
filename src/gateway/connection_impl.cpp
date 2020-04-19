@@ -40,8 +40,10 @@ namespace gateway
     connection_config::connection_config()
     : server_key()
     , server_id(generate_server_id())
-    , compression_threshold(256) {
-        //        server_key.assign(minecraft::security::rsa(1024));
+    , compression_threshold(256)
+    {
+        server_key.emplace();
+        server_key->assign(minecraft::security::rsa(1024));
     };
 
     auto operator<<(std::ostream &os, connection_config const &cfg) -> std::ostream &
