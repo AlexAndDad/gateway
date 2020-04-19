@@ -16,6 +16,4 @@ namespace minecraft
                     (login_success, 2),
                     (set_compression, 3))
 
-    WISE_ENUM_CLASS((client_state, std::int32_t), (initial, 0), (status, 1), (login, 2))
-
 }   // namespace minecraft
