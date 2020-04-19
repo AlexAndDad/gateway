@@ -26,7 +26,8 @@ TEST_CASE("minecraft::slot_data")
         auto back = optional_slot_data();
 
         auto ec = error_code();
-        auto iter = parse(buffer.begin(), buffer.end(), back, ec);
+        auto span = to_span(buffer);
+        auto iter = parse(span.begin(), span.end(), back, ec);
         REQUIRE(back.has_value());
         CHECK(back->item_id == 0);
         CHECK(back->count == 0);

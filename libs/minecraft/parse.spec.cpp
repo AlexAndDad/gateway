@@ -1,26 +1,29 @@
 #include "minecraft/parse.hpp"
-
 #include <catch2/catch.hpp>
 
 TEST_CASE("parse fundamentals")
 {
-    using vec = std::vector< char >;
+    using namespace minecraft;
+
+    using vec = compose_buffer ;
 
     SECTION("int32_t")
     {
-        auto good = [](vec data, minecraft::var_int expected, std::size_t expected_length) {
-            auto result   = minecraft::var_int();
-            minecraft::error_code ec;
-            auto next = minecraft::parse(data.begin(), data.end(), result, ec);
+        auto good = [](vec v, minecraft::var_int expected, std::size_t expected_length) {
+            auto data = to_span(v);
+            auto result   = var_int();
+            error_code ec;
+            auto next = parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
             CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
-        auto bad = [](vec data, minecraft::error_code expected, std::size_t expected_length = 0) {
-            auto result   = minecraft::var_int();
-            minecraft::error_code ec;
-            auto next =  minecraft::parse(data.begin(), data.end(), result, ec);
+        auto bad = [](vec v, minecraft::error_code expected, std::size_t expected_length = 0) {
+            auto data = to_span(v);
+            auto result   = var_int();
+            error_code ec;
+            auto next =  parse(data.begin(), data.end(), result, ec);
             CHECK(ec.failed());
             CHECK(expected.message() == ec.message());
             CHECK(std::distance(data.begin(), next) == expected_length);
@@ -41,16 +44,18 @@ TEST_CASE("parse fundamentals")
 
     SECTION("int64_t")
     {
-        auto good = [](vec data, minecraft::var_long expected, std::size_t expected_length) {
-            auto result   = minecraft::var_long();
-            minecraft::error_code ec;
+        auto good = [](vec v, var_long expected, std::size_t expected_length) {
+            auto data = to_span(v);
+            auto result   = var_long();
+            error_code ec;
             auto next = minecraft::parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
             CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
-        auto bad = [](vec data, minecraft::error_code expected, std::size_t expected_length = 0) {
+        auto bad = [](vec v, minecraft::error_code expected, std::size_t expected_length = 0) {
+            auto data = to_span(v);
             auto result   = minecraft::var_long();
             minecraft::error_code ec;
             auto next =  minecraft::parse(data.begin(), data.end(), result, ec);

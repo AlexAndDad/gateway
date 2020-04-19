@@ -11,6 +11,7 @@
 #include <iostream>
 #include <polyfill/bitset_tools.hpp>
 #include <wise_enum/wise_enum.h>
+#include "minecraft/span.hpp"
 
 namespace minecraft
 {
@@ -19,6 +20,16 @@ namespace minecraft
 
     using const_buffer_element  = char const;
     using const_buffer_iterator = const_buffer_element *;
+
+    using compose_buffer = std::vector<mutable_buffer_element >;
+
+    inline auto to_span(compose_buffer const& buf)
+    {
+        auto first = buf.data();
+        auto last = first + buf.size();
+        return const_byte_span (first, last);
+    }
+
 
     // std::uint8_t <-> Byte
     // std::int32_t <-> VarInt

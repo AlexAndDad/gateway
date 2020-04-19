@@ -129,7 +129,7 @@ namespace minecraft::protocol
 
         // client parameters / discovered by server
         std::string hostname;
-        std::uint32_t port;
+        std::uint32_t port = 0;
     };
 
     inline std::ostream &operator<<(std::ostream &os, stream_impl_base const &base)

@@ -1,12 +1,12 @@
-#include <catch2/catch.hpp>
-
 #include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
-#include <string_view>
+
+#include <catch2/catch.hpp>
 #include <string>
+#include <string_view>
 
 using namespace std::literals;
-
+using namespace minecraft;
 namespace
 {
     std::vector<std::uint8_t> to_bytes(std::string_view sv)
@@ -14,45 +14,51 @@ namespace
         std::vector<std::uint8_t> result(sv.begin(), sv.end());
         return result;
     }
-}
+}   // namespace
 
 TEST_CASE("minecraft encode")
 {
+    using namespace minecraft;
+
     SECTION("var_int")
     {
-        auto scenario = [](minecraft::var_int initial, std::string_view expected)
-        {
+        auto scenario = [](minecraft::var_int initial, compose_buffer expected) {
             INFO("var_int " << initial);
-            std::string buffer;
-            auto round_trip = minecraft::var_int(-1);
-            minecraft::encode(initial, std::back_inserter(buffer));
+            compose_buffer buffer;
+            auto           round_trip = minecraft::var_int(-1);
+            encode(initial, std::back_inserter(buffer));
             CHECK(buffer == expected);
-            auto ec = minecraft::error_code();
-            auto pos = minecraft::parse(buffer.begin(), buffer.end(), round_trip, ec);
+            auto ec  = minecraft::error_code();
+            auto s   = to_span(buffer);
+            auto pos = parse(s.begin(), s.end(), round_trip, ec);
             CHECK(round_trip == initial);
-            CHECK(pos == buffer.end());
+            CHECK(pos == s.end());
         };
 
-        scenario(0, "\x00"sv);
-        scenario(127, "\x7f"sv);
-        scenario(128, "\x80\x01"sv);
-        scenario(16384, "\x80\x80\x01"sv);
-        scenario(-1, "\xFF\xFF\xFF\xFF\x0F");
-        scenario(-16384, "\x80\x80\xFF\xFF\x0F");
-        scenario(323, "\xc3\x02");
+        scenario(0, { '\x00' });
+        scenario(127, { '\x7f' });
+        scenario(128, { '\x80', '\x01' });
+        scenario(16384, { '\x80', '\x80', '\x01' });
+        scenario(-1, { '\xFF', '\xFF', '\xFF', '\xFF', '\x0F' });
+        scenario(-16384, { '\x80', '\x80', '\xFF', '\xFF', '\x0F' });
+        scenario(323, { '\xc3', '\x02' });
     }
 
     SECTION("std::vector<std::uint8_t>")
     {
-        std::string buffer;
-        auto initial = to_bytes("hello"sv);
-        auto round_trip = initial;
+        compose_buffer buffer;
+        auto        initial    = to_bytes("hello"sv);
+
+        encode(initial, back_inserter(buffer));
+        REQUIRE(buffer == compose_buffer{'\x05','h','e','l','l','o'});
+
+        auto        round_trip = initial;
         round_trip.clear();
-
-        minecraft::encode(initial, back_inserter(buffer));
-        REQUIRE(buffer == "\x05hello"sv);
-
-        auto ec = minecraft::error_code();
-        auto iend = minecraft::parse(buffer.begin(), buffer.end(), initial, ec);
+        auto ec   = error_code();
+        auto s = to_span(buffer);
+        auto iend = minecraft::parse(s.begin(), s.end(), round_trip, ec);
+        CHECK(ec == error_code());
+        CHECK(round_trip == initial);
+        CHECK(iend == s.end());
     }
 }

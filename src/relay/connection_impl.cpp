@@ -2,6 +2,8 @@
 
 #include "minecraft/protocol/client_connect.hpp"
 #include "minecraft/protocol/old_style_ping.hpp"
+#include "minecraft/protocol/server_handshake.hpp"
+#include "minecraft/protocol/server_status.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/rsa.hpp"
 #include "minecraft/send_frame.hpp"
@@ -115,6 +117,19 @@ namespace relay
             spdlog::info("old style ping request...");
             co_await async_old_style_ping(stream_, net::use_awaitable);
             spdlog::info("...responded");
+            co_return;
+        }
+
+        auto next_state = co_await protocol::async_server_handshake(stream_, net::use_awaitable);
+
+        switch (next_state)
+        {
+        case protocol::connection_state::login:
+            break;
+        case protocol::connection_state::status:
+            co_return co_await async_server_status(stream_, net::use_awaitable);
+        default:
+            spdlog::error("logic error");
             co_return;
         }
 

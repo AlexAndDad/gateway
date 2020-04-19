@@ -71,7 +71,7 @@ TEST_CASE("minecraft::stream_impl")
 "    compression threshold : -1\n"
 "    encryption            : no\n"
 "    hostname              : \n"
-"    port                  : \n"
+"    port                  : 0\n"
 "    next_layer : [socket [error_code \"Bad file descriptor\",9,\"system\"]->[error_code \"Bad file descriptor\",9,\"system\"]]\n"s;
         CHECK(oss.str().size() == expected.size());
         CHECK(oss.str() == expected);

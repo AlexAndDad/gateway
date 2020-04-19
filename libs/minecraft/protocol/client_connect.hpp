@@ -9,6 +9,7 @@
 #include "minecraft/server/login_success.hpp"
 #include "minecraft/server/set_compression.hpp"
 #include "read_frame.hpp"
+#include "minecraft/protocol/expect_frame.hpp"
 
 namespace minecraft::protocol
 {
