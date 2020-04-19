@@ -13,6 +13,7 @@
 #include <wise_enum/wise_enum.h>
 #include "minecraft/span.hpp"
 
+
 namespace minecraft
 {
     using mutable_buffer_element  = char;
