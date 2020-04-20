@@ -9,3 +9,8 @@ hunter_config(utf8cpp
 hunter_config(WiseEnum
         GIT_SUBMODULE git-deps/WiseEnum
         CONFIGURATION_TYPES Release)
+
+hunter_config(BoostWebclient
+        GIT_SUBMODULE git-deps/boost-webclient
+        CONFIGURATION_TYPES Release RelWithDebInfo Debug
+        CMAKE_ARGS BOOST_WEBCLIENT_USE_HUNTER=ON)
