@@ -90,6 +90,12 @@ namespace minecraft::protocol
         std::optional< storage_type > opt_val_;
     };
 
+    inline
+    auto buffer(shared_secret const& ss) -> net::const_buffer
+    {
+        return net::const_buffer(ss.data(), ss.size());
+    }
+
     template<class Stream>
     Stream& operator<<(Stream& os, shared_secret const& secret)
     {
@@ -99,11 +105,6 @@ namespace minecraft::protocol
         else
             fmt::print(os, "none");
         return os;
-    }
-
-    inline auto buffer(shared_secret const &secret)
-    {
-        return secret.has_value() ? net::const_buffer(secret.data(), secret.size()) : net::const_buffer(nullptr, 0);
     }
 
     inline auto buffer(shared_secret &secret)
