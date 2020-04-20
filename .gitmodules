@@ -7,3 +7,6 @@
 [submodule "git-deps/utfcpp"]
 	path = git-deps/utfcpp
 	url = git@github.com:AlexAndDad/utfcpp.git
+[submodule "git-deps/boost-webclient"]
+	path = git-deps/boost-webclient
+	url = git@github.com:madmongo1/webclient.git
