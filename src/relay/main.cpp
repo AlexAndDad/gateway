@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "app.hpp"
 #include "config.hpp"
 #include "polyfill/explain.hpp"
 
@@ -14,8 +14,8 @@ namespace relay
         auto ioc  = net::io_context(1);
         auto exec = ioc.get_executor();
 
-        auto app = application(exec, std::move(config));
-        app.start();
+        auto app_ = app(exec, std::move(config));
+        app_.start();
 
         ioc.run();
     }

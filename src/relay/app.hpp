@@ -1,4 +1,5 @@
 #pragma once
+#include "application/console.hpp"
 #include "config/net.hpp"
 #include "listener.hpp"
 #include "minecraft/security/private_key.hpp"
@@ -18,15 +19,16 @@ namespace relay
         }
     };
 
-    struct application
+    struct app
     {
         using executor_type = net::io_context::executor_type;
         using signal_set    = net::basic_signal_set< executor_type >;
 
-        application(executor_type exec, app_config config)
-            : config_(std::move(config))
-            , signals_(exec)
-            , listener_(exec, config_)
+        app(executor_type exec, app_config config)
+        : config_(std::move(config))
+        , signals_(exec)
+        , listener_(exec, config_)
+        , console_(exec, ::dup(0))
         {
             std::cout << "Application Starting\n\n";
             std::cout << config_ << std::endl;
@@ -79,13 +81,27 @@ namespace relay
             cancel_all_services();
         }
 
-        void start_all_services() { listener_.start(); }
+        void start_all_services()
+        {
+            listener_.start();
+            console_.start([this]{
+                dispatch(bind_executor(this->get_executor(), [this]{
+                    this->cancel_all_services();
+                    this->signals_.cancel();
+                }));
+            });
+        }
 
-        void cancel_all_services() { listener_.cancel(); }
+        void cancel_all_services()
+        {
+            listener_.cancel();
+            console_.stop();
+        }
 
         app_config config_;
 
-        signal_set signals_;
-        listener   listener_;
+        signal_set           signals_;
+        listener             listener_;
+        application::console console_;
     };
-}   // namespace masquerade
+}   // namespace relay

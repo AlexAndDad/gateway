@@ -15,7 +15,7 @@ list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
 add_library(relay_lib ${src_files} ${hdr_files})
-target_link_libraries(relay_lib PUBLIC minecraft_lib)
+target_link_libraries(relay_lib PUBLIC application_lib minecraft_lib)
 
 add_executable(relay main.cpp)
 target_link_libraries(relay PUBLIC relay_lib)

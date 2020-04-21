@@ -63,6 +63,31 @@ list(APPEND all_libs polyfill_lib)
 list(APPEND all_spec_files ${polyfill_spec_files})
 
 #
+# application
+#
+
+file(GLOB_RECURSE application_src_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        application/*.cpp)
+file(GLOB_RECURSE application_generated_hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_BINARY_DIR}/application/*.hpp)
+file(GLOB_RECURSE application_hdr_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        src/*.hpp)
+list(APPEND application_hdr_files ${generated_hdr_files})
+set(application_spec_files ${application_src_files})
+list(FILTER application_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER application_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
+
+add_library(application_lib ${application_src_files} ${application_hdr_files})
+target_link_libraries(application_lib PUBLIC config_lib polyfill_lib Boost::boost)
+target_include_directories(application_lib
+        PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR})
+
+list(APPEND all_libs application_lib)
+list(APPEND all_spec_files ${application_spec_files})
+
+#
 # minecraft
 #
 
@@ -81,6 +106,7 @@ add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 target_link_libraries(minecraft_lib PUBLIC
         config_lib polyfill_lib
         Boost::boost Boost::filesystem Boost::iostreams Boost::system
+        Boost::webclient
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL
         spdlog::spdlog
