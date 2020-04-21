@@ -18,7 +18,7 @@ TEST_CASE("polyfill::net::future")
                 std::string s;
                 try
                 {
-                    s = co_await f.co_get();
+                    s = co_await f();
                     FAIL();
                 }
                 catch (polyfill::system_error &)
@@ -89,5 +89,38 @@ TEST_CASE("polyfill::net::future")
 
         p = polyfill::net::promise< std::string >(exec);
         ioc.run();
+    }
+}
+TEST_CASE("polyfill::net::future2")
+{
+    auto ioc  = polyfill::net::io_context();
+    auto exec = ioc.get_executor();
+
+    auto ioc2  = polyfill::net::io_context();
+    auto exec2 = ioc2.get_executor();
+
+    SECTION("correct executors")
+    {
+        auto p = polyfill::net::promise< std::string >(exec);
+
+        polyfill::net::post(polyfill::net::bind_executor(exec, [&] { p.set_value("Hello"); }));
+
+        auto f        = p.get_future(exec2);
+        auto tid      = std::this_thread::get_id();
+        bool happened = false;
+        f.async_wait([&](polyfill::error_code ec, std::optional< std::string > os) {
+            CHECK(os.has_value());
+            CHECK(ec.message() == "Success");
+            CHECK(std::this_thread::get_id() == tid);
+            happened = true;
+        });
+
+        auto t1 = std::thread([&] { ioc.run(); });
+
+        ioc2.run();
+
+        CHECK(happened);
+
+        t1.join();
     }
 }
