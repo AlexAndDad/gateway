@@ -34,6 +34,9 @@ find_package(ZLIB CONFIG REQUIRED)
 hunter_add_package(Catch)
 find_package(Catch2)
 
+hunter_add_package(Eigen)
+find_package(Eigen3 CONFIG REQUIRED)
+
 if (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
     if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
         # using Clang

@@ -85,7 +85,8 @@ target_link_libraries(minecraft_lib PUBLIC
         OpenSSL::Crypto OpenSSL::SSL
         spdlog::spdlog
         utf8cpp
-        ZLIB::zlib)
+        ZLIB::zlib
+        Eigen3::Eigen)
 
 target_include_directories(minecraft_lib
         PUBLIC

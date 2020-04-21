@@ -219,32 +219,4 @@ namespace gateway
 
     auto connection_impl::handle_cancel() -> void { stream_.close(); }
 
-    template < class NextLayer, class Iter, class CompletionToken >
-    auto
-    async_send_packets(minecraft::protocol::stream< NextLayer > &stream, Iter first, Iter last, CompletionToken &&token)
-    {
-        auto op = [&stream, coro = net::coroutine(), first, last](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
-            boost::ignore_unused(bytes_transferred);
-#include <boost/asio/yield.hpp>
-            reenter(coro) for (;;)
-            {
-                if (first == last)
-                    return self.complete(ec);
-                spdlog::info("writing packet: {}", wise_enum::to_string(first->id()));
-                yield
-                {
-                    // since we are mutating self, we must be sure that any
-                    // iterator arithmetic is complete before the yielding call
-                    auto &p = *first++;
-                    stream.async_write_packet(p, std::move(self));
-                }
-                if (ec.failed())
-                    return self.complete(ec);
-            }
-#include <boost/asio/unyield.hpp>
-        };
-
-        return net::async_compose< CompletionToken, void(error_code) >(std::move(op), token, stream);
-    }
 }   // namespace gateway

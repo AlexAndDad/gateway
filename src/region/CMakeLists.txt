@@ -15,7 +15,7 @@ list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
 add_library(region_lib ${src_files} ${hdr_files})
-target_link_libraries(region_lib PUBLIC minecraft_lib)
+target_link_libraries(region_lib PUBLIC minecraft_lib gateway_lib)
 
 add_executable(region main.cpp)
 target_link_libraries(region PUBLIC region_lib)
