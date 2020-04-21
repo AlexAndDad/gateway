@@ -10,6 +10,17 @@ TEST_CASE("polyfill::net::future")
     auto p = polyfill::net::promise< std::string >(exec);
     auto f = p.get_future();
 
+    SECTION("coroutines")
+    {
+        polyfill::net::co_spawn(exec, [&]()->polyfill::net::awaitable<std::string>{
+            co_return * co_await f.co_wait();
+        }, [](std::exception_ptr ep, std::string s){
+            CHECK(bool(ep));
+        });
+        p = polyfill::net::promise< std::string >(exec);
+        ioc.run();
+    }
+
     SECTION("value available prior to wait")
     {
         p.set_value("Hello");
@@ -66,4 +77,5 @@ TEST_CASE("polyfill::net::future")
         p = polyfill::net::promise< std::string >(exec);
         ioc.run();
     }
+
 }
