@@ -4,7 +4,9 @@
 
 namespace polyfill
 {
-    namespace net = config::net;
+    namespace net {
+        using namespace config::net;
+    }
     using config::error_code;
     using config::system_error;
 }
