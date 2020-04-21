@@ -13,7 +13,9 @@ TEST_CASE("polyfill::net::future")
     SECTION("coroutines")
     {
         polyfill::net::co_spawn(exec, [&]()->polyfill::net::awaitable<std::string>{
-            co_return * co_await f.co_wait();
+
+            co_await f.co_wait();
+
         }, [](std::exception_ptr ep, std::string s){
             CHECK(bool(ep));
         });

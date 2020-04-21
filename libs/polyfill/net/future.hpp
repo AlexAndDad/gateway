@@ -163,7 +163,11 @@ namespace polyfill::net
                 future_wait_op< T > { impl_ }, token, get_executor());
         }
 
-        auto co_wait() { return async_wait(net::use_awaitable); }
+        auto co_wait() -> awaitable< T >
+        {
+            auto ot = co_await async_wait(net::use_awaitable);
+            co_return std::move(*ot);
+        }
 
         auto get_executor() const -> executor_type { return impl_->get_executor(); }
 
@@ -191,21 +195,18 @@ namespace polyfill::net
         }
 
         promise(promise &&other) noexcept
-            : impl_(std::move(other.impl_))
+        : impl_(std::move(other.impl_))
         {
         }
 
-        promise& operator=(promise &&other) noexcept
+        promise &operator=(promise &&other) noexcept
         {
             destroy();
             impl_ = std::move(other.impl_);
             return *this;
         }
 
-        ~promise() noexcept
-        {
-            destroy();
-        }
+        ~promise() noexcept { destroy(); }
 
         void set_value(T val)
         {
@@ -222,7 +223,6 @@ namespace polyfill::net
         future< T > get_future() { return future< T >(impl_); }
 
       private:
-
         void destroy()
         {
             if (impl_)
