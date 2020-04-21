@@ -14,7 +14,7 @@ namespace minecraft
         position(std::int32_t x, std::int32_t y, std::int32_t z)
             : x_(x)
             , y_(y)
-            , z_(y)
+            , z_(z)
         {
         }
 

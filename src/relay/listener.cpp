@@ -16,8 +16,8 @@ namespace relay
     }
 
     listener::listener(executor_type exec, listener_config config)
-    : acceptor_(exec)
-    , config_(std::move(config))
+    : config_(std::move(config))
+    , acceptor_(exec)
     {
         using namespace std::literals;
         error_code ec;
@@ -33,10 +33,10 @@ namespace relay
             if (ec.failed() && ec != net::error::address_in_use)
                 throw system_error(ec);
             std::cout << ec.message() << std::endl;
-            auto t = net::system_timer (get_executor());
+            auto t = net::system_timer(get_executor());
             t.expires_after(5s);
             t.wait();
-        } while(ec.failed());
+        } while (ec.failed());
         acceptor_.listen();
         spdlog::info("relay: listening on {}", minecraft::report(acceptor_));
     }

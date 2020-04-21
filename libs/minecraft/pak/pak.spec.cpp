@@ -10,7 +10,7 @@
 #include <zlib.h>
 
 void add_buffer_to_vector(std::vector<char> &vector, const char *buffer, uLongf length) {
-    for (int character_index = 0; character_index < length; character_index++) {
+    for (std::size_t character_index = 0; character_index < length; character_index++) {
         char current_character = buffer[character_index];
         vector.push_back(current_character);
     }

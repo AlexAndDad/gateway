@@ -3,95 +3,60 @@
 #include "net.hpp"
 
 #include <exception>
+#include <fmt/ostream.h>
+#include <string_view>
 
 namespace polyfill
 {
+    namespace detail
+    {
+        void start_entry(std::ostream &s, std::exception &e, std::size_t level);
+        void start_entry(std::ostream &s, config::system_error &e, std::size_t level);
+        void close_entry(std::ostream &s);
+    }   // namespace detail
+
     struct explainer
     {
-        std::exception_ptr ep = std::current_exception();
+        explainer(std::exception_ptr ep = std::current_exception());
 
-        template < class Stream >
-        static void emit(Stream &s, std::exception &e, std::size_t level)
-        {
-            s << std::string(level, ' ') << "exception: " << e.what() << '\n';
-        }
+        void operator()(std::ostream &s) const;
 
-        template < class Stream >
-        static void emit(Stream &s, config::system_error &e, std::size_t level)
-        {
-            s << std::string(level, ' ') << "system error: " << e.what() << " : code=" << e.code().value()
-              << " : category=" << e.code().category().name() << " : message=" << e.code().message() << '\n';
-        }
+      private:
+        static void print(std::ostream &os, std::string_view s, std::size_t level = 0);
 
-        template < class Stream, class Exception >
-        static void print(Stream &os, Exception &e, std::size_t level = 0)
-        {
-            emit(os, e, level);
-            try
-            {
-                std::rethrow_if_nested(e);
-            }
-            catch (config::system_error &e)
-            {
-                print(os, e, level + 1);
-            }
-            catch (std::exception &e)
-            {
-                print(os, e, level + 1);
-            }
-            catch (...)
-            {
-                os << std::string(level, ' ') << "exception: unknown" << '\n';
-            }
-        }
+        template < class Exception >
+        static void print(std::ostream &os, Exception &e, std::size_t level = 0);
 
-        template < class Stream >
-        void operator()(Stream &s) const
-        {
-            try
-            {
-                std::rethrow_exception(ep);
-                s << "no exception";
-            }
-            catch (config::system_error &e)
-            {
-                print(s, e);
-            }
-            catch (std::exception &e)
-            {
-                print(s, e);
-            }
-            catch (...)
-            {
-                s << "exception: unknown" << '\n';
-            }
-        }
+        friend std::ostream &operator<<(std::ostream &s, explainer const &ex);
 
-        friend std::ostream &operator<<(std::ostream &s, explainer const &ex)
-        {
-            ex(s);
-            return s;
-        }
+        std::exception_ptr ep;
     };
 
-    inline auto explain(std::exception_ptr ep = std::current_exception()) -> explainer { return explainer { ep }; }
+    auto explain(std::exception_ptr ep = std::current_exception()) -> explainer;
 
-    inline auto deduce_return_code(std::exception_ptr ep = std::current_exception()) -> int
+    auto deduce_return_code(std::exception_ptr ep = std::current_exception()) -> int;
+
+    template < class Exception >
+    void explainer::print(std::ostream &os, Exception &e, std::size_t level)
     {
-        int result = 0;
+        detail::start_entry(os, e, level);
         try
         {
-            std::rethrow_exception(ep);
+            std::rethrow_if_nested(e);
         }
-        catch (config::system_error &se)
+        catch (config::system_error &e)
         {
-            result = se.code().value();
+            print(os, e, level + 1);
+        }
+        catch (std::exception &e)
+        {
+            print(os, e, level + 1);
         }
         catch (...)
         {
-            result = 127;
+            print(os, std::string_view("unknown"), level + 1);
         }
-
-        return result;
+        detail::close_entry(os);
     }
+
 }   // namespace polyfill

@@ -34,6 +34,20 @@ find_package(ZLIB CONFIG REQUIRED)
 hunter_add_package(Catch)
 find_package(Catch2)
 
+if (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
+        # using Clang
+        add_compile_options(-Wall -Wextra -pedantic -Werror -fchar8_t)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "[Gg][Nn][Uu]")
+        # using GCC
+        add_compile_options(-Wall -Wextra -pedantic -Werror)
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        # using Intel C++
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # using Visual Studio C++
+        add_compile_options(/W4 /WX)
+    endif ()
+endif ()
 
 add_subdirectory(libs)
 add_subdirectory(src)

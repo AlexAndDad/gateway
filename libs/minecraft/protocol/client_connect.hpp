@@ -31,7 +31,8 @@ namespace minecraft::protocol
         {
             auto first = reinterpret_cast< const char * >(data.data());
             auto last  = first + data.size();
-            auto next  = parse(first, last, which_packet_type, ec);
+            auto _ = parse(first, last, which_packet_type, ec);
+            boost::ignore_unused(_);
 
             if (not ec.failed())
             {
@@ -92,7 +93,7 @@ namespace minecraft::protocol
         }
 
         template < class Self >
-        void operator()(Self &self, error_code ec = {}, std::size_t bytes_transferred = 0)
+        void operator()(Self &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0)
         {
 #include <boost/asio/yield.hpp>
             reenter(this) for (;;)
@@ -127,7 +128,7 @@ namespace minecraft::protocol
     auto async_client_connect(protocol::stream< NextLayer > &s, client_connect_state &state, CompletionToken &&token)
     {
         auto op = [&s, &state, coro = net::coroutine()](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
             auto log_fail = [&s, &ec](auto &&context) {
                 auto fail = ec.failed();
                 if (fail)

@@ -32,6 +32,7 @@ TEST_CASE("minecraft::slot_data")
         CHECK(back->item_id == 0);
         CHECK(back->count == 0);
         CHECK(back->nbt_data == nbt::value(nbt::nbt_end()));
+        CHECK(iter == span.end());
 
     }
 

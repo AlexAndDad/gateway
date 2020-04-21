@@ -15,7 +15,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#define MINECRAFT_READ_FRAME_DEBUG 1
+#define MINECRAFT_READ_FRAME_DEBUG 0
 
 namespace minecraft::protocol
 {
@@ -27,7 +27,6 @@ namespace minecraft::protocol
                    buffer,
                    cont         = false,
                    ec_          = error_code(),
-                   transferred_ = std::size_t(0),
                    frame_length =
                        std::int32_t(0)](auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
 #include <boost/asio/yield.hpp>
@@ -83,7 +82,7 @@ namespace minecraft::protocol
 
             read_frame:
 
-                while (buffer.size() < frame_length)
+                while (static_cast<int>(buffer.size()) < frame_length)
                 {
                     original_size = buffer.size();
                     buffer.grow(frame_length - buffer.size());
@@ -162,6 +161,7 @@ namespace minecraft::protocol
     {
         auto op = [&s, coro = net::coroutine(), &target](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+            boost::ignore_unused(bytes_transferred);
 #include <boost/asio/yield.hpp>
             reenter(coro)
             {

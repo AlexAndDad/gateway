@@ -10,6 +10,7 @@
 
 #include <boost/beast/core/bind_handler.hpp>
 #include <variant>
+#include <wise_enum/wise_enum.h>
 
 namespace polyfill::net
 {
@@ -22,12 +23,19 @@ namespace polyfill::net
         virtual void notify_error(error_code ec)            = 0;
     };
 
+    /// A signal type indicating that the future does not yet have state
+    struct future_pending {};
+
+    /// A signal type that indicates that the future state has completed the promise by invoking the future's handler
+    /// with either an error or a value
+    struct future_completed {};
+
     template < class T >
     struct future_state_impl
     {
         using executor_type  = net::executor;
         using optional_value = std::optional< T >;
-        using variant_type   = std::variant< std::monostate, error_code, optional_value >;
+        using variant_type   = std::variant< future_pending, error_code, optional_value , future_completed>;
 
         explicit future_state_impl(executor_type exec)
         : exec_(exec)

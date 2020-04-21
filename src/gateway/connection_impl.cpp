@@ -192,6 +192,7 @@ namespace gateway
                 auto last  = buf.end();
                 auto ec    = boost::system::error_code();
                 auto i     = minecraft::parse_var(first, last, id, ec);
+                boost::ignore_unused(i);
 
                 spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
                              this,
@@ -224,6 +225,7 @@ namespace gateway
     {
         auto op = [&stream, coro = net::coroutine(), first, last](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+            boost::ignore_unused(bytes_transferred);
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {

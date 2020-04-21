@@ -46,7 +46,7 @@ namespace minecraft::protocol
                                       "}";
 
         auto op = [&stream, coro = net::coroutine(), pstate = std::move(state)](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             auto not_eof = [&ec]() -> error_code&
             {

@@ -51,7 +51,7 @@ namespace minecraft::security {
     void x509::serial_number(int val)
     {
         assert(native_handle());
-        ASN1_INTEGER_set(X509_get_serialNumber(native_handle()), 1);
+        ASN1_INTEGER_set(X509_get_serialNumber(native_handle()), val);
     }
 
     void x509::not_before(std::chrono::seconds from_now)

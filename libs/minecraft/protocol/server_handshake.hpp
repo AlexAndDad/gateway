@@ -25,7 +25,7 @@ namespace minecraft::protocol
         request->next_state       = next_state;
 
         auto op = [&stream, coro = net::coroutine(), request = std::move(request)](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             reenter(coro)
             {
@@ -48,7 +48,7 @@ namespace minecraft::protocol
     auto async_server_handshake(stream< NextLayer > &stream, CompletionHandler &&handler)
     {
         auto op = [&stream, coro = net::coroutine(), request = std::make_unique< minecraft::client::handshake >()](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             if (ec.failed())
                 self.complete(ec, connection_state::initial);

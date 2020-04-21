@@ -4,7 +4,7 @@
 
 TEST_CASE("polyfill::net::future")
 {
-    auto ioc = polyfill::net::io_context();
+    auto ioc  = polyfill::net::io_context();
     auto exec = ioc.get_executor();
 
     auto p = polyfill::net::promise< std::string >(exec);
@@ -12,13 +12,24 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("coroutines")
     {
-        polyfill::net::co_spawn(exec, [&]()->polyfill::net::awaitable<std::string>{
-
-            co_await f.co_wait();
-
-        }, [](std::exception_ptr ep, std::string s){
-            CHECK(bool(ep));
-        });
+        polyfill::net::co_spawn(
+            exec,
+            [&]() -> polyfill::net::awaitable< void > {
+                std::string s;
+                try
+                {
+                    s = co_await f.co_wait();
+                    FAIL();
+                }
+                catch (polyfill::system_error &)
+                {
+                }
+                catch (...)
+                {
+                    FAIL();
+                }
+            },
+            polyfill::net::detached);
         p = polyfill::net::promise< std::string >(exec);
         ioc.run();
     }
@@ -79,5 +90,4 @@ TEST_CASE("polyfill::net::future")
         p = polyfill::net::promise< std::string >(exec);
         ioc.run();
     }
-
 }

@@ -39,7 +39,7 @@ namespace minecraft::protocol::compression
                 return std::string("unexpected event code: " + std::to_string(ev));
             }
 
-            bool failed(int ev) const noexcept override { return false; }
+            bool failed(int) const noexcept override { return false; }
 
         } cat_;
         return cat_;

@@ -93,6 +93,7 @@ namespace minecraft::protocol
         template < class Self >
         void operator()(Self &self, error_code ec = {}, std::size_t bytes_transferred = 0)
         {
+            boost::ignore_unused(bytes_transferred);
 #include <boost/asio/yield.hpp>
             if (log_fail(ec).failed())
                 return self.complete(ec);

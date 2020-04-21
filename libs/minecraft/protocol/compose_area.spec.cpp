@@ -42,8 +42,6 @@ TEST_CASE("minecraft::protocol::compose_area")
 
     protocol::compose_area ca;
 
-    auto &buf = ca.prepare();
-
     protocol::compression::deflate_impl test_deflate_;
     protocol::compression::inflate_impl test_inflate_;
 

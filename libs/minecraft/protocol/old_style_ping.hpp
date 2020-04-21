@@ -64,7 +64,7 @@ namespace minecraft::protocol
         using socket_type = net::basic_stream_socket< Protocol, Executor >;
 
         auto op = [&sock, coro = net::coroutine(), mem = std::vector< char >(1)](
-                      auto &self, error_code ec = {}, std::size_t bytes_transfered = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transfered*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             reenter(coro)
             {
@@ -91,7 +91,7 @@ namespace minecraft::protocol
     auto async_read_be_utf16(Stream &stream, std::u16string &result, CompletionToken &&token)
     {
         auto op = [&stream, &result, coro = net::coroutine(), length = std::uint16_t(), buffer = std::vector< char >()](
-                      auto &self, error_code ec = {}, std::size_t bytes_transfered = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transfered*/ = 0) mutable {
             using minecraft::parse;
             if (ec.failed())
                 return self.complete(ec);
@@ -138,7 +138,7 @@ namespace minecraft::protocol
     auto async_old_style_ping(stream< NextLayer > &stream, CompletionToken &&token)
     {
         auto op = [&stream, coro = net::coroutine(), state = std::make_unique< osp_state >()](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
             using minecraft::parse;
 #include <boost/asio/yield.hpp>
             if (ec.failed())

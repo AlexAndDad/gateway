@@ -106,7 +106,7 @@ struct has_resolver
 template < class Protocol, class Derived >
 struct has_multiconnect
 {
-    has_multiconnect(net::executor e) {}
+    has_multiconnect() {}
 
   private:
     using protocol         = Protocol;
@@ -153,7 +153,7 @@ struct has_multiconnect
     template < class Self >
     void initiate_connects(Self &self, resolver_results const &endpoints)
     {
-        std::transform(endpoints.begin(), endpoints.end(), std::back_inserter(socks), [&](auto iter) {
+        std::transform(endpoints.begin(), endpoints.end(), std::back_inserter(socks), [&](auto&&) {
             return socket_type(self.get_executor());
         });
         auto i = std::size_t(0);
@@ -188,7 +188,7 @@ struct mass_connect_op
     , has_error()
     , has_timeout< mass_connect_op< Socket > >(sock.get_executor(), timeout)
     , has_resolver< protocol, mass_connect_op< Socket > >(sock.get_executor())
-    , has_multiconnect< protocol, mass_connect_op< Socket > >(sock.get_executor())
+    , has_multiconnect< protocol, mass_connect_op< Socket > >()
     , sock_(sock)
     , hostname_(std::move(hostname))
     , port_(std::move(port))

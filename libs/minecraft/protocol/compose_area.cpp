@@ -17,7 +17,7 @@ namespace minecraft::protocol
 
     net::const_buffer compose_area::commit(int compression_threshold)
     {
-        const auto uncompressed_size = frame().size();
+        const auto uncompressed_size = static_cast<int>(frame().size());
 
         if (compression_threshold < 0)
         {

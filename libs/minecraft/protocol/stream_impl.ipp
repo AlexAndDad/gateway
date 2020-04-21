@@ -21,7 +21,7 @@ namespace minecraft::protocol
         typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
     {
         auto op = [this, coro = net::coroutine(), ec_ = error_code()](
-                      auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
+                      auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             reenter(coro) for (;;)
             {
@@ -119,7 +119,6 @@ namespace minecraft::protocol
         auto op = [this, coro = net::coroutine(), ec_ = error_code(), original_size_ = std::size_t()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
 #include <boost/asio/yield.hpp>
-            std::size_t grow_size;
 
             reenter(coro) for (;;)
             {
@@ -257,8 +256,6 @@ namespace minecraft::protocol
     std::ostream &operator<<(std::ostream &os, stream_impl< NextLayer > &impl)
     {
         fmt::print(os, "[stream {} [transport {}]", impl.as_base(), report(impl.next_layer_));
-        auto prefix = []() { return std::string_view("\n    "); };
-
         return os;
     }
 

@@ -12,8 +12,8 @@ namespace gateway
     }
 
     listener::listener(executor_type exec, listener_config config)
-    : acceptor_(exec)
-    , config_(std::move(config))
+    : config_(std::move(config))
+    , acceptor_(exec)
     {
         acceptor_.open(protocol::v4());
         acceptor_.set_option(socket_type::reuse_address());

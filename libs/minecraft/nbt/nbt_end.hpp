@@ -28,7 +28,7 @@ namespace minecraft::nbt
     }
 
     template < class Iter >
-    Iter parse(Iter first, Iter last, nbt_end &arg, error_code &ec)
+    Iter parse(Iter first, Iter /*last*/, nbt_end &/*arg*/, error_code &ec)
     {
         ec.clear();
         return first;

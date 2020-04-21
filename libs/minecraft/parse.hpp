@@ -23,7 +23,7 @@ namespace minecraft
 
         if (ec.failed())
         {
-            if (std::distance(first, last) < byte_count)
+            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
             {
                 ec = error::incomplete_parse;
             }
@@ -47,7 +47,7 @@ namespace minecraft
 
         if (ec.failed())
         {
-            if (std::distance(first, last) < byte_count)
+            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
             {
                 ec = error::incomplete_parse;
             }
@@ -74,7 +74,7 @@ namespace minecraft
 
         if (not ec.failed())
         {
-            if (std::distance(first, last) < byte_count)
+            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
                 ec = error::incomplete_parse;
             else
             {
@@ -171,7 +171,7 @@ namespace minecraft
             first     = parse_var(first, last, size, ec);
             if (not ec.failed())
             {
-                auto available = static_cast< std::size_t >(std::distance(first, last));
+                auto available = std::distance(first, last);
                 if (size > available)
                     return err(error::incomplete_parse);
 
@@ -196,6 +196,7 @@ namespace minecraft
     }
 
     template < class Enum >
+    [[nodiscard]]
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator second, var_enum< Enum > &target, error_code &ec)
     {
@@ -256,7 +257,7 @@ namespace minecraft
         first = parse_var(first, last, size, ec);
         if (not ec.failed())
         {
-            constexpr auto byte_limit = Limit * 4;
+            constexpr auto byte_limit = static_cast<int>(Limit) * 4;
             auto available = std::distance(first, last);
             if (size > byte_limit)
                 ec = error::invalid_string;

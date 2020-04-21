@@ -42,6 +42,7 @@ namespace bot
                         auto span = to_span(stream_.current_frame());
                         error_code ec;
                         auto next = parse(span.begin(), span.end(), packet, ec);
+                        boost::ignore_unused(next);
                         if (not ec.failed())
                         {
                             spdlog::info("recognised {}", packet);

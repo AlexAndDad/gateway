@@ -1,29 +1,30 @@
 #include "minecraft/parse.hpp"
+
 #include <catch2/catch.hpp>
 
 TEST_CASE("parse fundamentals")
 {
     using namespace minecraft;
 
-    using vec = compose_buffer ;
+    using vec = compose_buffer;
 
     SECTION("int32_t")
     {
         auto good = [](vec v, minecraft::var_int expected, std::size_t expected_length) {
-            auto data = to_span(v);
-            auto result   = var_int();
+            auto       data   = to_span(v);
+            auto       result = var_int();
             error_code ec;
-            auto next = parse(data.begin(), data.end(), result, ec);
+            auto       next = parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
             CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
         auto bad = [](vec v, minecraft::error_code expected, std::size_t expected_length = 0) {
-            auto data = to_span(v);
-            auto result   = var_int();
+            auto       data   = to_span(v);
+            auto       result = var_int();
             error_code ec;
-            auto next =  parse(data.begin(), data.end(), result, ec);
+            auto       next = parse(data.begin(), data.end(), result, ec);
             CHECK(ec.failed());
             CHECK(expected.message() == ec.message());
             CHECK(std::distance(data.begin(), next) == expected_length);
@@ -45,15 +46,16 @@ TEST_CASE("parse fundamentals")
     SECTION("int64_t")
     {
         auto good = [](vec v, var_long expected, std::size_t expected_length) {
-            auto data = to_span(v);
-            auto result   = var_long();
+            auto       data   = to_span(v);
+            auto       result = var_long();
             error_code ec;
-            auto next = minecraft::parse(data.begin(), data.end(), result, ec);
+            auto       next = minecraft::parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
             CHECK(std::distance(data.begin(), next) == expected_length);
         };
 
+        /*
         auto bad = [](vec v, minecraft::error_code expected, std::size_t expected_length = 0) {
             auto data = to_span(v);
             auto result   = minecraft::var_long();
@@ -63,6 +65,7 @@ TEST_CASE("parse fundamentals")
             CHECK(expected.message() == ec.message());
             CHECK(std::distance(data.begin(), next) == expected_length);
         };
+*/
 
         SECTION("00") { good(vec { 0x00 }, 0, 1); }
         SECTION("01") { good(vec { 0x01 }, 1, 1); }
@@ -91,7 +94,7 @@ TEST_CASE("parse fundamentals")
         SECTION("80 80 80 80 80 80 80 80 80 01")
         {
             good(vec { '\x80', '\x80', '\x80', '\x80', '\x80', '\x80', '\x80', '\x80', '\x80', '\x01' },
-                 0x8000000000000000LL, // -9223372036854775808
+                 0x8000000000000000LL,   // -9223372036854775808
                  10);
         }
     }
