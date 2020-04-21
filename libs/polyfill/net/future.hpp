@@ -11,31 +11,28 @@
 #include <boost/beast/core/bind_handler.hpp>
 #include <variant>
 #include <wise_enum/wise_enum.h>
+#include "polyfill/net/detail/future_invoker_base.hpp"
 
 namespace polyfill::net
 {
-    template < class T >
-    struct future_invoker_base
-    {
-        virtual ~future_invoker_base() = default;
-
-        virtual void notify_value(std::optional< T > &&val) = 0;
-        virtual void notify_error(error_code ec)            = 0;
-    };
 
     /// A signal type indicating that the future does not yet have state
-    struct future_pending {};
+    struct future_pending
+    {
+    };
 
     /// A signal type that indicates that the future state has completed the promise by invoking the future's handler
     /// with either an error or a value
-    struct future_completed {};
+    struct future_completed
+    {
+    };
 
     template < class T >
     struct future_state_impl
     {
         using executor_type  = net::executor;
         using optional_value = std::optional< T >;
-        using variant_type   = std::variant< future_pending, error_code, optional_value , future_completed>;
+        using variant_type   = std::variant< future_pending, error_code, optional_value, future_completed >;
 
         explicit future_state_impl(executor_type exec)
         : exec_(exec)
@@ -70,7 +67,7 @@ namespace polyfill::net
                 var_ = std::move(ec);
         }
 
-        void set_invoker(std::unique_ptr< future_invoker_base< T > > pinvoker)
+        void set_invoker(std::unique_ptr< detail::future_invoker_base< T > > pinvoker)
         {
             // we should assert that this has not happened more than once
             assert(!invoker_);
@@ -100,12 +97,12 @@ namespace polyfill::net
         auto get_executor() const -> executor_type { return exec_; }
 
         executor_type                               exec_;
-        std::unique_ptr< future_invoker_base< T > > invoker_;
+        std::unique_ptr< detail::future_invoker_base< T > > invoker_;
         variant_type                                var_;
     };
 
     template < class T, class Handler >
-    struct future_invoker : future_invoker_base< T >
+    struct future_invoker : detail::future_invoker_base< T >
     {
         explicit future_invoker(Handler &&handler)
         : handler_(std::move(handler))
@@ -164,18 +161,12 @@ namespace polyfill::net
         using impl_type     = std::shared_ptr< impl_class >;
         using executor_type = typename impl_class::executor_type;
 
-        template < class CompletionHandler >
-        auto async_wait(CompletionHandler &&token)
-        {
-            return net::async_compose< CompletionHandler, void(error_code, std::optional< T >) >(
-                future_wait_op< T > { impl_ }, token, get_executor());
-        }
+        auto operator()() -> awaitable< T >;
 
-        auto co_wait() -> awaitable< T >
-        {
-            auto ot = co_await async_wait(net::use_awaitable);
-            co_return std::move(*ot);
-        }
+        template < class CompletionHandler >
+        auto async_wait(CompletionHandler &&token);
+
+        auto co_get() -> awaitable< T >;
 
         auto get_executor() const -> executor_type { return impl_->get_executor(); }
 
@@ -244,3 +235,5 @@ namespace polyfill::net
     };
 
 }   // namespace polyfill::net
+
+#include "polyfill/net/impl/future.hpp"

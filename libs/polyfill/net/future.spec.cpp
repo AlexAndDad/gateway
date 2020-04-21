@@ -18,7 +18,7 @@ TEST_CASE("polyfill::net::future")
                 std::string s;
                 try
                 {
-                    s = co_await f.co_wait();
+                    s = co_await f.co_get();
                     FAIL();
                 }
                 catch (polyfill::system_error &)

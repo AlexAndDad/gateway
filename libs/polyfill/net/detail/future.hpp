@@ -5,9 +5,10 @@
 // Official repository: https://github.com/AlexAndDad/gateway
 //
 
+#pragma once
 #include "polyfill/net/future.hpp"
 
-namespace polyfill::net
+namespace polyfill::net::detail
 {
 
 }
