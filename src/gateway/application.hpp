@@ -8,27 +8,24 @@ namespace gateway
 {
     struct app_config : listener_config
     {
-        auto as_listener_config() const -> listener_config const&
-        {
-            return *this;
-        }
+        auto as_listener_config() const -> listener_config const & { return *this; }
 
-        friend auto operator<<(std::ostream& os, app_config const& cfg) -> std::ostream&
+        friend auto operator<<(std::ostream &os, app_config const &cfg) -> std::ostream &
         {
             os << "Application Config\n";
             os << cfg.as_listener_config();
             return os;
         }
-
     };
 
     struct application
     {
         using executor_type = net::io_context::executor_type;
-        using signal_set = net::basic_signal_set<executor_type>;
+        using signal_set    = net::basic_signal_set< executor_type >;
 
-        application(executor_type exec)
-        : signals_(exec)
+        application(executor_type exec, app_config const &config)
+        : config_(config)
+        , signals_(exec)
         , listener_(exec, config_)
         {
             std::cout << "Application Starting\n\n";
@@ -38,34 +35,24 @@ namespace gateway
 
         void start()
         {
-            dispatch(bind_executor(get_executor(), [this]{
-                this->handle_start();
-            }));
+            dispatch(bind_executor(get_executor(), [this] { this->handle_start(); }));
         }
 
         void cancel()
         {
-            dispatch(bind_executor(get_executor(), [this]{
-                this->handle_cancel();
-            }));
+            dispatch(bind_executor(get_executor(), [this] { this->handle_cancel(); }));
         }
 
-        auto get_executor() -> executor_type
-        {
-            return signals_.get_executor();
-        }
+        auto get_executor() -> executor_type { return signals_.get_executor(); }
 
-    private:
-
+      private:
         void handle_start()
         {
-            signals_.async_wait([this](error_code const& ec, int sig){
-                handle_signal(ec, sig);
-            });
+            signals_.async_wait([this](error_code const &ec, int sig) { handle_signal(ec, sig); });
             start_all_services();
         }
 
-        void handle_signal(error_code const& ec, int sig)
+        void handle_signal(error_code const &ec, int sig)
         {
             if (ec.failed())
             {
@@ -92,19 +79,13 @@ namespace gateway
             cancel_all_services();
         }
 
-        void start_all_services()
-        {
-            listener_.start();
-        }
+        void start_all_services() { listener_.start(); }
 
-        void cancel_all_services()
-        {
-            listener_.cancel();
-        }
+        void cancel_all_services() { listener_.cancel(); }
 
-        app_config config_;
+        app_config const &config_;
 
         signal_set signals_;
-        listener listener_;
+        listener   listener_;
     };
-}
+}   // namespace gateway

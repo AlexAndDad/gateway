@@ -3,15 +3,23 @@
 #include "polyfill/explain.hpp"
 
 #include <iostream>
+#include <boost/program_options.hpp>
 
 namespace gateway
 {
     void run()
     {
+        namespace po = boost::program_options;
+
+        app_config config;
+
+
+
+
         auto ioc = net::io_context(1);
         auto exec = ioc.get_executor();
 
-        auto app = application(exec);
+        auto app = application(exec, config);
         app.start();
 
 
