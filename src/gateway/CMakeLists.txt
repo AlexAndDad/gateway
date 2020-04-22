@@ -15,7 +15,7 @@ list(FILTER src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER src_files EXCLUDE REGEX "^.*main\\.cpp$")
 
 add_library(gateway_lib ${src_files} ${hdr_files})
-target_link_libraries(gateway_lib PUBLIC minecraft_lib)
+target_link_libraries(gateway_lib PUBLIC minecraft_lib Boost::json)
 
 add_executable(gateway main.cpp)
 target_link_libraries(gateway PUBLIC gateway_lib)

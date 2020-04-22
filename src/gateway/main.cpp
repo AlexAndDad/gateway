@@ -5,6 +5,8 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
+#include <boost/json/string.hpp>
+
 namespace gateway
 {
     void run()
