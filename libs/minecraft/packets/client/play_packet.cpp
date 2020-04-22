@@ -7,6 +7,7 @@
 
 #include "play_packet.hpp"
 
+#include "minecraft/compose.hpp"
 #include "minecraft/parse.hpp"
 
 #include <boost/utility/identity_type.hpp>
@@ -14,8 +15,10 @@
 
 namespace minecraft::packets::client
 {
-
-    template<class T> struct identity {};
+    template < class T >
+    struct identity
+    {
+    };
 
     template < class... Ts >
     struct for_all_types_impl;
@@ -23,8 +26,11 @@ namespace minecraft::packets::client
     template <>
     struct for_all_types_impl<>
     {
-        template<class...Args>
-        bool operator()(Args&&...) const { return false; };
+        template < class... Args >
+        bool operator()(Args &&...) const
+        {
+            return false;
+        };
     };
 
     template < class T, class... Rest >
@@ -49,24 +55,41 @@ namespace minecraft::packets::client
         auto res = first;
         if (not ec)
         {
-            auto id = var_enum< play_id >();
-            first   = parse(first, last, id, ec);
-            for_all_types([&]< class Type >(identity< Type >, play_packet_variant &var) {
-                if constexpr (std::is_same_v<Type, std::monostate>)
-                    return false;
-                else if (Type::id() == id.value())
-                {
-                    Type& actual = var.emplace<Type>();
-                    first = parse(first, last, actual, ec);
-                    return true;
-                }
-                else return false;
-            }, pkt.as_variant());
+            auto id    = var_enum< play_id >();
+            first      = parse(first, last, id, ec);
+            auto found = for_all_types(
+                [&]< class Type >(identity< Type >, play_packet_variant &var) {
+                    if constexpr (std::is_same_v< Type, std::monostate >)
+                        return false;
+                    else if (Type::id() == id.value())
+                    {
+                        Type &actual = var.emplace< Type >();
+                        first        = parse(first, last, actual, ec);
+                        return true;
+                    }
+                    else
+                        return false;
+                },
+                pkt.as_variant());
+            if (not ec and not found)
+                ec = error::invalid_packet;
             if (not ec)
                 res = first;
         }
 
         return res;
+    }
+
+    void compose(play_packet const &pkt, compose_buffer &buf)
+    {
+        std::visit(
+            [&buf]< class T >(T const &actual) {
+                if constexpr (std::is_same_v< T, std::monostate >)
+                    assert(!"logic error - composing an empty packet");
+                else
+                    compose(actual, buf);
+            },
+            pkt.as_variant());
     }
 
 }   // namespace minecraft::packets::client

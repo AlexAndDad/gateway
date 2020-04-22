@@ -30,6 +30,8 @@ namespace minecraft::packets::client
             ec = error::invalid_packet;
         return ec.failed() ? first : current;
     }
+
+    void compose(keep_alive const& pkt, compose_buffer& buf);
 }
 
 

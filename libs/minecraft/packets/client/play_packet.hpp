@@ -40,6 +40,9 @@ namespace minecraft::packets::client
             as_variant());
     }
 
-    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, play_packet& pkt, error_code& ec);
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, play_packet &pkt, error_code &ec);
+
+    void compose(play_packet const& pkt, compose_buffer& buf);
 
 }   // namespace minecraft::packets::client
