@@ -14,3 +14,8 @@ hunter_config(BoostWebclient
         GIT_SUBMODULE git-deps/boost-webclient
         CONFIGURATION_TYPES Release RelWithDebInfo Debug
         CMAKE_ARGS BOOST_WEBCLIENT_USE_HUNTER=ON)
+
+hunter_config(boost_json
+        GIT_SUBMODULE git-deps/boost_json
+        CONFIGURATION_TYPES Release
+        CMAKE_ARGS BOOST_JSON_ALLOW_TESTS=NO)

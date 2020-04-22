@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include <boost/json/string.hpp>
+
 namespace gateway
 {
     void run()
