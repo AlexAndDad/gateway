@@ -10,3 +10,6 @@
 [submodule "git-deps/boost-webclient"]
 	path = git-deps/boost-webclient
 	url = git@github.com:madmongo1/webclient.git
+[submodule "git-deps/boost_json"]
+	path = git-deps/boost_json
+	url = git@github.com:madmongo1/json.git
