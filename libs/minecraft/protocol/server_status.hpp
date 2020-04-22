@@ -9,6 +9,7 @@
 #include "minecraft/protocol/stream.hpp"
 #include "minecraft/status_packets.hpp"
 
+
 namespace minecraft::protocol
 {
     template < class NextLayer, class CompletionToken >

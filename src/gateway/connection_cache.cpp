@@ -2,14 +2,14 @@
 
 namespace gateway
 {
-    void connection_cache::create(connection_config config, socket_type &&sock)
+    void connection_cache::create(connection_config config, socket_type &&sock, minecraft::region::fake_bus & bus)
     {
         if (canceled_)
         {
             return;
         }
         auto ep    = sock.remote_endpoint();
-        auto conn  = connection(std::move(config), std::move(sock));
+        auto conn  = connection(std::move(config), std::move(sock), bus);
         cache_[ep] = conn.get_weak_impl();
     }
 

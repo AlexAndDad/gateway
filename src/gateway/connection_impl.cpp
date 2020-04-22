@@ -5,9 +5,9 @@
 #include "minecraft/protocol/server_handshake.hpp"
 #include "minecraft/protocol/server_status.hpp"
 #include "minecraft/security/rsa.hpp"
-#include "minecraft/server/chat_message.hpp"
-#include "minecraft/server/join_game.hpp"
-#include "minecraft/server/play_packet.hpp"
+#include "minecraft/packets/server/chat_message.hpp"
+#include "minecraft/packets/server/join_game.hpp"
+#include "minecraft/packets/server/play_packet.hpp"
 #include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 #include "polyfill/report.hpp"
@@ -58,12 +58,6 @@ namespace gateway
 
     // =========================================
 
-    connection_impl::connection_impl(connection_config config, socket_type &&sock)
-    : config_(std::move(config))
-    , stream_(std::move(sock))
-    , login_params_(config_.server_id, config_.server_key)
-    {
-    }
 
     auto connection_impl::start() -> void
     {
@@ -135,10 +129,10 @@ namespace gateway
         }
 
         {   // Send join game packet
-            auto packet                  = minecraft::server::join_game();
+            auto packet                  = minecraft::packets::server::join_game();
             packet.entity_id             = 1;
-            packet.game_mode             = minecraft::server::join_game::survival;
-            packet.dimension             = minecraft::server::join_game::overworld;
+            packet.game_mode             = minecraft::packets::server::join_game::survival;
+            packet.dimension             = minecraft::packets::server::join_game::overworld;
             packet.hashed_seed           = 123412341234;
             packet.max_players           = 20;
             packet.level_type            = "default";
@@ -149,13 +143,13 @@ namespace gateway
         }
 
         {   // Send a spawn packet
-            auto pack     = minecraft::server::spawn_position();
+            auto pack     = minecraft::packets::server::spawn_position();
             pack.location = { 0, 60, 0 };
             co_await async_write_packet(pack);
         }
 
         {   // Send a player position and look packet
-            auto pack  = minecraft::server::player_position_and_look();
+            auto pack  = minecraft::packets::server::player_position_and_look();
             pack.x     = 0;
             pack.y     = 60;
             pack.z     = 0;
@@ -172,9 +166,9 @@ namespace gateway
         // Send 3 chat messages
         for (int i = 0; i < 3; ++i)
         {
-            auto pack      = minecraft::server::chat_message();
+            auto pack      = minecraft::packets::server::chat_message();
             pack.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
-            pack.position  = minecraft::server::chat_message::chat_position ::system_message;
+            pack.position  = minecraft::packets::server::chat_message::chat_position ::system_message;
             co_await async_write_packet(pack);
         }
 
@@ -185,15 +179,23 @@ namespace gateway
             {
                 auto bt = co_await stream_.async_read_frame(net::use_awaitable);
 
-                auto id    = std::int32_t();
+
                 auto data  = stream_.current_frame();
                 auto buf   = minecraft::to_span(data);
                 auto first = buf.begin();
                 auto last  = buf.end();
-                auto ec    = boost::system::error_code();
-                auto i     = minecraft::parse_var(first, last, id, ec);
-                boost::ignore_unused(i);
+                boost::ignore_unused(bt);
+                boost::ignore_unused(first);
+                boost::ignore_unused(last);
 
+                // parse the packet using the new expect frame using a variant
+
+
+
+
+
+
+                /*
                 spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
                              this,
                              __func__,
@@ -201,6 +203,7 @@ namespace gateway
                              bt,
                              id,
                              spdlog::to_hex(config::to_span(data)));
+                             */
             }
             catch (system_error &se)
             {

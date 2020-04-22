@@ -3,6 +3,7 @@
 #include "listener.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/security/rsa.hpp"
+#include "minecraft/region/fake_bus.hpp"
 
 namespace gateway
 {
@@ -27,9 +28,9 @@ namespace gateway
         using executor_type = net::io_context::executor_type;
         using signal_set = net::basic_signal_set<executor_type>;
 
-        application(executor_type exec)
+        application(executor_type exec, minecraft::region::fake_bus & bus)
         : signals_(exec)
-        , listener_(exec, config_)
+        , listener_(exec, config_, bus)
         {
             std::cout << "Application Starting\n\n";
             std::cout << config_ << std::endl;

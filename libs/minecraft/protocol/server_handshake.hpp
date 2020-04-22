@@ -1,5 +1,5 @@
 #pragma once
-#include "minecraft/client/handshake.hpp"
+#include "minecraft/packets/client/handshake.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/protocol/connection_state.hpp"
 #include "minecraft/protocol/read_frame.hpp"
@@ -17,7 +17,7 @@ namespace minecraft::protocol
                                 protocol::connection_state next_state,
                                 CompletionHandler &&       handler)
     {
-        auto request = std::make_unique< minecraft::client::handshake >();
+        auto request = std::make_unique< minecraft::packets::client::handshake >();
 
         request->protocol_version = version;
         request->server_port      = stream.server_port();
@@ -47,7 +47,7 @@ namespace minecraft::protocol
     template < class NextLayer, class CompletionHandler >
     auto async_server_handshake(stream< NextLayer > &stream, CompletionHandler &&handler)
     {
-        auto op = [&stream, coro = net::coroutine(), request = std::make_unique< minecraft::client::handshake >()](
+        auto op = [&stream, coro = net::coroutine(), request = std::make_unique< minecraft::packets::client::handshake >()](
                       auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
             if (ec.failed())

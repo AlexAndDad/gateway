@@ -2,7 +2,7 @@
 #include "minecraft/protocol/client_connect.hpp"
 #include "minecraft/protocol/stream.hpp"
 #include "polyfill/explain.hpp"
-#include "minecraft/server/play_packet.hpp"
+#include "minecraft/packets/server/play_packet.hpp"
 #include <boost/asio/awaitable.hpp>
 
 namespace bot

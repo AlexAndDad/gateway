@@ -1,12 +1,10 @@
 
 
 #include "config/net.hpp"
-#include "fake_bus.hpp"
 #include "gateway/application.hpp"
+#include "minecraft/region/fake_bus.hpp"
 #include "polyfill/explain.hpp"
 #include "region_server.hpp"
-
-
 
 #include <iostream>
 #include <memory>
@@ -19,8 +17,8 @@ namespace region
         application(executor_type exec)
         : exec_(exec)
         , bus_(exec)
-        , region_server_(exec)
-        , gateway_server_(exec)
+        , region_server_(exec, bus_)
+        , gateway_server_(exec, bus_)
         {
         }
 
@@ -29,36 +27,22 @@ namespace region
             config::net::co_spawn(
                 exec_,
                 [self = shared_from_this()]() -> config::net::awaitable< void > { co_await self->run(); },
-                [self = shared_from_this()](std::exception_ptr ep) {
-                    try
-                    {
-                        if (ep)
-                            std::rethrow_exception(ep);
-                    }
-                    catch (boost::system::system_error &se)
-                    {
-                        auto &&ec = se.code();
-                        if (ec == config::net::error::operation_aborted)
-                            return;
-                        spdlog::error("{}::{}({})", *self, "run", minecraft::report(ec));
-                    }
-                    catch (...)
-                    {
-                        spdlog::error("{}::{} - exception: ", *self, "run", polyfill::explain());
-                    }
-                });
+                config::net::detached);
         }
 
       private:
         config::net::awaitable< void > run()
         {
+            region_server_.start();
+            gateway_server_.start();
 
+            co_return;
         }
 
-        executor_type        exec_;
-        fake_bus             bus_;
-        region_server        region_server_;
-        gateway::application gateway_server_;
+        executor_type               exec_;
+        minecraft::region::fake_bus bus_;
+        region_server               region_server_;
+        gateway::application        gateway_server_;
     };
 
     void run()

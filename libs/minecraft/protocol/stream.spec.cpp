@@ -1,4 +1,4 @@
-#include "minecraft/client/handshake.hpp"
+#include "minecraft/packets/client/handshake.hpp"
 #include "stream.hpp"
 
 #include <boost/beast/_experimental/test/handler.hpp>

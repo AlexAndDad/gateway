@@ -1,13 +1,13 @@
 #pragma once
 
-#include "minecraft/client/encryption_response.hpp"
-#include "minecraft/client/handshake.hpp"
-#include "minecraft/client/login_start.hpp"
+#include "minecraft/packets/client/encryption_response.hpp"
+#include "minecraft/packets/client/handshake.hpp"
+#include "minecraft/packets/client/login_start.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/send_frame.hpp"
-#include "minecraft/server/encryption_request.hpp"
-#include "minecraft/server/login_success.hpp"
-#include "minecraft/server/set_compression.hpp"
+#include "minecraft/packets/server/encryption_request.hpp"
+#include "minecraft/packets/server/login_success.hpp"
+#include "minecraft/packets/server/set_compression.hpp"
 #include "read_frame.hpp"
 #include "minecraft/protocol/expect_frame.hpp"
 

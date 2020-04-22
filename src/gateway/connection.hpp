@@ -14,7 +14,7 @@ namespace gateway
     {
         using socket_type = connection_impl::socket_type;
 
-        explicit connection(connection_config config, socket_type &&sock);
+        explicit connection(connection_config config, socket_type &&sock, minecraft::region::fake_bus & bus);
 
         void cancel();
 
