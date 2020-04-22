@@ -1,6 +1,6 @@
-#include "chat_message.hpp"
 #include "config/net.hpp"
 #include "minecraft/net.hpp"
+#include "minecraft/packets/server/chat_message.hpp"
 
 #include <boost/beast/_experimental/test/handler.hpp>
 #include <boost/beast/_experimental/test/stream.hpp>
@@ -11,9 +11,9 @@ TEST_CASE("minecraft::packets::server::chat_message")
 {
     using namespace minecraft;
 
-    auto msg      = server::chat_message();
+    auto msg      = minecraft::packets::server::chat_message();
     msg.json_data = R"__json__({ "text": "foo", "bold": "true", })__json__";
-    msg.position  = server::chat_message::chat_position::system_message;
+    msg.position  = minecraft::packets::server::chat_message::chat_position::system_message;
 
     auto ioc               = net::io_context();
     auto client            = boost::beast::test::stream(ioc);
