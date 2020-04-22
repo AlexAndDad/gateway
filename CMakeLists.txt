@@ -17,6 +17,9 @@ find_package(Boost COMPONENTS filesystem iostreams program_options system REQUIR
 hunter_add_package(BoostWebclient)
 find_package(boost_WEBCLIENT)
 
+hunter_add_package(BoostJson)
+find_package(boost_json)
+
 hunter_add_package(spdlog COMPONENTS)
 find_package(spdlog)
 
