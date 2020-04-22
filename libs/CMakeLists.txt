@@ -5,10 +5,10 @@
 set(libs_spec_files)
 set(all_libs)
 
+
 #
 # config
 #
-
 set(TEST_DATA_DIR "${PROJECT_SOURCE_DIR}/test_data")
 configure_file(config/test_data.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/config/test_data.hpp @ONLY)
 
