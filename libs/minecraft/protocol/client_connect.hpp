@@ -66,12 +66,12 @@ namespace minecraft::protocol
 
         // arguments and results
 
-        client::handshake           client_handshake;
-        client::login_start         client_login_start;
-        server::set_compression     server_set_compression;
-        server::encryption_request  server_encryption_request;
-        client::encryption_response client_encryption_response;
-        server::login_success       server_login_success;
+        packets::client::handshake           client_handshake;
+        packets::client::login_start         client_login_start;
+        packets::server::set_compression     server_set_compression;
+        packets::server::encryption_request  server_encryption_request;
+        packets::client::encryption_response client_encryption_response;
+        packets::server::login_success       server_login_success;
 
         security::private_key server_key;
         shared_secret         secret;
