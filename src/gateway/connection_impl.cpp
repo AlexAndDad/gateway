@@ -84,6 +84,14 @@ namespace gateway
             });
     }
 
+    template < class... Ts >
+    struct overloaded : Ts...
+    {
+        using Ts::operator()...;
+    };
+    template < class... Ts >
+    overloaded(Ts...) -> overloaded< Ts... >;
+
     auto connection_impl::run() -> net::awaitable< void >
     {
         //
@@ -125,6 +133,10 @@ namespace gateway
                 co_return;
             }
         }
+
+        // Client is now logged in.
+        // Notify the bus
+        bus_.produce_username({ stream_.player_name(), true });
 
         {   // Send join game packet
             auto packet                  = minecraft::packets::server::join_game();
@@ -184,8 +196,8 @@ namespace gateway
                 boost::ignore_unused(bt);
 
                 // parse the packet using the new expect frame using a variant
-                auto pack = minecraft::packets::client_play_packet();
-                auto ec   = error_code();
+                minecraft::packets::client_play_packet pack = minecraft::packets::client_play_packet();
+                auto                                   ec   = error_code();
                 parse(first, last, pack, ec);
 
                 if (ec)
@@ -195,31 +207,19 @@ namespace gateway
                 }
                 else
                 {
-                    struct packet_handler
-                    {
-                        packet_handler(minecraft::region::fake_bus &bus, minecraft::packets::client_play_packet *packet)
-                        : bus_(bus)
-                        , packet_(packet)
-                        {
-                        }
-
-                        void operator()(minecraft::packets::client::keep_alive &&arg) { bus_. }
-                        void operator()(auto arg)
-                        {
-                            spdlog::warn("{}::{}({})", this, __func__, "unhandled packet type");
-                        }
-                        void operator()(std::monostate)
-                        {
-                            spdlog::warn("{}::{}({})", this, __func__, "got 'monostate' in packet_handler");
-                        }
-
-                      private:
-                        minecraft::region::fake_bus &           bus_;
-                        minecraft::packets::client_play_packet *packet_;
-                    };
-
                     // Handle the packet, if its a ping we handle it here, else pass it to the bus
-                    std::visit(packet_handler(bus_), pack.as_variant());
+                    auto &func_name = __func__;
+                    std::visit(overloaded {
+                                   [this, &pack, &func_name](std::monostate &arg) {
+                                       spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
+                                   },
+                                   [this, &pack, &func_name](auto &arg) {
+                                       spdlog::warn(
+                                           "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
+                                   },
+                                   [this, &pack](minecraft::packets::client::keep_alive &arg) { this->bus_ },
+                               },
+                               pack.as_variant());
                 }
             }
             catch (system_error &se)
