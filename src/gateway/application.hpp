@@ -3,7 +3,7 @@
 #include "listener.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "minecraft/security/rsa.hpp"
-#include "minecraft/region/fake_bus.hpp"
+#include "minecraft/region/player_updates_queue.hpp"
 
 namespace gateway
 {
@@ -28,9 +28,9 @@ namespace gateway
         using executor_type = net::io_context::executor_type;
         using signal_set = net::basic_signal_set<executor_type>;
 
-        application(executor_type exec, minecraft::region::fake_bus & bus)
+        application(executor_type exec, minecraft::region::player_update_queue & queue)
         : signals_(exec)
-        , listener_(exec, config_, bus)
+        , listener_(exec, config_, queue)
         {
             std::cout << "Application Starting\n\n";
             std::cout << config_ << std::endl;

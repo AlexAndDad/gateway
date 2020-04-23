@@ -25,7 +25,7 @@ namespace gateway
             auto ep = sock.remote_endpoint();
             std::clog << "listener: new connection from " << ep.address() << ':' << ep.port() << std::endl;
 
-            connections_.create(config_, std::move(sock), bus_);
+            connections_.create(config_, std::move(sock), queue_);
 
             initiate_accept();
         }

@@ -10,8 +10,8 @@ namespace gateway
     using namespace std::literals;
 
 
-    connection::connection(connection_config config, socket_type &&sock, minecraft::region::fake_bus & bus)
-    : impl_(std::make_shared< connection_impl >(std::move(config), std::move(sock), bus))
+    connection::connection(connection_config config, socket_type &&sock, minecraft::region::player_update_queue & queue)
+    : impl_(std::make_shared< connection_impl >(std::move(config), std::move(sock), queue))
     {
         impl_->start();
     }

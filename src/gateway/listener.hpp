@@ -2,7 +2,6 @@
 
 #include "config/net.hpp"
 #include "connection_cache.hpp"
-#include "minecraft/region/fake_bus.hpp"
 #include "minecraft/security/private_key.hpp"
 
 #include <iostream>
@@ -28,10 +27,10 @@ namespace gateway
         using socket_type   = net::basic_stream_socket< protocol, executor_type >;
         using acceptor_type = net::basic_socket_acceptor< protocol, executor_type >;
 
-        listener(executor_type exec, listener_config config, minecraft::region::fake_bus &bus)
+        listener(executor_type exec, listener_config config, minecraft::region::player_update_queue &queue)
         : config_(std::move(config))
         , acceptor_(exec)
-        , bus_(bus)
+        , queue_(queue)
         {
             acceptor_.open(protocol::v4());
             acceptor_.set_option(socket_type::reuse_address());
@@ -73,9 +72,9 @@ namespace gateway
 
         void handle_cancel();
 
-        listener_config              config_;
-        acceptor_type                acceptor_;
-        connection_cache             connections_;
-        minecraft::region::fake_bus &bus_;
+        listener_config                         config_;
+        acceptor_type                           acceptor_;
+        connection_cache                        connections_;
+        minecraft::region::player_update_queue &queue_;
     };
 }   // namespace gateway

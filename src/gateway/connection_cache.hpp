@@ -11,7 +11,7 @@ namespace gateway {
         using socket_type = net::basic_stream_socket<protocol, executor_type>;
 
         void
-        create(connection_config config, socket_type &&sock, minecraft::region::fake_bus & bus);
+        create(connection_config config, socket_type &&sock, minecraft::region::player_update_queue & queue);
 
         void cancel();
 

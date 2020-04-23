@@ -13,9 +13,9 @@ namespace gateway
         auto ioc = net::io_context(1);
         auto exec = ioc.get_executor();
 
-        minecraft::region::fake_bus bus(exec);
+        minecraft::region::player_update_queue queue(exec);
 
-        auto app = application(exec, bus);
+        auto app = application(exec, queue);
         app.start();
 
 
