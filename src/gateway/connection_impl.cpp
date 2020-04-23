@@ -1,13 +1,14 @@
 #include "connection_impl.hpp"
 
 #include "config/span.hpp"
+#include "minecraft/packets/client_play_packet.hpp"
+#include "minecraft/packets/server/chat_message.hpp"
+#include "minecraft/packets/server/join_game.hpp"
+#include "minecraft/packets/server/play_packet.hpp"
 #include "minecraft/protocol/old_style_ping.hpp"
 #include "minecraft/protocol/server_handshake.hpp"
 #include "minecraft/protocol/server_status.hpp"
 #include "minecraft/security/rsa.hpp"
-#include "minecraft/packets/server/chat_message.hpp"
-#include "minecraft/packets/server/join_game.hpp"
-#include "minecraft/packets/server/play_packet.hpp"
 #include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 #include "polyfill/report.hpp"
@@ -58,7 +59,6 @@ namespace gateway
 
     // =========================================
 
-
     auto connection_impl::start() -> void
     {
         net::co_spawn(
@@ -82,8 +82,6 @@ namespace gateway
                     spdlog::error("{}::{} - exception: ", *self, "run", polyfill::explain());
                 }
             });
-
-        // dispatch(bind_executor(get_executor(), [self = shared_from_this()] { self->handle_start(); }));
     }
 
     auto connection_impl::run() -> net::awaitable< void >
@@ -179,31 +177,50 @@ namespace gateway
             {
                 auto bt = co_await stream_.async_read_frame(net::use_awaitable);
 
-
                 auto data  = stream_.current_frame();
                 auto buf   = minecraft::to_span(data);
                 auto first = buf.begin();
                 auto last  = buf.end();
                 boost::ignore_unused(bt);
-                boost::ignore_unused(first);
-                boost::ignore_unused(last);
 
                 // parse the packet using the new expect frame using a variant
+                auto pack = minecraft::packets::client_play_packet();
+                auto ec   = error_code();
+                parse(first, last, pack, ec);
 
+                if (ec)
+                {
+                    spdlog::warn("Unable to parse packet from the client");
+                    spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+                }
+                else
+                {
+                    struct packet_handler
+                    {
+                        packet_handler(minecraft::region::fake_bus &bus, minecraft::packets::client_play_packet *packet)
+                        : bus_(bus)
+                        , packet_(packet)
+                        {
+                        }
 
+                        void operator()(minecraft::packets::client::keep_alive &&arg) { bus_. }
+                        void operator()(auto arg)
+                        {
+                            spdlog::warn("{}::{}({})", this, __func__, "unhandled packet type");
+                        }
+                        void operator()(std::monostate)
+                        {
+                            spdlog::warn("{}::{}({})", this, __func__, "got 'monostate' in packet_handler");
+                        }
 
+                      private:
+                        minecraft::region::fake_bus &           bus_;
+                        minecraft::packets::client_play_packet *packet_;
+                    };
 
-
-
-                /*
-                spdlog::info("{}::{}({}) - frame length={}, type={}, dump={:n}",
-                             this,
-                             __func__,
-                             polyfill::report(ec),
-                             bt,
-                             id,
-                             spdlog::to_hex(config::to_span(data)));
-                             */
+                    // Handle the packet, if its a ping we handle it here, else pass it to the bus
+                    std::visit(packet_handler(bus_), pack.as_variant());
+                }
             }
             catch (system_error &se)
             {
