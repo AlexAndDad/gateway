@@ -5,7 +5,7 @@
 #include "net.hpp"
 
 #include <minecraft/protocol/stream.hpp>
-#include <minecraft/region/fake_bus.hpp>
+#include <minecraft/region/player_updates_queue.hpp>
 
 namespace gateway
 {
@@ -26,11 +26,13 @@ namespace gateway
         using socket_type        = net::basic_stream_socket< transport_protocol, executor_type >;
         using stream_type        = minecraft::protocol::stream< socket_type >;
 
-        explicit connection_impl(connection_config config, socket_type &&sock, minecraft::region::fake_bus &bus)
+        explicit connection_impl(connection_config                       config,
+                                 socket_type &&                          sock,
+                                 minecraft::region::player_update_queue &queue)
         : config_(std::move(config))
         , stream_(std::move(sock))
         , login_params_(config_.server_id, config_.server_key)
-        , bus_(bus)
+        , queue_(queue)
         {
         }
 
@@ -81,7 +83,7 @@ namespace gateway
 
         minecraft::protocol::server_accept_state login_params_;
 
-        minecraft::region::fake_bus &bus_;
+        minecraft::region::player_update_queue &queue_;
     };
 
 }   // namespace gateway

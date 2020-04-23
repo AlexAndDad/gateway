@@ -135,8 +135,8 @@ namespace gateway
         }
 
         // Client is now logged in.
-        // Notify the bus
-        bus_.produce_username({ stream_.player_name(), true });
+        // Notify the bus and get queues to communicate packets
+        auto client_queue = queue_.produce_new_player(stream_.player_name());
 
         {   // Send join game packet
             auto packet                  = minecraft::packets::server::join_game();
@@ -196,7 +196,7 @@ namespace gateway
                 boost::ignore_unused(bt);
 
                 // parse the packet using the new expect frame using a variant
-                minecraft::packets::client_play_packet pack = minecraft::packets::client_play_packet();
+                minecraft::packets::client::client_play_packet pack = minecraft::packets::client::client_play_packet();
                 auto                                   ec   = error_code();
                 parse(first, last, pack, ec);
 
@@ -210,14 +210,22 @@ namespace gateway
                     // Handle the packet, if its a ping we handle it here, else pass it to the bus
                     auto &func_name = __func__;
                     std::visit(overloaded {
-                                   [this, &pack, &func_name](std::monostate &arg) {
+                                   [this, &pack](std::monostate &arg) {
                                        spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
+                                       boost::ignore_unused(arg);
+                                       boost::ignore_unused(pack);
                                    },
-                                   [this, &pack, &func_name](auto &arg) {
+                                   [this, &pack](auto &arg) {
+                                       boost::ignore_unused(pack);
                                        spdlog::warn(
                                            "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
                                    },
-                                   [this, &pack](minecraft::packets::client::keep_alive &arg) { this->bus_ },
+                                   [this, &pack](minecraft::packets::client::keep_alive &arg) {
+                                       // Handle the keep alive packet
+                                       boost::ignore_unused(arg);
+                                       boost::ignore_unused(pack);
+                                       boost::ignore_unused(this);
+                                   },
                                },
                                pack.as_variant());
                 }
