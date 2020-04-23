@@ -10,7 +10,7 @@
 #include "server/player_position_and_look.hpp"
 #include "server/spawn_position.hpp"
 
-namespace minecraft::packets
+namespace minecraft::packets::server
 {
     using play_packet_variant = std::variant< std::monostate,
                                               server::chat_message,

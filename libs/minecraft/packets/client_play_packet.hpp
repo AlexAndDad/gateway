@@ -7,7 +7,7 @@
 #include "minecraft/packets/client/keep_alive.hpp"
 #include "minecraft/packets/client/play_id.hpp"
 
-namespace minecraft::packets
+namespace minecraft::packets::client
 {
     using play_packet_variant = std::variant< std::monostate, client::keep_alive >;
 
