@@ -25,15 +25,9 @@ namespace polyfill::net::detail
         }
 
         template < class Self >
-        void operator()(Self &self, std::optional< T > &&value)
+        void operator()(Self &self, outcome::result< T > &&value)
         {
-            self.complete(error_code(), std::move(value));
-        }
-
-        template < class Self >
-        void operator()(Self &self, error_code ec)
-        {
-            self.complete(ec, std::optional< T >());
+            self.complete(std::move(value));
         }
 
         std::shared_ptr< future_state_impl< T > > shared_state_;

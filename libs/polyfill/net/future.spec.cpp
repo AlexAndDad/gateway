@@ -37,10 +37,10 @@ TEST_CASE("polyfill::net::future")
     SECTION("value available prior to wait")
     {
         p.set_value("Hello");
-        f.async_wait([](polyfill::error_code ec, std::optional< std::string > s) {
-            CHECK(ec.message() == "Success");
+        f.async_wait([](polyfill::outcome::result<std::string> s) {
+
             REQUIRE(s.has_value());
-            CHECK(*s == "Hello");
+            CHECK(s.value() == "Hello");
         });
 
         ioc.run();
@@ -48,10 +48,9 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("value available after wait")
     {
-        f.async_wait([](polyfill::error_code ec, std::optional< std::string > s) {
-            CHECK(ec.message() == "Success");
+        f.async_wait([](polyfill::outcome::result<std::string> s) {
             REQUIRE(s.has_value());
-            CHECK(*s == "Hello");
+            CHECK(s.value() == "Hello");
         });
 
         p.set_value("Hello");
@@ -61,9 +60,9 @@ TEST_CASE("polyfill::net::future")
     SECTION("error available prior to wait")
     {
         p.set_error(polyfill::net::error::operation_aborted);
-        f.async_wait([](polyfill::error_code ec, std::optional< std::string > s) {
-            CHECK(ec.message() == "Operation canceled");
-            CHECK(not s.has_value());
+        f.async_wait([](polyfill::outcome::result<std::string> s) {
+            REQUIRE(s.has_error());
+            CHECK(s.error().message() == "Operation canceled");
         });
 
         ioc.run();
@@ -71,9 +70,9 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("error available after wait")
     {
-        f.async_wait([](polyfill::error_code ec, std::optional< std::string > s) {
-            CHECK(ec.message() == "Operation canceled");
-            CHECK(not s.has_value());
+        f.async_wait([](polyfill::outcome::result<std::string> s) {
+            REQUIRE(s.has_error());
+            CHECK(s.error().message() == "Operation canceled");
         });
 
         p.set_error(polyfill::net::error::operation_aborted);
@@ -82,45 +81,12 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("broken promise after wait")
     {
-        f.async_wait([](polyfill::error_code ec, std::optional< std::string > s) {
-            CHECK(ec.message() == "Operation canceled");
-            CHECK(not s.has_value());
+        f.async_wait([](polyfill::outcome::result<std::string> s) {
+            REQUIRE(s.has_error());
+            CHECK(s.error().message() == "Operation canceled");
         });
 
         p = polyfill::net::promise< std::string >(exec);
         ioc.run();
-    }
-}
-TEST_CASE("polyfill::net::future2")
-{
-    auto ioc  = polyfill::net::io_context();
-    auto exec = ioc.get_executor();
-
-    auto ioc2  = polyfill::net::io_context();
-    auto exec2 = ioc2.get_executor();
-
-    SECTION("correct executors")
-    {
-        auto p = polyfill::net::promise< std::string >(exec);
-
-        polyfill::net::post(polyfill::net::bind_executor(exec, [&] { p.set_value("Hello"); }));
-
-        auto f        = p.get_future(exec2);
-        auto tid      = std::this_thread::get_id();
-        bool happened = false;
-        f.async_wait([&](polyfill::error_code ec, std::optional< std::string > os) {
-            CHECK(os.has_value());
-            CHECK(ec.message() == "Success");
-            CHECK(std::this_thread::get_id() == tid);
-            happened = true;
-        });
-
-        auto t1 = std::thread([&] { ioc.run(); });
-
-        ioc2.run();
-
-        CHECK(happened);
-
-        t1.join();
     }
 }

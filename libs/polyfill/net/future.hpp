@@ -8,7 +8,6 @@
 #pragma once
 #include "polyfill/net.hpp"
 #include "polyfill/net/detail/future_wait_op.hpp"
-
 namespace polyfill::net
 {
     template < class T>
@@ -20,7 +19,6 @@ namespace polyfill::net
         using impl_class    = detail::future_state_impl< T >;
         using impl_type     = std::shared_ptr< impl_class >;
         using executor_type = net::executor;
-
 
         template < class CompletionHandler >
         auto async_wait(CompletionHandler &&token);
@@ -77,7 +75,7 @@ namespace polyfill::net
 
         void set_error(error_code ec)
         {
-            impl_->set_error(std::move(ec));
+            impl_->set_value(ec);
             impl_.reset();
         }
 
@@ -95,7 +93,7 @@ namespace polyfill::net
         {
             if (impl_)
             {
-                impl_->set_error(error::operation_aborted);
+                impl_->set_value(error_code(error::operation_aborted));
                 impl_.reset();
             }
         }

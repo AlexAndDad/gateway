@@ -7,8 +7,9 @@
 
 #pragma once
 #include "polyfill/net.hpp"
+#include "polyfill/net/detail/future_invoker_base.hpp"
+#include "polyfill/outcome.hpp"
 
-#include <optional>
 #include <variant>
 
 namespace polyfill::net::detail
@@ -27,8 +28,7 @@ namespace polyfill::net::detail
     template < class T >
     struct future_state_impl
     {
-        using optional_value = std::optional< T >;
-        using variant_type   = std::variant< future_pending, error_code, optional_value, future_completed >;
+        using variant_type = std::variant< future_pending, error_code, outcome::result< T >, future_completed >;
 
         explicit future_state_impl()
         : invoker_()
@@ -37,7 +37,7 @@ namespace polyfill::net::detail
         {
         }
 
-        void set_value(T val)
+        void set_value(outcome::result<T>&& val)
         {
             auto lock = std::unique_lock(mutex_);
             assert(std::holds_alternative< future_pending >(var_));
@@ -46,25 +46,10 @@ namespace polyfill::net::detail
                 auto pinvoker = std::move(invoker_);
                 var_          = future_completed();
                 lock.unlock();
-                pinvoker->notify_value(optional_value(std::move(val)));
+                pinvoker->notify_value(std::move(val));
             }
             else
-                var_ = optional_value(std::move(val));
-        }
-
-        void set_error(error_code ec)
-        {
-            auto lock = std::unique_lock(mutex_);
-            assert(std::holds_alternative< future_pending >(var_));
-            if (invoker_)
-            {
-                auto pinvoker = std::move(invoker_);
-                var_          = future_completed();
-                lock.unlock();
-                pinvoker->notify_error(ec);
-            }
-            else
-                var_ = ec;
+                var_ = std::move(val);
         }
 
         void set_invoker(std::unique_ptr< detail::future_invoker_base< T > > pinvoker)
@@ -77,20 +62,11 @@ namespace polyfill::net::detail
                 invoker_ = std::move(pinvoker);
                 return;
             }
-            else if (std::holds_alternative< error_code >(var_))
+            else if (std::holds_alternative< outcome::result< T > >(var_))
             {
-                auto ec = std::get< error_code >(var_);
-                var_    = future_completed();
-                lock.unlock();
-                pinvoker->notify_error(ec);
-                return;
-            }
-            else if (std::holds_alternative< optional_value >(var_))
-            {
-                auto val = std::move(std::get< optional_value >(var_));
+                auto val = std::move(std::get< outcome::result< T > >(var_));
                 var_     = future_completed();
                 lock.unlock();
-                assert(val.has_value());
                 pinvoker->notify_value(std::move(val));
                 return;
             }
