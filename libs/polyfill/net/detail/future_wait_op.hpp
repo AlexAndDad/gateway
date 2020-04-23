@@ -7,6 +7,7 @@
 
 #pragma once
 #include "polyfill/net.hpp"
+#include "polyfill/net/future_types.hpp"
 #include "polyfill/net/detail/future_invoker.hpp"
 #include "polyfill/net/detail/future_state_impl.hpp"
 
@@ -25,7 +26,7 @@ namespace polyfill::net::detail
         }
 
         template < class Self >
-        void operator()(Self &self, outcome::result< T > &&value)
+        void operator()(Self &self, future_result_type< T > &&value)
         {
             self.complete(std::move(value));
         }

@@ -8,6 +8,7 @@
 #pragma once
 #include "polyfill/net.hpp"
 #include "polyfill/net/detail/future_wait_op.hpp"
+
 namespace polyfill::net
 {
     template < class T>
@@ -19,6 +20,8 @@ namespace polyfill::net
         using impl_class    = detail::future_state_impl< T >;
         using impl_type     = std::shared_ptr< impl_class >;
         using executor_type = net::executor;
+
+        using result_type = future_result_type<T>;
 
         template < class CompletionHandler >
         auto async_wait(CompletionHandler &&token);

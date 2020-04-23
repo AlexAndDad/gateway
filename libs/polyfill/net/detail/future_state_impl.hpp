@@ -8,6 +8,7 @@
 #pragma once
 #include "polyfill/net.hpp"
 #include "polyfill/net/detail/future_invoker_base.hpp"
+#include "polyfill/net/future_types.hpp"
 #include "polyfill/outcome.hpp"
 
 #include <variant>
@@ -28,7 +29,9 @@ namespace polyfill::net::detail
     template < class T >
     struct future_state_impl
     {
-        using variant_type = std::variant< future_pending, error_code, outcome::result< T >, future_completed >;
+        using result_type = future_result_type< T >;
+
+        using variant_type = std::variant< future_pending, result_type, future_completed >;
 
         explicit future_state_impl()
         : invoker_()
@@ -37,7 +40,7 @@ namespace polyfill::net::detail
         {
         }
 
-        void set_value(outcome::result<T>&& val)
+        void set_value(result_type &&val)
         {
             auto lock = std::unique_lock(mutex_);
             assert(std::holds_alternative< future_pending >(var_));
@@ -62,9 +65,9 @@ namespace polyfill::net::detail
                 invoker_ = std::move(pinvoker);
                 return;
             }
-            else if (std::holds_alternative< outcome::result< T > >(var_))
+            else if (std::holds_alternative< result_type >(var_))
             {
-                auto val = std::move(std::get< outcome::result< T > >(var_));
+                auto val = std::move(std::get< result_type >(var_));
                 var_     = future_completed();
                 lock.unlock();
                 pinvoker->notify_value(std::move(val));

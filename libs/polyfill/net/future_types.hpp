@@ -6,9 +6,10 @@
 //
 
 #pragma once
-#include "polyfill/net/future.hpp"
+#include "polyfill/outcome.hpp"
 
-namespace polyfill::net::detail
+namespace polyfill::net
 {
-
+    template < class T >
+    using future_result_type = outcome::outcome< T >;
 }

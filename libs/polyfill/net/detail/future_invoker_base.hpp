@@ -1,5 +1,6 @@
 #pragma once
 #include "polyfill/outcome.hpp"
+#include "polyfill/net/future_types.hpp"
 
 namespace polyfill::net::detail
 {
@@ -8,7 +9,7 @@ namespace polyfill::net::detail
     {
         virtual ~future_invoker_base() = default;
 
-        virtual void notify_value(outcome::result<T>&& result) = 0;
+        virtual void notify_value(future_result_type<T>&& result) = 0;
     };
 
 }

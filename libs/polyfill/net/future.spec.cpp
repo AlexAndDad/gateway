@@ -37,7 +37,7 @@ TEST_CASE("polyfill::net::future")
     SECTION("value available prior to wait")
     {
         p.set_value("Hello");
-        f.async_wait([](polyfill::outcome::result<std::string> s) {
+        f.async_wait([](polyfill::net::future_result_type<std::string> s) {
 
             REQUIRE(s.has_value());
             CHECK(s.value() == "Hello");
@@ -48,7 +48,7 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("value available after wait")
     {
-        f.async_wait([](polyfill::outcome::result<std::string> s) {
+        f.async_wait([](polyfill::net::future_result_type<std::string> s) {
             REQUIRE(s.has_value());
             CHECK(s.value() == "Hello");
         });
@@ -60,7 +60,7 @@ TEST_CASE("polyfill::net::future")
     SECTION("error available prior to wait")
     {
         p.set_error(polyfill::net::error::operation_aborted);
-        f.async_wait([](polyfill::outcome::result<std::string> s) {
+        f.async_wait([](polyfill::net::future_result_type<std::string> s) {
             REQUIRE(s.has_error());
             CHECK(s.error().message() == "Operation canceled");
         });
@@ -70,7 +70,7 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("error available after wait")
     {
-        f.async_wait([](polyfill::outcome::result<std::string> s) {
+        f.async_wait([](polyfill::net::future_result_type<std::string> s) {
             REQUIRE(s.has_error());
             CHECK(s.error().message() == "Operation canceled");
         });
@@ -81,7 +81,7 @@ TEST_CASE("polyfill::net::future")
 
     SECTION("broken promise after wait")
     {
-        f.async_wait([](polyfill::outcome::result<std::string> s) {
+        f.async_wait([](polyfill::net::future_result_type<std::string> s) {
             REQUIRE(s.has_error());
             CHECK(s.error().message() == "Operation canceled");
         });

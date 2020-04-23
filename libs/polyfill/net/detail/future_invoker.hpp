@@ -24,7 +24,7 @@ namespace polyfill::net::detail
         {
         }
 
-        virtual void notify_value(outcome::result<T> &&value) override
+        virtual void notify_value(future_result_type<T> &&value) override
         {
             net::post(boost::beast::bind_front_handler(std::move(*handler_), std::move(value)));
             handler_.reset();
