@@ -8,7 +8,7 @@
 
 namespace minecraft::packets::server
 {
-    using play_packet_variant = std::variant< std::monostate, chat_message, player_position_and_look, spawn_position >;
+    using play_packet_variant_old = std::variant< std::monostate, chat_message, player_position_and_look, spawn_position >;
 
     struct play_packet
     {
