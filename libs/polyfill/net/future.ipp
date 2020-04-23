@@ -1,3 +1,10 @@
+//
+// Copyright (c) 2020 Richard Hodges (hodges.r@gmail.com)
+// Copyright (c) 2020 Alexander Hodges
+//
+// Official repository: https://github.com/AlexAndDad/gateway
+//
+
 namespace polyfill::net
 {
     template < class T >
@@ -5,8 +12,7 @@ namespace polyfill::net
     auto future< T >::async_wait(CompletionHandler &&token)
     {
         return net::async_compose< CompletionHandler, void(result_type) >(
-
-            detail::future_wait_op< T > { impl_ }, token, *this);
+            detail::future_wait_op< T > { impl_ }, token);
     }
 
     template < class T >

@@ -5,11 +5,10 @@
 TEST_CASE("polyfill::net::future")
 {
     auto ioc  = polyfill::net::io_context();
-    auto exec = ioc.get_executor();
 
-    auto p = polyfill::net::promise< std::string >(exec);
+    auto p = polyfill::net::promise< std::string >();
     auto f = p.get_future();
-
+/*
     SECTION("coroutines")
     {
         polyfill::net::co_spawn(
@@ -30,10 +29,10 @@ TEST_CASE("polyfill::net::future")
                 }
             },
             polyfill::net::detached);
-        p = polyfill::net::promise< std::string >(exec);
+        p = polyfill::net::promise< std::string >();
         ioc.run();
     }
-
+*/
     SECTION("value available prior to wait")
     {
         p.set_value("Hello");
@@ -86,7 +85,7 @@ TEST_CASE("polyfill::net::future")
             CHECK(s.error().message() == "Operation canceled");
         });
 
-        p = polyfill::net::promise< std::string >(exec);
+        p = polyfill::net::promise< std::string >();
         ioc.run();
     }
 }

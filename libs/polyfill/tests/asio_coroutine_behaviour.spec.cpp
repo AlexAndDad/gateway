@@ -74,7 +74,7 @@ TEST_CASE("polyfill::tests::asio_coroutine_behaviour")
                 CHECK(which_thread() == "a");
                 std::cout << "Checkpoint 2 : thread " << which_thread() << std::endl;
 
-                auto ap = net::promise< int >(b.ioc.get_executor());
+                auto ap = net::promise< int >();
                 net::co_spawn(
                     b.ioc.get_executor(),
                     [&]() -> net::awaitable< int > {
@@ -84,7 +84,7 @@ TEST_CASE("polyfill::tests::asio_coroutine_behaviour")
                     },
                     [&](std::exception_ptr, int x) { ap.set_value(x); });
 
-                auto v = co_await ap.get_future(a.ioc.get_executor())();
+                auto v = co_await ap.get_future()();
                 CHECK(which_thread() == "a");
                 CHECK(v == 0);
                 std::cout << "Checkpoint 4 : thread " << which_thread() << " with value " << v << std::endl;

@@ -11,100 +11,62 @@
 
 namespace polyfill::net
 {
-    template < class T>
+    template < class T >
     struct promise;
 
-    template < class T>
+    template < class T >
     struct future
     {
-        using impl_class    = detail::future_state_impl< T >;
-        using impl_type     = std::shared_ptr< impl_class >;
-        using executor_type = net::executor;
+        using impl_class = detail::future_state_impl< T >;
+        using impl_type  = std::shared_ptr< impl_class >;
 
-        using result_type = future_result_type<T>;
+        using result_type = future_result_type< T >;
 
         template < class CompletionHandler >
         auto async_wait(CompletionHandler &&token);
 
-        auto operator()() -> awaitable< T>;
-
-        auto get_executor() const -> executor_type { return exec_; }
+        auto operator()() -> awaitable< T >;
 
       private:
         friend promise< T >;
 
-        future(impl_type impl, executor_type exec)
+        future(impl_type impl)
         : impl_(std::move(impl))
-        , exec_(exec)
         {
         }
 
-        impl_type     impl_;
-        executor_type exec_;
+        impl_type impl_;
     };
 
-    template < class T>
+    template < class T >
     struct promise
     {
-        using impl_class    = detail::future_state_impl< T >;
-        using impl_type     = std::shared_ptr< impl_class >;
-        using executor_type = net::executor;
+        using impl_class = detail::future_state_impl< T >;
+        using impl_type  = std::shared_ptr< impl_class >;
 
-        promise(executor_type const& exec)
-        : impl_(std::make_shared< detail::future_state_impl< T > >())
-        , exec_(exec)
-        {
-        }
+        promise();
 
-        promise(promise &&other) noexcept
-        : impl_(std::move(other.impl_))
-        {
-        }
+        promise(promise &&other) noexcept;
 
-        promise &operator=(promise &&other) noexcept
-        {
-            destroy();
-            impl_ = std::move(other.impl_);
-            return *this;
-        }
+        promise &operator=(promise &&other) noexcept;
 
-        ~promise() noexcept { destroy(); }
+        ~promise() noexcept;
 
-        void set_value(T val)
-        {
-            impl_->set_value(std::move(val));
-            impl_.reset();
-        }
+        void set_value(T val);
 
-        void set_error(error_code ec)
-        {
-            impl_->set_value(ec);
-            impl_.reset();
-        }
+        void set_error(error_code ec);
 
-        future< T > get_future() { return future< T >(impl_, get_executor()); }
+        void set_exception(std::exception_ptr ep);
 
-        future< T > get_future(net::executor fe)
-        {
-            return future< T >(impl_, fe);
-        }
-
-        auto get_executor() const -> executor_type { return exec_; }
+        future< T > get_future();
 
       private:
-        void destroy()
-        {
-            if (impl_)
-            {
-                impl_->set_value(error_code(error::operation_aborted));
-                impl_.reset();
-            }
-        }
+        void destroy();
 
-        impl_type     impl_;
-        executor_type exec_;
+        impl_type impl_;
     };
 
 }   // namespace polyfill::net
 
-#include "polyfill/net/impl/future.hpp"
+#include "future.ipp"
+#include "promise.ipp"

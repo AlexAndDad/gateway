@@ -7,9 +7,11 @@
 
 #pragma once
 #include "polyfill/outcome.hpp"
+#include "polyfill/net.hpp"
 
 namespace polyfill::net
 {
     template < class T >
-    using future_result_type = outcome::outcome< T >;
+    using future_result_type = outcome::outcome< T , error_code, std::exception_ptr>;
+
 }
