@@ -3,10 +3,10 @@
 #include "config/net.hpp"
 #include "polyfill/net/future.hpp"
 
-#include <deque>
 #include <functional>
 #include <memory>
-#include <minecraft/packets/server/play_packet.hpp>
+#include <minecraft/packets/client_play_packet.hpp>
+#include <minecraft/packets/server_play_packet.hpp>
 #include <string>
 
 namespace minecraft::region
@@ -20,8 +20,10 @@ namespace minecraft::region
 
         using username_storage_type = std::pair< std::string, bool >;
         using username_promise_type = polyfill::net::promise< username_storage_type >;
+        using username_handle_type  = std::shared_ptr< username_promise_type >;
 
-        using server_packet_type = minecraft::packets::server::play_packet;
+        using server_packet_type = minecraft::packets::server_play_packet;
+        using client_packet_type = minecraft::packets::client_play_packet;
 
         fake_bus(executor_type exec)
         : strand_(net::make_strand(exec))
@@ -34,58 +36,50 @@ namespace minecraft::region
             co_await net::post(get_strand(), net::use_awaitable);
             BOOST_ASSERT(get_strand().running_in_this_thread());
 
-            auto p = polyfill::net::promise< username_storage_type >();
-            auto f = p.get_future();
+            username_handle_type promise = std::make_shared< username_promise_type >(get_strand());
+            username_consumer_queue_.push_back(promise);
+            auto fut = promise->get_future(exec);
+            auto res = co_await fut();
 
-            net::co_spawn(
-                this->get_strand(),
-                [p = std::move(p), self = this->shared_from_this()]() mutable -> net::awaitable< void > {
-                    if (self->username_storage_queue_.empty())
-                    {
-                        self->username_consumer_queue_.push_back(std::move(p));
-                    }
-                    else
-                    {
-                        auto user = std::move(self->username_storage_queue_.front());
-                        self->username_storage_queue_.pop_front();
-                        p.set_value(std::move(user));
-                    }
-                    co_return;
-                },
-                net::detached);
-
-            auto result = co_await f();
-            co_return result;
+            BOOST_ASSERT(exec.running_in_this_thread());   // Make sure we are ready to return on the exec of the caller
+            co_return res;
         }
 
         void produce_username(username_storage_type username_storage)
         {
-            dispatch(bind_executor(get_strand(),
-                                   [self = this->shared_from_this(), username = std::move(username_storage)]() mutable {
-                                       BOOST_ASSERT(self->get_strand().running_in_this_thread());
-
-                                       if (self->username_consumer_queue_.empty())
-                                       {
-                                           self->username_storage_queue_.push_back(std::move(username));
-                                       }
-                                       else   // notify a consumer of a new message
-                                       {
-                                           auto prom = std::move(self->username_consumer_queue_.front());
-                                           self->username_consumer_queue_.pop_front();
-                                           prom.set_value(std::move(username));
-                                       }
-                                   }));
+            dispatch(bind_executor(get_strand(), [this, username = std::move(username_storage)]() mutable {
+                this->handle_produce_username(std::move(username));
+            }));
         }
 
-        /*
-        void produce_client_packet(minecraft::packets::server::play_packet packet) {}
-        net::awaitable< minecraft::packets::server::play_packet > consume_client_packet(net::io_context::strand &exec,
+        void produce_client_packet(std::string name, client_packet_type packet) {
+
+        }
+
+        net::awaitable< client_packet_type > consume_client_packet(net::io_context::strand &exec,
                                                                                         std::string player_name)
         {
         }
-*/
 
       private:   // functions
+        void handle_produce_username(username_storage_type username_storage)
+        {
+            BOOST_ASSERT(get_strand().running_in_this_thread());
+
+            if (username_consumer_queue_.empty())
+            {
+                username_storage_queue_.emplace_back(std::move(username_storage));
+                return;
+            }
+            else   // notify a consumer of a new message
+            {
+                auto prom = username_consumer_queue_.back();
+                prom->set_value(std::move(username_storage));
+
+                username_consumer_queue_.pop_back();
+            }
+        }
+
         strand_type get_strand() { return strand_; }
 
       private:   // data
@@ -93,8 +87,8 @@ namespace minecraft::region
         strand_type strand_;
 
         // Username queue
-        std::deque< username_promise_type > username_consumer_queue_;
-        std::deque< username_storage_type > username_storage_queue_;
+        std::vector< username_handle_type >  username_consumer_queue_;
+        std::vector< username_storage_type > username_storage_queue_;
 
         // Packet queue
     };
