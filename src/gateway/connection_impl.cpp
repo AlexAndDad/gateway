@@ -112,8 +112,7 @@ namespace gateway
                 break;
             }
 
-        //        initiate_read();
-
+        // Accept the client
         try
         {
             co_await minecraft::protocol::async_server_accept(stream_, this->login_params_, net::use_awaitable);
@@ -137,6 +136,66 @@ namespace gateway
         // Client is now logged in.
         // Notify the bus and get queues to communicate packets
         auto client_queue = queue_.produce_new_player(stream_.player_name());
+
+        // Start listening for server packets to send.
+        net::dispatch(
+            net::bind_executor(get_executor(), [self = shared_from_this(),&client_queue]() { self->handle_server_packets(client_queue); }));
+
+        // Spin reading packets and sending to queue to be processed
+        while (true)
+        {
+            try
+            {
+                auto bt = co_await stream_.async_read_frame(net::use_awaitable);
+
+                auto data  = stream_.current_frame();
+                auto buf   = minecraft::to_span(data);
+                auto first = buf.begin();
+                auto last  = buf.end();
+                boost::ignore_unused(bt);
+
+                // parse the packet using the new expect frame using a variant
+                minecraft::packets::client::client_play_packet pack = minecraft::packets::client::client_play_packet();
+                auto                                           ec   = error_code();
+                parse(first, last, pack, ec);
+
+                if (ec)
+                {
+                    spdlog::warn("Unable to parse packet from the client");
+                    spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+                }
+                else
+                {
+                    // Handle the packet, if its a ping we handle it here, else pass it to the bus
+                    auto &func_name = __func__;
+                    std::visit(overloaded {
+                                   [this, &pack](std::monostate &arg) {
+                                       spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
+                                       boost::ignore_unused(arg);
+                                       boost::ignore_unused(pack);
+                                   },
+                                   [this, &pack](auto &arg) {
+                                       // A normal play packet, send it to the queue to be handled
+                                       boost::ignore_unused(pack);
+                                       spdlog::warn(
+                                           "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
+                                   },
+                                   [this, &pack](minecraft::packets::client::keep_alive &arg) {
+                                       // Handle the keep alive packet TODO
+                                       boost::ignore_unused(arg);
+                                       boost::ignore_unused(pack);
+                                       boost::ignore_unused(this);
+                                   },
+                               },
+                               pack.as_variant());
+                }
+            }
+            catch (system_error &se)
+            {
+                auto &&ec = se.code();
+                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+            }
+        }
 
         {   // Send join game packet
             auto packet                  = minecraft::packets::server::join_game();
@@ -180,61 +239,6 @@ namespace gateway
             pack.json_data = R"json({ "text" : "Hello, World!", "bold" : true })json";
             pack.position  = minecraft::packets::server::chat_message::chat_position ::system_message;
             co_await async_write_packet(pack);
-        }
-
-        // Spin
-        while (true)
-        {
-            try
-            {
-                auto bt = co_await stream_.async_read_frame(net::use_awaitable);
-
-                auto data  = stream_.current_frame();
-                auto buf   = minecraft::to_span(data);
-                auto first = buf.begin();
-                auto last  = buf.end();
-                boost::ignore_unused(bt);
-
-                // parse the packet using the new expect frame using a variant
-                minecraft::packets::client::client_play_packet pack = minecraft::packets::client::client_play_packet();
-                auto                                   ec   = error_code();
-                parse(first, last, pack, ec);
-
-                if (ec)
-                {
-                    spdlog::warn("Unable to parse packet from the client");
-                    spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-                }
-                else
-                {
-                    // Handle the packet, if its a ping we handle it here, else pass it to the bus
-                    auto &func_name = __func__;
-                    std::visit(overloaded {
-                                   [this, &pack](std::monostate &arg) {
-                                       spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
-                                       boost::ignore_unused(arg);
-                                       boost::ignore_unused(pack);
-                                   },
-                                   [this, &pack](auto &arg) {
-                                       boost::ignore_unused(pack);
-                                       spdlog::warn(
-                                           "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
-                                   },
-                                   [this, &pack](minecraft::packets::client::keep_alive &arg) {
-                                       // Handle the keep alive packet
-                                       boost::ignore_unused(arg);
-                                       boost::ignore_unused(pack);
-                                       boost::ignore_unused(this);
-                                   },
-                               },
-                               pack.as_variant());
-                }
-            }
-            catch (system_error &se)
-            {
-                auto &&ec = se.code();
-                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-            }
         }
     }
 

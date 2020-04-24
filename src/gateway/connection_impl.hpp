@@ -61,6 +61,23 @@ namespace gateway
         net::awaitable< void > run();
         auto                   handle_cancel() -> void;
 
+        void handle_server_packets(minecraft::region::client_queue_update &client_queue)
+        {
+            net::co_spawn(
+                get_executor(),
+                [self = shared_from_this(), &client_queue]() -> net::awaitable< void > {
+                    while (true)   // Loop
+                    {
+                        // Read a packet to send
+                        auto packet = co_await client_queue.client_consumer.consume();
+
+                        // Send the packet
+                        co_await self->async_write_packet(packet);
+                    }
+                },
+                net::detached)
+        }
+
         template < class Packet >
         auto async_write_packet(Packet const &p) -> net::awaitable< void >
         {

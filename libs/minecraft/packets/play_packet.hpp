@@ -7,10 +7,12 @@
 
 #pragma once
 
-#include "minecraft/types.hpp"
 #include "minecraft/parse_error.hpp"
+#include "minecraft/types.hpp"
 
 #include <variant>
+#include <spdlog/spdlog.h>
+#include <wise_enum.h>
 
 namespace minecraft::packets
 {
@@ -101,7 +103,11 @@ namespace minecraft::packets
                 },
                 pkt.as_variant());
             if (not ec and not found)
+            {
                 ec = error::invalid_packet;
+                spdlog::warn("Invalid packet with ID: {}", static_cast<std::int32_t>(id.value()));
+            }
+
             if (not ec)
                 res = first;
         }
@@ -114,12 +120,12 @@ namespace minecraft::packets
     {
         std::visit(
             [&buf]< class T >(T const &actual) {
-            if constexpr (std::is_same_v< T, std::monostate >)
-                assert(!"logic error - composing an empty packet");
-            else
-                compose(actual, buf);
-        },
-        pkt.as_variant());
+                if constexpr (std::is_same_v< T, std::monostate >)
+                    assert(!"logic error - composing an empty packet");
+                else
+                    compose(actual, buf);
+            },
+            pkt.as_variant());
     }
 
 }   // namespace minecraft::packets
