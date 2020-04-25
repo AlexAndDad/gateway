@@ -81,6 +81,7 @@ add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 target_link_libraries(minecraft_lib PUBLIC
         config_lib polyfill_lib
         Boost::boost Boost::filesystem Boost::iostreams Boost::system
+        Boost::json
         Boost::webclient
         Threads::Threads
         OpenSSL::Crypto OpenSSL::SSL

@@ -1,24 +1,26 @@
 #pragma once
 #include "daft_hash.hpp"
-#include "minecraft/packets/client/encryption_response.hpp"
-#include "minecraft/packets/client/handshake.hpp"
-#include "minecraft/packets/client/login_start.hpp"
 #include "minecraft/hexdump.hpp"
 #include "minecraft/multibyte.hpp"
 #include "minecraft/net.hpp"
-#include "minecraft/protocol/daft_hash.hpp"
-#include "minecraft/report.hpp"
-#include "minecraft/security/private_key.hpp"
+#include "minecraft/packets/client/encryption_response.hpp"
+#include "minecraft/packets/client/handshake.hpp"
+#include "minecraft/packets/client/login_start.hpp"
 #include "minecraft/packets/server/encryption_request.hpp"
 #include "minecraft/packets/server/login_success.hpp"
 #include "minecraft/packets/server/set_compression.hpp"
+#include "minecraft/protocol/daft_hash.hpp"
+#include "minecraft/protocol/mojang_login_data.hpp"
+#include "minecraft/report.hpp"
+#include "minecraft/security/private_key.hpp"
 #include "read_frame.hpp"
 #include "stream.hpp"
-#include <boost/webclient/internet_session.hpp>
-#include <boost/webclient/get.hpp>
 
+#include <boost/json.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/webclient/get.hpp>
+#include <boost/webclient/internet_session.hpp>
 #include <spdlog/spdlog.h>
 #include <variant>
 
@@ -39,15 +41,17 @@ namespace minecraft::protocol
 
         // frames
 
-        using client_packet_variant = std::variant< packets::client::login_start, packets::client::encryption_response >;
-        using server_packet_variant =
-            std::variant< packets::server::set_compression, packets::server::encryption_request, packets::server::login_success >;
+        using client_packet_variant =
+            std::variant< packets::client::login_start, packets::client::encryption_response >;
+        using server_packet_variant = std::variant< packets::server::set_compression,
+                                                    packets::server::encryption_request,
+                                                    packets::server::login_success >;
 
-        client_packet_variant  client_packet;
-        server_packet_variant  server_packet;
-        std::vector< uint8_t > server_public_key_der;
-        std::optional<boost::webclient::unique_http_response> auth_response;
-
+        client_packet_variant                                   client_packet;
+        server_packet_variant                                   server_packet;
+        std::vector< uint8_t >                                  server_public_key_der;
+        std::optional< boost::webclient::unique_http_response > auth_response;
+        std::optional< mojang_login_data >                      mojang_data;
 
         friend auto operator<<(std::ostream &os, server_accept_state const &arg) -> std::ostream &;
     };
@@ -71,6 +75,13 @@ namespace minecraft::protocol
             return ec;
         };
 
+        auto log_fail(error_code const &ec) const -> error_code const &
+        {
+            if (ec.failed())
+                spdlog::warn("{} failed: {}", context, report(ec));
+            return ec;
+        };
+
         server_accept_state &state;
         net::coroutine       coro;
         const char *         context = "login start";
@@ -87,15 +98,8 @@ namespace minecraft::protocol
         {
         }
 
-        /*
-        template<class Self>
-        void operator()(Self& self, error_code ec, boost::webclient::http_response&& response)
-        {
-
-        }
-*/
-        template<class Self>
-        void operator()(Self& self, error_code ec, boost::webclient::unique_http_response response)
+        template < class Self >
+        void operator()(Self &self, error_code ec, boost::webclient::unique_http_response response)
         {
             state.auth_response.emplace(std::move(response));
             spdlog::info("response: \n{}\n", state.auth_response->body());
@@ -153,7 +157,9 @@ namespace minecraft::protocol
                     // decode shared secret
                     //
 
-                    yield {
+                    yield
+                    {
+                        context = "verify with mojang";
                         using net::buffer;
                         auto &request  = std::get< packets::server::encryption_request >(state.server_packet);
                         auto &response = std::get< packets::client::encryption_response >(state.client_packet);
@@ -172,11 +178,18 @@ namespace minecraft::protocol
                         boost::webclient::async_get(stream.inet_session(), url, std::move(self));
                     }
 
-
-
-                    //
-                    // todo : contact minecraft server here for uuid
-                    //
+                    this->context = "parse mojang response";
+                    if (state.auth_response->status_int() != 200)
+                    {
+                        spdlog::warn("mojang response [code {}] [reason {}]",
+                                     state.auth_response->status_int(),
+                                     state.auth_response->status_message());
+                        log_fail(error::invalid_mojang_response);
+                        return self.complete(ec);
+                    }
+                    state.mojang_data.emplace(boost::json::parse(state.auth_response->body(), ec));
+                    if (log_fail(ec).failed())
+                        return self.complete(ec);
                 }
 
                 yield
@@ -195,10 +208,18 @@ namespace minecraft::protocol
                 //
                 yield
                 {
-                    context      = "success";
-                    auto &pkt    = state.server_packet.emplace< packets::server::login_success >();
-                    pkt.username = stream.player_name();
-                    pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
+                    context   = "success";
+                    auto &pkt = state.server_packet.emplace< packets::server::login_success >();
+                    if (state.mojang_data)
+                    {
+                        pkt.username.assign(state.mojang_data->name.begin(), state.mojang_data->name.end());
+                        pkt.uuid = insert_dashes(state.mojang_data->id);
+                    }
+                    else
+                    {
+                        pkt.username = stream.player_name();
+                        pkt.uuid     = to_string(server_accept_op_base::generate_uuid());
+                    }
                     stream.async_write_packet(pkt, std::move(self));
                 }
                 return self.complete(log_fail(ec));

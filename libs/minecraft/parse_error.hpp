@@ -34,6 +34,7 @@ namespace minecraft
             shared_secret_failure = 1,
             not_rsa_key           = 2,
             decryption_failure    = 3,
+            invalid_mojang_response = 4,
         };
 
         enum protocol_error
@@ -107,6 +108,8 @@ namespace minecraft
                     return "not rsa key";
                 case error::login_error::decryption_failure:
                     return "decryption failure";
+                case error::invalid_mojang_response:
+                    return "invalid response from mojang server";
                 }
                 return "unknown code: " + std::to_string(value);
             }
