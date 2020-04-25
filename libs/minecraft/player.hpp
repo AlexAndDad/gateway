@@ -7,23 +7,29 @@ namespace minecraft
     template < class Connection >
     struct player
     {
+        using name_type     = std::string;
+        using executor_type = net::io_context::executor_type;
+        using strand_type   = net::io_context::strand;
 
-        using name_type = std::string;
-
-        player(Connection connection)
-        : connection(std::move(connection))
+        player(std::string name, Connection connection, executor_type exec)
+        : name_(std::move(name))
+        , strand_(exec.context())
+        , connection_(std::move(connection))
         {
         }
 
-      public:
 
-        name_type name;
+
+
+      public:
+        name_type name_;
 
         // World related data
-        math::Vector3d position;   // XZ center, Y bottom
-        math::Vector3d rotation;   // degrees [-180, +180]
+        math::Vector3d position_;   // XZ center, Y bottom
+        math::Vector3d rotation_;   // degrees [-180, +180]
 
       private:
-        Connection connection;
+        strand_type strand_;
+        Connection  connection_;
     };
 }   // namespace minecraft
