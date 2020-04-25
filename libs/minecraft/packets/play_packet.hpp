@@ -26,6 +26,10 @@ namespace minecraft::packets
         auto        as_variant() const -> PlayPacketVariant const & { return var_; }
         auto        as_variant() -> PlayPacketVariant & { return var_; }
 
+        template <class PacketType>
+        void set(PacketType packet)
+        {var_ = std::move(packet);}
+
       private:
         PlayPacketVariant var_;
     };
