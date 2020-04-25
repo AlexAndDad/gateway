@@ -2,7 +2,7 @@
 
 #include "config/net.hpp"
 #include "minecraft/player.hpp"
-#include "minecraft/region/fake_bus.hpp"
+#include "minecraft/region/player_updates_queue.hpp"
 #include "player/player_manager.hpp"
 
 #include <iostream>
@@ -16,9 +16,9 @@ namespace region
         using strand_type   = config::net::io_context::strand;
         using signal_set    = config::net::basic_signal_set< executor_type >;
 
-        region_server(executor_type exec, minecraft::region::fake_bus &bus)
+        region_server(executor_type exec, minecraft::region::player_update_queue &queue)
         : strand_(exec.context())
-        , bus_(bus)
+        , queue_(queue)
         , player_manager_(exec)
         {
             std::cout << "Region Server created\n";
@@ -34,12 +34,6 @@ namespace region
         }
 
       private:
-        /// @brief Starts and runs the region_server and all subprocesses.
-        ///
-        /// @CORO
-        ///
-        /// @return
-
         config::net::awaitable< void > run()
         {
             // Start the world
@@ -51,16 +45,10 @@ namespace region
                     BOOST_ASSERT(self->get_strand().running_in_this_thread());
                     while (true)
                     {
-                        auto res = co_await self->bus_.consume_username(self->get_strand());
-                        if (res.second)   // Adding a new player
-                        {
-                            // Create a bus subscription for that player
-                            //self->player_manager_.create_player(res.)
-                        }
-                        else   // removing an existing player
-                        {
-                        }
-                        co_return;
+                        auto player_update_queue = co_await self->queue_.consume_new_player();
+                        std::string name = player_update_queue.name;
+                        auto player_connection = player::player_connection(std::move(player_update_queue));
+                        self->player_manager_.add_player(std::move(name),std::move(player_connection));
                     }
                 },
                 config::net::detached);
@@ -68,9 +56,9 @@ namespace region
             co_return;
         }
 
-        strand_type &                get_strand() { return strand_; }
-        strand_type                  strand_;
-        minecraft::region::fake_bus &bus_;
-        player::player_manager       player_manager_;
+        strand_type &                           get_strand() { return strand_; }
+        strand_type                             strand_;
+        minecraft::region::player_update_queue &queue_;
+        player::player_manager                  player_manager_;
     };
 }   // namespace region
