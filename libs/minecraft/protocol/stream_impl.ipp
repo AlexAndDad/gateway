@@ -4,7 +4,8 @@ namespace minecraft::protocol
 {
     template < class NextLayer >
     stream_impl< NextLayer >::stream_impl(next_layer_type &&next)
-    : next_layer_(std::move(next))
+    : stream_impl_base(next.get_executor())
+    , next_layer_(std::move(next))
     {
     }
 
@@ -119,7 +120,6 @@ namespace minecraft::protocol
         auto op = [this, coro = net::coroutine(), ec_ = error_code(), original_size_ = std::size_t()](
                       auto &self, error_code ec = {}, std::size_t bytes_transferred = 0) mutable {
 #include <boost/asio/yield.hpp>
-
             reenter(coro) for (;;)
             {
                 if (encryption_)

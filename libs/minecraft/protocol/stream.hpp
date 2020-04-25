@@ -63,6 +63,11 @@ namespace minecraft::protocol
 
         auto get_executor() const -> executor_type;
 
+        auto inet_session() -> boost::webclient::internet_session&
+        {
+            return impl_->inet_session();
+        }
+
         /// Enable encryption and set the shared secret
         /// \param secret is a net::const buffer containing the shared secret. secret.size() must be exactly 16
         /// \pre stream is not already encrypted

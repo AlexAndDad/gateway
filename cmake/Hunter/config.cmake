@@ -12,8 +12,10 @@ hunter_config(WiseEnum
 
 hunter_config(boost_webclient
         GIT_SUBMODULE git-deps/boost-webclient
-        CONFIGURATION_TYPES Release RelWithDebInfo Debug
-        CMAKE_ARGS BOOST_WEBCLIENT_USE_HUNTER=ON)
+        CONFIGURATION_TYPES Release Debug
+        CMAKE_ARGS
+            BOOST_WEBCLIENT_USE_HUNTER=ON
+            BUILD_TESTING=OFF)
 
 hunter_config(boost_json
         GIT_SUBMODULE git-deps/boost_json

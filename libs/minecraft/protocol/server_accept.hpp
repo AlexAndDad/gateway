@@ -14,6 +14,8 @@
 #include "minecraft/packets/server/set_compression.hpp"
 #include "read_frame.hpp"
 #include "stream.hpp"
+#include <boost/webclient/internet_session.hpp>
+#include <boost/webclient/get.hpp>
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -44,6 +46,8 @@ namespace minecraft::protocol
         client_packet_variant  client_packet;
         server_packet_variant  server_packet;
         std::vector< uint8_t > server_public_key_der;
+        std::optional<boost::webclient::unique_http_response> auth_response;
+
 
         friend auto operator<<(std::ostream &os, server_accept_state const &arg) -> std::ostream &;
     };
@@ -90,6 +94,15 @@ namespace minecraft::protocol
 
         }
 */
+        template<class Self>
+        void operator()(Self& self, error_code ec, boost::webclient::unique_http_response response)
+        {
+            state.auth_response.emplace(std::move(response));
+            spdlog::info("response: \n{}\n", state.auth_response->body());
+            spdlog::info("log: \n{}\n", state.auth_response->log());
+            (*this)(self, ec);
+        }
+
         template < class Self >
         void operator()(Self &self, error_code ec = {}, std::size_t bytes_transferred = 0)
         {
@@ -140,7 +153,7 @@ namespace minecraft::protocol
                     // decode shared secret
                     //
 
-                    {
+                    yield {
                         using net::buffer;
                         auto &request  = std::get< packets::server::encryption_request >(state.server_packet);
                         auto &response = std::get< packets::client::encryption_response >(state.client_packet);
@@ -153,12 +166,13 @@ namespace minecraft::protocol
                         hasher.update(buffer(secret));
                         hasher.update(buffer(state.server_public_key_der));
                         auto hash = hasher.finalise();
-                        /*
                         auto url  = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" +
                                    stream.player_name() + "&serverId=" + hash;   // + "&ip=ip";
-                        boost::webclient::async_get(url, std::move(self));
-                         */
+                        spdlog::info("url [{}]", url);
+                        boost::webclient::async_get(stream.inet_session(), url, std::move(self));
                     }
+
+
 
                     //
                     // todo : contact minecraft server here for uuid

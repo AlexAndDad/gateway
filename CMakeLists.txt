@@ -18,7 +18,7 @@ hunter_add_package(boost_json)
 find_package(boost_json)
 
 hunter_add_package(boost_webclient)
-find_package(boost_WEBCLIENT)
+find_package(boost_webclient)
 
 hunter_add_package(spdlog COMPONENTS)
 find_package(spdlog)
