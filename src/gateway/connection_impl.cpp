@@ -1,10 +1,12 @@
 #include "connection_impl.hpp"
 
 #include "config/span.hpp"
+#include "keep_alive_handler.hpp"
 #include "minecraft/packets/client_play_packet.hpp"
 #include "minecraft/packets/server/chat_message.hpp"
 #include "minecraft/packets/server/join_game.hpp"
 #include "minecraft/packets/server/play_packet.hpp"
+#include "minecraft/parse_error.hpp"
 #include "minecraft/protocol/old_style_ping.hpp"
 #include "minecraft/protocol/server_handshake.hpp"
 #include "minecraft/protocol/server_status.hpp"
@@ -138,8 +140,27 @@ namespace gateway
         auto client_queue = queue_.produce_new_player(stream_.player_name());
 
         // Start listening for server packets to send.
-        net::dispatch(
-            net::bind_executor(get_executor(), [self = shared_from_this(),&client_queue]() { self->handle_server_packets(client_queue); }));
+        net::dispatch(net::bind_executor(get_executor(), [self = shared_from_this(), &client_queue]() {
+            self->handle_server_packets(client_queue);
+        }));
+
+        // Instantiate keep alive handler
+        auto keep_alive = keep_alive_handler(get_executor());
+
+        // Create callback functions for keep alive timer
+        auto expiry_callback = [self = shared_from_this()]() { self->on_keep_alive_timeout(); };
+        auto server_producer = minecraft::region::async_queue_produce_handle(client_queue.client_consumer.get());
+        auto update_callback = [self = shared_from_this(), server_producer = std::move(server_producer)]() mutable {
+            // Construct and send a keep_alive_packet
+            auto keep_alive = minecraft::packets::server::keep_alive();
+            keep_alive.prepare();
+            auto packet = minecraft::packets::server::server_play_packet();
+            packet.set(std::move(keep_alive));
+            server_producer.produce(std::move(packet));
+        };
+
+        keep_alive.set_callbacks(std::move(expiry_callback), std::move(update_callback));
+        keep_alive.start();
 
         // Spin reading packets and sending to queue to be processed
         while (true)
@@ -174,17 +195,16 @@ namespace gateway
                                        boost::ignore_unused(arg);
                                        boost::ignore_unused(pack);
                                    },
-                                   [this, &pack](auto &arg) {
+                                   [this, &pack, &client_queue](auto &arg) {
                                        // A normal play packet, send it to the queue to be handled
+                                       client_queue.client_producer.produce(std::move(pack));
                                        boost::ignore_unused(pack);
                                        spdlog::warn(
                                            "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
                                    },
-                                   [this, &pack](minecraft::packets::client::keep_alive &arg) {
-                                       // Handle the keep alive packet TODO
+                                   [&keep_alive](minecraft::packets::client::keep_alive &arg) {
                                        boost::ignore_unused(arg);
-                                       boost::ignore_unused(pack);
-                                       boost::ignore_unused(this);
+                                       keep_alive.reset_expiry();
                                    },
                                },
                                pack.as_variant());
@@ -194,6 +214,11 @@ namespace gateway
             {
                 auto &&ec = se.code();
                 spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+
+                if (ec.category() != minecraft::parse_error_category())
+                {
+                    // TODO handle
+                }
             }
         }
 

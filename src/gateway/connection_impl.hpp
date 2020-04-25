@@ -75,7 +75,7 @@ namespace gateway
                         co_await self->async_write_packet(packet);
                     }
                 },
-                net::detached)
+                net::detached);
         }
 
         template < class Packet >
@@ -91,6 +91,11 @@ namespace gateway
                 auto &&ec = se.code();
                 spdlog::warn("{}::{}({})", this, "async_write_packet", minecraft::report(ec));
             }
+        }
+
+        void on_keep_alive_timeout()
+        {
+            // TODO cancel connection
         }
 
         connection_config config_;
