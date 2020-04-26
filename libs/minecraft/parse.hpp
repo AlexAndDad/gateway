@@ -15,57 +15,19 @@ namespace minecraft
     // fundamental types
     //
 
-    inline const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, double &target, error_code &ec)
-    {
-        using value_type          = std::decay_t< decltype(target) >;
-        constexpr auto byte_count = sizeof(value_type);
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, double &target, error_code &ec)
+        -> const_buffer_iterator;
 
-        if (ec.failed())
-        {
-            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
-            {
-                ec = error::incomplete_parse;
-            }
-            else
-            {
-                using namespace boost::endian;
-                endian_buffer< order::big, value_type, 8 * byte_count, align::yes > buffer;
-                std::copy(first, first + byte_count, buffer.data());
-                target = buffer.value();
-                first += byte_count;
-            }
-        }
-        return first;
-    }
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, float &target, error_code &ec)
+        -> const_buffer_iterator;
 
-    inline const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, float &target, error_code &ec)
-    {
-        using value_type          = std::decay_t< decltype(target) >;
-        constexpr auto byte_count = sizeof(value_type);
-
-        if (ec.failed())
-        {
-            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
-            {
-                ec = error::incomplete_parse;
-            }
-            else
-            {
-                using namespace boost::endian;
-                endian_buffer< order::big, value_type, 8 * byte_count, align::yes > buffer;
-                std::copy(first, first + byte_count, buffer.data());
-                target = buffer.value();
-                first += byte_count;
-            }
-        }
-        return first;
-    }
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, bool &target, error_code &ec)
+        -> const_buffer_iterator;
 
     template < typename Integral, typename ValueType = std::decay_t< Integral > >
     auto parse(const_buffer_iterator first, const_buffer_iterator last, Integral &target, error_code &ec)
-        -> std::enable_if_t< std::is_integral_v< ValueType >, const_buffer_iterator >
+        -> std::enable_if_t< std::is_integral_v< ValueType > and not std::is_same_v< Integral, bool >,
+                             const_buffer_iterator >
     {
         using namespace boost::endian;
 
@@ -74,7 +36,7 @@ namespace minecraft
 
         if (not ec.failed())
         {
-            if (std::distance(first, last) < static_cast<std::ptrdiff_t>(byte_count))
+            if (std::distance(first, last) < static_cast< std::ptrdiff_t >(byte_count))
                 ec = error::incomplete_parse;
             else
             {
@@ -122,8 +84,9 @@ namespace minecraft
         return first;
     }
 
-    inline
-    auto parse(const_buffer_iterator first, const_buffer_iterator last, std::uint8_t &target, error_code &ec) -> const_buffer_iterator
+    /*
+    inline auto parse(const_buffer_iterator first, const_buffer_iterator last, std::uint8_t &target, error_code &ec)
+        -> const_buffer_iterator
     {
         if (not ec.failed())
         {
@@ -137,7 +100,7 @@ namespace minecraft
         }
         return first;
     }
-
+*/
     template < class Enum >
     auto parse(const_buffer_iterator first, const_buffer_iterator last, Enum &target, error_code &ec)
         -> std::enable_if_t< std::is_enum_v< Enum >, const_buffer_iterator >
@@ -152,41 +115,11 @@ namespace minecraft
         return first;
     }
 
-    inline auto parse(const_buffer_iterator        first,
-                      const_buffer_iterator        last,
-                      std::vector< std::uint8_t > &target,
-                      error_code &                 ec,
-                      std::int32_t                 byte_limit = 65536) -> const_buffer_iterator
-    {
-        auto ret = first;
-
-        auto err = [&ec, ret](auto code) {
-            ec = code;
-            return ret;
-        };
-
-        if (not ec.failed())
-        {
-            auto size = std::int32_t();
-            first     = parse_var(first, last, size, ec);
-            if (not ec.failed())
-            {
-                auto available = std::distance(first, last);
-                if (size > available)
-                    return err(error::incomplete_parse);
-
-                if (size > byte_limit)
-                    return err(error::invalid_array);
-
-                target.clear();
-                target.reserve(size);
-                target.insert(target.end(), first, first + size);
-                first += size;
-                ret = first;
-            }
-        }
-        return ret;
-    }
+    auto parse(const_buffer_iterator        first,
+               const_buffer_iterator        last,
+               std::vector< std::uint8_t > &target,
+               error_code &                 ec,
+               std::int32_t                 byte_limit = 65536) -> const_buffer_iterator;
 
     template < class Underlying >
     const_buffer_iterator
@@ -196,8 +129,7 @@ namespace minecraft
     }
 
     template < class Enum >
-    [[nodiscard]]
-    const_buffer_iterator
+    [[nodiscard]] const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator second, var_enum< Enum > &target, error_code &ec)
     {
         if (not ec.failed())
@@ -251,17 +183,17 @@ namespace minecraft
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
     {
-        auto ret     = first;
+        auto ret = first;
 
-        auto size    = std::int32_t();
-        first = parse_var(first, last, size, ec);
+        auto size = std::int32_t();
+        first     = parse_var(first, last, size, ec);
         if (not ec.failed())
         {
-            constexpr auto byte_limit = static_cast<int>(Limit) * 4;
-            auto available = std::distance(first, last);
+            constexpr auto byte_limit = static_cast< int >(Limit) * 4;
+            auto           available  = std::distance(first, last);
             if (size > byte_limit)
                 ec = error::invalid_string;
-            else if(size > available)
+            else if (size > available)
                 ec = error::incomplete_parse;
             else
             {
@@ -274,33 +206,7 @@ namespace minecraft
         return ret;
     }
 
-    inline
-    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::u16string& result, error_code& ec)
-    {
-        auto ret = first;
-        while(not ec.failed())
-        {
-            std::uint16_t length;
-            first = parse(first, last, length, ec);
-            if (ec.failed()) break;
-
-            auto available = std::distance(first, last);
-            if (available < length * 2) {
-                ec = error::incomplete_parse;
-                break;
-            }
-
-            result.resize(length);
-            std::memcpy(result.data(), first, length * 2);
-            first += length * 2;
-
-            for (auto& elem : result)
-                boost::endian::big_to_native_inplace(elem);
-
-            ret = first;
-            break;
-        }
-        return ret;
-    }
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::u16string &result, error_code &ec);
 
 }   // namespace minecraft

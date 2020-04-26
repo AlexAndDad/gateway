@@ -5,4 +5,5 @@
 namespace minecraft::packets::server
 {
 
+
 }   // namespace minecraft::packets::server

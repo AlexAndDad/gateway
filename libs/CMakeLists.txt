@@ -89,7 +89,7 @@ target_link_libraries(minecraft_lib PUBLIC
         utf8cpp
         ZLIB::zlib
         Eigen3::Eigen)
-
+target_compile_definitions(minecraft_lib PUBLIC "-DSPDLOG_FMT_EXTERNAL=1")
 target_include_directories(minecraft_lib
         PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}

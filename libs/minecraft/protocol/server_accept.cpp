@@ -3,6 +3,8 @@
 #include "minecraft/utils/print_variant.hpp"
 
 #include <fmt/ostream.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 namespace minecraft::protocol
 {

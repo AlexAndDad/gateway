@@ -1,6 +1,8 @@
 #pragma once
 
 #include "minecraft/encode.hpp"
+#include "minecraft/parse_error.hpp"
+#include "minecraft/types.hpp"
 #include "play_id.hpp"
 
 #include <limits>
@@ -32,5 +34,7 @@ namespace minecraft::packets::server
 
     std::ostream &operator<<(std::ostream &os, keep_alive const &arg);
     void          compose(keep_alive const &arg, std::vector< char > &target);
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, keep_alive &pkt, error_code &ec);
 
 }   // namespace minecraft::packets::server

@@ -23,5 +23,4 @@ namespace minecraft::packets::server
     {
     };
 
-
-}   // namespace minecraft::packets
+}   // namespace minecraft::packets::server

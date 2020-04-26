@@ -2,7 +2,7 @@
 #include "minecraft/protocol/client_connect.hpp"
 #include "minecraft/protocol/stream.hpp"
 #include "polyfill/explain.hpp"
-#include "minecraft/packets/server/play_packet.hpp"
+#include "minecraft/packets/server_play_packet.hpp"
 #include <boost/asio/awaitable.hpp>
 
 namespace bot
@@ -38,7 +38,7 @@ namespace bot
                     while(1)
                     {
                         co_await stream_.async_read_frame(net::use_awaitable);
-                        server::play_packet packet;
+                        auto packet = packets::server::server_play_packet();
                         auto span = to_span(stream_.current_frame());
                         error_code ec;
                         auto next = parse(span.begin(), span.end(), packet, ec);

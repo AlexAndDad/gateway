@@ -9,6 +9,8 @@ HunterGate(
 
 project(GateWay VERSION 0.1.0)
 
+option(SPDLOG_FMT_EXTERNAL "spdlog uses fmt library" ON)
+
 find_package(Threads REQUIRED)
 
 hunter_add_package(Boost COMPONENTS filesystem iostreams program_options system)

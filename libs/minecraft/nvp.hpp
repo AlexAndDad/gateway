@@ -1,0 +1,129 @@
+//
+// Copyright (c) 2020 Richard Hodges (hodges.r@gmail.com)
+// Copyright (c) 2020 Alexander Hodges
+//
+// Official repository: https://github.com/AlexAndDad/gateway
+//
+
+#pragma once
+
+#include <boost/mp11/tuple.hpp>
+#include <cstddef>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
+#include <string_view>
+#include <tuple>
+
+namespace minecraft
+{
+    /// @brief A nam-value pair, designed to live until the end of the current statement in order to facilitate printing
+    /// or parsing
+    /// @tparam N A reference to the characters yielding the name of the element
+    /// @tparam T a reference to the value of the element
+    template < std::size_t N, class T >
+    struct nvp
+    {
+        constexpr nvp(const char (&name)[N], T const& value)
+            : name(name)
+            , value(value)
+        {}
+
+        const char (&name)[N];
+        T const &value;
+    };
+
+    template < std::size_t N, class T >
+    nvp(const char (&)[N], T const &) -> nvp< N, T >;
+
+    template < std::size_t N, class T >
+    std::ostream &operator<<(std::ostream &os, nvp< N, T > n)
+    {
+        fmt::print(os, "{}", n);
+        return os;
+    }
+
+    template < std::size_t N, class T >
+    auto to_string(nvp< N, T > const &n)
+    {
+        return fmt::format("{}", n);
+    }
+
+    template < class... NVPs >
+    struct nvp_set
+    {
+        constexpr nvp_set(NVPs... nvps)
+        : tuple_(std::move(nvps)...)
+        {
+        }
+
+        using tuple_type = std::tuple< NVPs... >;
+        tuple_type tuple_;
+    };
+
+    template < class... NVPs >
+    std::ostream &operator<<(std::ostream &os, nvp_set< NVPs... > const &nvps)
+    {
+        fmt::print(os, "{}", nvps);
+        return os;
+    }
+
+    template < class... NVPs >
+    auto to_string(nvp_set< NVPs... > const &nvps)
+    {
+        return fmt::format("{}", nvps);
+    }
+
+}   // namespace minecraft
+
+namespace fmt
+{
+    template < std::size_t N, class T >
+    struct formatter< minecraft::nvp< N, T > >
+    {
+        using nvp = minecraft::nvp< N, T >;
+
+        template < typename ParseContext >
+        constexpr auto parse(ParseContext &ctx)
+        {
+            auto iclose = std::find(ctx.begin(), ctx.end(), '}');
+            return iclose;
+        }
+
+        template < typename FormatContext >
+        auto format(nvp const &n, FormatContext &ctx)
+        {
+            return fmt::format_to(ctx.out(), "[{} {}]", n.name, n.value);
+        }
+    };
+
+    template < class... NVPs >
+    struct formatter< minecraft::nvp_set< NVPs... > >
+    {
+        using nvps = minecraft::nvp_set< NVPs... >;
+
+        template < typename ParseContext >
+        constexpr auto parse(ParseContext &ctx)
+        {
+            auto iclose = std::find(ctx.begin(), ctx.end(), '}');
+            return iclose;
+        }
+
+        template < typename FormatContext >
+        auto format(nvps const &n, FormatContext &ctx)
+        {
+            const char* format = "{}";
+
+            auto iter = ctx.out();
+            auto visitor = [&](auto&& nvp)
+            {
+                iter  = fmt::format_to(iter, format, nvp);
+                format = " {}";
+            };
+
+            boost::mp11::tuple_for_each(n.tuple_, visitor);
+            return iter;
+        }
+    };
+}   // namespace fmt

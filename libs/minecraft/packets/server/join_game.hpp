@@ -6,7 +6,9 @@
 
 #include "minecraft/encode.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/parse_error.hpp"
 #include "play_id.hpp"
+#include <wise_enum/wise_enum.h>
 
 namespace minecraft::packets::server
 {
@@ -33,20 +35,9 @@ namespace minecraft::packets::server
         bool           enable_respawn_screen;
     };
 
-    inline void compose(join_game const &packet, std::vector< char > &target)
-    {
-        using minecraft::encode;
-        auto i1 = std::back_inserter(target);
-        i1      = encode(variable_length(packet.id()), i1);
-        i1      = encode(packet.entity_id, i1);
-        i1      = encode(packet.game_mode, i1);
-        i1      = encode(packet.dimension, i1);
-        i1      = encode(packet.hashed_seed, i1);
-        i1      = encode(packet.max_players, i1);
-        i1      = encode(packet.level_type, i1);
-        i1      = encode(packet.view_distance, i1);
-        i1      = encode(packet.reduced_debug_info, i1);
-        encode(packet.enable_respawn_screen, i1);
-    }
+    void compose(join_game const &packet, std::vector< char > &target);
+    std::ostream& operator<<(std::ostream& os, join_game const& pkt);
+
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, join_game& pkt, error_code& ec);
 
 }   // namespace minecraft::packets::server

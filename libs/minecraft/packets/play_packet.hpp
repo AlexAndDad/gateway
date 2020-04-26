@@ -7,11 +7,13 @@
 
 #pragma once
 
+#include "minecraft/parse.hpp"
 #include "minecraft/parse_error.hpp"
 #include "minecraft/types.hpp"
 
-#include <variant>
 #include <spdlog/spdlog.h>
+#include <fmt/ostream.h>
+#include <variant>
 #include <wise_enum.h>
 
 namespace minecraft::packets
@@ -26,9 +28,11 @@ namespace minecraft::packets
         auto        as_variant() const -> PlayPacketVariant const & { return var_; }
         auto        as_variant() -> PlayPacketVariant & { return var_; }
 
-        template <class PacketType>
+        template < class PacketType >
         void set(PacketType packet)
-        {var_ = std::move(packet);}
+        {
+            var_ = std::move(packet);
+        }
 
       private:
         PlayPacketVariant var_;
@@ -109,7 +113,7 @@ namespace minecraft::packets
             if (not ec and not found)
             {
                 ec = error::invalid_packet;
-                spdlog::warn("Invalid packet with ID: {}", static_cast<std::int32_t>(id.value()));
+                spdlog::warn("Invalid packet with ID: {}", static_cast< std::int32_t >(id.value()));
             }
 
             if (not ec)
@@ -130,6 +134,20 @@ namespace minecraft::packets
                     compose(actual, buf);
             },
             pkt.as_variant());
+    }
+
+    template < class PlayID, class PlayPacketVariant >
+    std::ostream &operator<<(std::ostream &os, play_packet< PlayID, PlayPacketVariant > const pkt)
+    {
+        auto visitor = [&os]< class Actual >(Actual const& actual) {
+            if constexpr (std::is_same_v< Actual, std::monostate >)
+                fmt::print(os, "[packet empty]");
+            else
+                fmt::print(os, "{}", actual);
+        };
+
+        std::visit(visitor, pkt.as_variant());
+        return os;
     }
 
 }   // namespace minecraft::packets
