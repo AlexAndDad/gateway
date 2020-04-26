@@ -8,13 +8,12 @@
 #include <limits>
 #include <ostream>
 #include <random>
+#include "minecraft/packets/packet_base.hpp"
 
 namespace minecraft::packets::server
 {
-    struct keep_alive
+    struct keep_alive : packet_base<play_id::keep_alive, keep_alive>
     {
-        static constexpr auto id() { return play_id::keep_alive; }
-
         void prepare()
         {
             static thread_local auto [eng, dist] = [] {
@@ -29,12 +28,11 @@ namespace minecraft::packets::server
             keep_alive_id = dist(eng);
         }
 
+        template < class Self >
+        static auto as_nvps(Self &self) { return nvp_set(nvp("keep_alive_id", self.keep_alive_id)); }
+
         std::int64_t keep_alive_id;
     };
 
-    std::ostream &operator<<(std::ostream &os, keep_alive const &arg);
-    void          compose(keep_alive const &arg, std::vector< char > &target);
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, keep_alive &pkt, error_code &ec);
 
 }   // namespace minecraft::packets::server

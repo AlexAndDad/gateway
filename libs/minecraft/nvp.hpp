@@ -9,10 +9,8 @@
 
 #include <boost/mp11/tuple.hpp>
 #include <cstddef>
-
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
 #include <string_view>
 #include <tuple>
 
@@ -25,17 +23,33 @@ namespace minecraft
     template < std::size_t N, class T >
     struct nvp
     {
-        constexpr nvp(const char (&name)[N], T const& value)
-            : name(name)
-            , value(value)
-        {}
+        nvp(const char (&name)[N], T &value)
+        : name(name)
+        , value(value)
+        {
+        }
 
-        const char (&name)[N];
-        T const &value;
+        std::string_view name;
+        T &value;
     };
 
     template < std::size_t N, class T >
-    nvp(const char (&)[N], T const &) -> nvp< N, T >;
+    nvp(const char (&)[N], const T &) -> nvp< N, const T >;
+
+    template < std::size_t N, class T >
+    nvp(const char (&)[N], T &) -> nvp< N, T >;
+
+    template < std::size_t N, class T >
+    constexpr auto operator==(nvp< N, T > const &a, nvp< N, T > const &b) -> bool
+    {
+        return a.value == b.value;
+    }
+
+    template < std::size_t N, class T >
+    constexpr auto operator!=(nvp< N, T > const &a, nvp< N, T > const &b) -> bool
+    {
+        return a.value != b.value;
+    }
 
     template < std::size_t N, class T >
     std::ostream &operator<<(std::ostream &os, nvp< N, T > n)
@@ -57,6 +71,10 @@ namespace minecraft
         : tuple_(std::move(nvps)...)
         {
         }
+
+        friend constexpr auto operator==(nvp_set const &l, nvp_set const &r) { return l.tuple_ == r.tuple_; }
+
+        friend constexpr auto operator!=(nvp_set const &l, nvp_set const &r) { return l.tuple_ != r.tuple_; }
 
         using tuple_type = std::tuple< NVPs... >;
         tuple_type tuple_;
@@ -113,12 +131,11 @@ namespace fmt
         template < typename FormatContext >
         auto format(nvps const &n, FormatContext &ctx)
         {
-            const char* format = "{}";
+            const char *format = "{}";
 
-            auto iter = ctx.out();
-            auto visitor = [&](auto&& nvp)
-            {
-                iter  = fmt::format_to(iter, format, nvp);
+            auto iter    = ctx.out();
+            auto visitor = [&](auto &&nvp) {
+                iter   = fmt::format_to(iter, format, nvp);
                 format = " {}";
             };
 

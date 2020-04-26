@@ -49,9 +49,9 @@ namespace minecraft::packets
         friend const_buffer_iterator
         parse(const_buffer_iterator first, const_buffer_iterator last, packet_base &target, error_code &ec)
         {
-            auto &self     = static_cast< Impl const & >(target);
+            auto &self     = static_cast< Impl & >(target);
             auto  original = first;
-            auto  parser   = [&](auto &&nvp) {
+            auto  parser   = [&](auto &nvp) {
                 using minecraft::parse;
                 first = parse(first, last, nvp.value, ec);
             };
@@ -60,6 +60,13 @@ namespace minecraft::packets
             if (not ec and first != last)
                 ec = error::invalid_packet;
             return ec ? original : first;
+        }
+
+        friend auto operator==(packet_base const& a, packet_base const& b)
+        {
+            auto &self_a     = static_cast< Impl const & >(a);
+            auto &self_b     = static_cast< Impl const & >(b);
+            return Impl::as_nvps(self_a) == Impl::as_nvps(self_b);
         }
     };
 }   // namespace minecraft::packets

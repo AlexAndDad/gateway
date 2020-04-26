@@ -179,7 +179,7 @@ namespace minecraft
         return ret;
     }
 
-    template < std::size_t Limit >
+    template < std::size_t Limit>
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
     {
