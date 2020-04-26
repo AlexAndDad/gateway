@@ -57,7 +57,7 @@ namespace minecraft
             else
             {
                 std::uint8_t val;
-                last   = parse(first, last, val, ec);
+                first   = parse(first, last, val, ec);
                 target = val ? true : false;
             }
         }

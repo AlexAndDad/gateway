@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wise_enum/wise_enum.h>
+#include "minecraft/wise_enum.hpp"
 
 namespace minecraft::packets::server
 {
@@ -10,6 +10,7 @@ namespace minecraft::packets::server
                     (spawn_position, 0x4E),
                     (keep_alive, 0x21),
                     (join_game, 0x26),
-                    (player_position_and_look, 0x36));
+                    (player_position_and_look, 0x36))
+    WISE_ENUM_ENABLE_IO(play_id)
 
-}
+}   // namespace minecraft::packets::server
