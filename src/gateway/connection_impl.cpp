@@ -168,6 +168,28 @@ namespace gateway
         }
 
         {   // Await a teleport confirm packet
+            auto ec     = error_code();
+            auto packet = co_await async_read_packet(ec);
+
+            std::visit(overloaded { [this](std::monostate &arg) {
+                                       boost::ignore_unused(arg);
+                                       spdlog::warn("{}::{}({})",
+                                                    this,
+                                                    __func__,
+                                                    "got monostate when expecting teleport confirm packet.");
+                                   },
+                                    [this](auto &arg) {
+                                        boost::ignore_unused(arg);
+                                        spdlog::warn(
+                                            "{}::{}(got packet with id: {} when expecting teleport confirm packet.)",
+                                            this,
+                                            __func__,
+                                            wise_enum::to_string(arg.id()));
+                                    },
+                                    [](minecraft::packets::client::teleport_confirm &arg) {
+                                        boost::ignore_unused(arg);   // Success, teleport confirm retrieved.
+                                    } },
+                       packet.as_variant());
         }
 
         // Client is now logged in.
@@ -178,9 +200,6 @@ namespace gateway
         net::dispatch(net::bind_executor(get_executor(), [self = shared_from_this(), &client_queue]() {
             self->handle_server_packets(client_queue);
         }));
-
-        // Instantiate keep alive handler
-        auto keep_alive = keep_alive_handler(get_executor());
 
         // Create callback functions for keep alive timer
         auto expiry_callback = [self = shared_from_this()]() { self->on_keep_alive_timeout(); };
@@ -194,33 +213,19 @@ namespace gateway
             server_producer.produce(std::move(packet));
         };
 
-        keep_alive.set_callbacks(std::move(expiry_callback), std::move(update_callback));
-        keep_alive.start();
+        keep_alive_impl_.set_callbacks(std::move(expiry_callback), std::move(update_callback));
+        // Instantiate keep alive handler
+        auto keep_alive_handle = keep_alive_handler(keep_alive_impl_);
 
         // Spin reading packets and sending to queue to be processed
         while (true)
         {
             try
             {
-                auto bt = co_await stream_.async_read_frame(net::use_awaitable);
+                auto ec   = error_code();
+                auto pack = co_await async_read_packet(ec);
 
-                auto data  = stream_.current_frame();
-                auto buf   = minecraft::to_span(data);
-                auto first = buf.begin();
-                auto last  = buf.end();
-                boost::ignore_unused(bt);
-
-                // parse the packet using the new expect frame using a variant
-                minecraft::packets::client::client_play_packet pack = minecraft::packets::client::client_play_packet();
-                auto                                           ec   = error_code();
-                parse(first, last, pack, ec);
-
-                if (ec)
-                {
-                    spdlog::warn("Unable to parse packet from the client");
-                    spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
-                }
-                else
+                if (not ec)
                 {
                     // Handle the packet, if its a ping we handle it here, else pass it to the bus
                     auto &func_name = __func__;
@@ -234,12 +239,11 @@ namespace gateway
                                        // A normal play packet, send it to the queue to be handled
                                        client_queue.client_producer.produce(std::move(pack));
                                        boost::ignore_unused(pack);
-                                       spdlog::warn(
-                                           "{}::{} unhandled client packet {})", this, func_name, arg);
+                                       spdlog::warn("{}::{} unhandled client packet {})", this, func_name, arg);
                                    },
-                                   [&keep_alive](minecraft::packets::client::keep_alive &arg) {
+                                   [this](minecraft::packets::client::keep_alive &arg) {
                                        boost::ignore_unused(arg);
-                                       keep_alive.reset_expiry();
+                                       keep_alive_impl_.reset_expiry();
                                    },
                                },
                                pack.as_variant());
@@ -252,7 +256,7 @@ namespace gateway
 
                 if (ec.category() != minecraft::parse_error_category())
                 {
-                    // TODO handle
+                    co_return;
                 }
             }
         }

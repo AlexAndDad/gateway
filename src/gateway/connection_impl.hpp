@@ -1,5 +1,6 @@
 #pragma once
 
+#include "keep_alive_handler.hpp"
 #include "minecraft/protocol/server_accept.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "net.hpp"
@@ -33,6 +34,7 @@ namespace gateway
         , stream_(std::move(sock))
         , login_params_(config_.server_id, config_.server_key)
         , queue_(queue)
+        , keep_alive_impl_(get_executor())
         {
         }
 
@@ -94,6 +96,28 @@ namespace gateway
             }
         }
 
+        net::awaitable< minecraft::packets::client::client_play_packet > async_read_packet(error_code &ec)
+        {
+            co_await stream_.async_read_frame(net::use_awaitable);
+
+            auto data  = stream_.current_frame();
+            auto buf   = minecraft::to_span(data);
+            auto first = buf.begin();
+            auto last  = buf.end();
+
+            // parse the packet using the new expect frame using a variant
+            minecraft::packets::client::client_play_packet pack = minecraft::packets::client::client_play_packet();
+
+            parse(first, last, pack, ec);
+
+            if (ec)
+            {
+                spdlog::warn("Unable to parse packet from the client");
+                spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+            }
+            co_return pack;
+        }
+
         void on_keep_alive_timeout()
         {
             // TODO cancel connection
@@ -105,8 +129,8 @@ namespace gateway
         std::vector< char > compose_buffer_;
 
         minecraft::protocol::server_accept_state login_params_;
-
-        minecraft::region::player_update_queue &queue_;
+        minecraft::region::player_update_queue & queue_;
+        keep_alive_impl                          keep_alive_impl_;
     };
 
 }   // namespace gateway
