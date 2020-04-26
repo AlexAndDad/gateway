@@ -2,20 +2,6 @@
 
 namespace minecraft::packets::client
 {
-    void report_on(std::ostream &os, handshake const &ch)
-    {
-        os << "client handshake : "
-              "protocol version="
-           << ch.protocol_version << " : server_address=" << ch.server_address << " : server_port=" << ch.server_port
-           << " : next_state=" << ch.next_state;
-    }
-
-    std::ostream &operator<<(std::ostream &os, handshake const &arg)
-    {
-        report_on(os, arg);
-        return os;
-    }
-
     error_code &handshake::validate(error_code &ec) const
     {
         if (not verify(protocol_version))
@@ -25,7 +11,7 @@ namespace minecraft::packets::client
         return ec;
     }
 
-    auto verify(handshake const& packet, error_code& ec) -> error_code&
+    auto verify(handshake const &packet, error_code &ec) -> error_code &
     {
         packet.validate(ec);
         return ec;

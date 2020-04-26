@@ -2,6 +2,7 @@
 
 #include "minecraft/encode.hpp"
 #include "minecraft/packet_id.hpp"
+#include "minecraft/packets/packet_base.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/protocol/connection_state.hpp"
 #include "minecraft/protocol/version.hpp"
@@ -9,52 +10,24 @@
 
 namespace minecraft::packets::client
 {
-    struct handshake
+    struct handshake : packet_base< packet_id::client_handshake, handshake >
     {
-        static constexpr auto              id() { return packet_id::client_handshake; }
-        var_enum< protocol::version_type > protocol_version =
-            var_enum< protocol::version_type >(protocol::version_type::v1_15_2);
+        var_enum< protocol::version_type >     protocol_version;
         varchar< 255 >                         server_address;
         std::uint16_t                          server_port;
-        var_enum< protocol::connection_state > next_state =
-            var_enum< protocol::connection_state >(protocol::connection_state::login);
+        var_enum< protocol::connection_state > next_state;
 
         error_code &validate(error_code &ec) const;
 
-        friend void          report_on(std::ostream &os, handshake const &);
-        friend std::ostream &operator<<(std::ostream &os, handshake const &arg);
-        friend auto          verify(handshake const &packet, error_code &ec) -> error_code &;
-
-        template < class Iter >
-        friend auto parse(Iter first, Iter last, handshake &target, error_code &ec) -> Iter
+        template < class Self >
+        static auto as_nvps(Self &self)
         {
-            using minecraft::parse;
-            auto current =
-                parse(first,
-                      last,
-                      std::tie(target.protocol_version, target.server_address, target.server_port, target.next_state),
-                      ec);
-            if (!ec.failed() && current != last)
-                ec = error::invalid_packet;
-            if (ec.failed())
-            {
-                return first;
-            }
-            return current;
+            return nvp_set(nvp("protocol_version", self.protocol_version),
+                           nvp("server_address", self.server_address),
+                           nvp("server_port", self.server_port),
+                           nvp("next_state", self.next_state));
         }
+
+        friend auto verify(handshake const &packet, error_code &ec) -> error_code &;
     };
-
-    inline std::size_t compose(handshake const &arg, std::vector< char > &target)
-    {
-        using minecraft::encode;
-        auto original_size = target.size();
-        auto i1            = std::back_inserter(target);
-        i1                 = encode(variable_length(arg.id()), i1);
-        i1                 = encode(arg.protocol_version, i1);
-        i1                 = encode(arg.server_address, i1);
-        i1                 = encode(arg.server_port, i1);
-        i1                 = encode(arg.next_state, i1);
-        return target.size() - original_size;
-    }
-
 }   // namespace minecraft::packets::client
