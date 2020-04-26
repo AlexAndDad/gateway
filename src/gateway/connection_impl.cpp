@@ -135,6 +135,41 @@ namespace gateway
             }
         }
 
+        {   // Send join game packet
+            auto packet                  = minecraft::packets::server::join_game();
+            packet.entity_id             = 1;
+            packet.game_mode             = minecraft::packets::server::join_game::survival;
+            packet.dimension             = minecraft::packets::server::join_game::overworld;
+            packet.hashed_seed           = 123412341234;
+            packet.max_players           = 20;
+            packet.level_type            = "default";
+            packet.view_distance         = 16;
+            packet.reduced_debug_info    = false;
+            packet.enable_respawn_screen = true;
+            co_await async_write_packet(packet);
+        }
+
+        {   // Send a spawn packet
+            auto pack     = minecraft::packets::server::spawn_position();
+            pack.location = { 0, 60, 0 };
+            co_await async_write_packet(pack);
+        }
+
+        {   // Send a player position and look packet
+            auto pack  = minecraft::packets::server::player_position_and_look();
+            pack.x     = 0;
+            pack.y     = 60;
+            pack.z     = 0;
+            pack.yaw   = 0.0f;
+            pack.pitch = 0.0f;
+            pack.set_flags(false, false, false, false, false);
+            pack.teleport_ID = 666;
+            co_await async_write_packet(pack);
+        }
+
+        {   // Await a teleport confirm packet
+        }
+
         // Client is now logged in.
         // Notify the bus and get queues to communicate packets
         auto client_queue = queue_.produce_new_player(stream_.player_name());
@@ -221,41 +256,8 @@ namespace gateway
                 }
             }
         }
+        /*
 
-        {   // Send join game packet
-            auto packet                  = minecraft::packets::server::join_game();
-            packet.entity_id             = 1;
-            packet.game_mode             = minecraft::packets::server::join_game::survival;
-            packet.dimension             = minecraft::packets::server::join_game::overworld;
-            packet.hashed_seed           = 123412341234;
-            packet.max_players           = 20;
-            packet.level_type            = "default";
-            packet.view_distance         = 16;
-            packet.reduced_debug_info    = false;
-            packet.enable_respawn_screen = true;
-            co_await async_write_packet(packet);
-        }
-
-        {   // Send a spawn packet
-            auto pack     = minecraft::packets::server::spawn_position();
-            pack.location = { 0, 60, 0 };
-            co_await async_write_packet(pack);
-        }
-
-        {   // Send a player position and look packet
-            auto pack  = minecraft::packets::server::player_position_and_look();
-            pack.x     = 0;
-            pack.y     = 60;
-            pack.z     = 0;
-            pack.yaw   = 0.0f;
-            pack.pitch = 0.0f;
-            pack.set_flags(false, false, false, false, false);
-            pack.teleport_ID = 666;
-            co_await async_write_packet(pack);
-        }
-
-        {   // Await a teleport confirm packet
-        }
 
         // Send 3 chat messages
         for (int i = 0; i < 3; ++i)
@@ -265,6 +267,7 @@ namespace gateway
             pack.position  = minecraft::packets::server::chat_message::chat_position ::system_message;
             co_await async_write_packet(pack);
         }
+         */
     }
 
     auto connection_impl::cancel() -> void

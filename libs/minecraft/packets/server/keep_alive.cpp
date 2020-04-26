@@ -11,7 +11,7 @@ namespace minecraft::packets::server
     void compose(const keep_alive &arg, std::vector< char > &target)
     {
         auto i = std::back_inserter(target);
-        i      = encode(arg.id(), i);
+        i      = encode(variable_length(arg.id()), i);
         encode(arg.keep_alive_id, i);
     }
 }   // namespace minecraft::packets::server

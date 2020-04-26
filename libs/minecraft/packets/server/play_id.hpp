@@ -5,6 +5,7 @@
 namespace minecraft::packets::server
 {
     WISE_ENUM_CLASS((play_id, std::int32_t),
+                    (invalid, 0x7f),
                     (chat_message, 0x0f),
                     (spawn_position, 0x4E),
                     (keep_alive, 0x21),
