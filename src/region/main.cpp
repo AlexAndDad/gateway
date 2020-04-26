@@ -2,7 +2,6 @@
 
 #include "config/net.hpp"
 #include "gateway/application.hpp"
-#include "minecraft/region/fake_bus.hpp"
 #include "polyfill/explain.hpp"
 #include "region_server.hpp"
 
