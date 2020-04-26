@@ -118,7 +118,7 @@ namespace minecraft
 
         struct status_pong
         {
-            static constexpr auto id() { return status_packet_id::response; }
+            static constexpr auto id() { return status_packet_id::pong; }
             std::int64_t          payload;
         };
 
