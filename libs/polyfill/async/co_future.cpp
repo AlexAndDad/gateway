@@ -1,14 +1,14 @@
-#include "polyfill/net/co_future.hpp"
+#include "co_future.hpp"
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("polyfill::net::execute")
+TEST_CASE("polyfill::async::co_future")
 {
-    using namespace polyfill::net;
+    using namespace polyfill;
     using namespace std::literals;
 
-    auto ioc1 = io_context();
-    auto ioc2 = io_context();
+    auto ioc1 = net::io_context();
+    auto ioc2 = net::io_context();
     auto wg1  = make_work_guard(ioc1);
     auto wg2  = make_work_guard(ioc2);
     auto t1   = std::thread([&] { ioc1.run(); });
@@ -19,15 +19,15 @@ TEST_CASE("polyfill::net::execute")
 
     ::config::net::co_spawn(
         ioc1,
-        [&]() -> awaitable< void > {
+        [&]() -> net::awaitable< void > {
             //
             // test starts here
             //
 
-            auto f = co_future< std::string >(bind_executor(ioc2, []() -> awaitable< std::string > {
-                auto t = system_timer(co_await this_coro::executor);
+            auto f = async::co_future< std::string >(bind_executor(ioc2, []() -> net::awaitable< std::string > {
+                auto t = net::system_timer(co_await net::this_coro::executor);
                 t.expires_after(1s);
-                co_await t.async_wait(use_awaitable);
+                co_await t.async_wait(net::use_awaitable);
                 co_return std::string("Hello");
             }));
 

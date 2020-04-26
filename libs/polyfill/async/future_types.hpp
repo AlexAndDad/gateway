@@ -9,7 +9,7 @@
 #include "polyfill/outcome.hpp"
 #include "polyfill/net.hpp"
 
-namespace polyfill::net
+namespace polyfill::async
 {
     template < class T >
     using future_result_type = outcome::outcome< T , error_code, std::exception_ptr>;

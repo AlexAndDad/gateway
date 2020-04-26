@@ -6,15 +6,15 @@
 //
 
 #pragma once
+#include "future_invoker_base.hpp"
 #include "polyfill/net.hpp"
-#include "polyfill/net/detail/future_invoker_base.hpp"
 
 #include <boost/beast/core/bind_handler.hpp>
 #include <cassert>
 #include <optional>
 #include <utility>
 
-namespace polyfill::net::detail
+namespace polyfill::async::detail
 {
     template < class T, class Handler >
     struct future_invoker : detail::future_invoker_base< T >

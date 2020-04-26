@@ -5,9 +5,6 @@
 // Official repository: https://github.com/AlexAndDad/gateway
 //
 
-#include "polyfill/net/future.hpp"
+#include "future_invoker_base.hpp"
 
-namespace polyfill::net
-{
-
-}
+// check that the header file is self contained

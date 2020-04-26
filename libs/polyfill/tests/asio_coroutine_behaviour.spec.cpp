@@ -2,8 +2,8 @@
 // Created by rhodges on 23/04/2020.
 //
 
+#include "polyfill/async/future.hpp"
 #include "polyfill/net.hpp"
-#include "polyfill/net/future.hpp"
 
 #include <catch2/catch.hpp>
 #include <iostream>
@@ -74,7 +74,7 @@ TEST_CASE("polyfill::tests::asio_coroutine_behaviour")
                 CHECK(which_thread() == "a");
                 std::cout << "Checkpoint 2 : thread " << which_thread() << std::endl;
 
-                auto ap = net::promise< int >();
+                auto ap = async::promise< int >();
                 net::co_spawn(
                     b.ioc.get_executor(),
                     [&]() -> net::awaitable< int > {

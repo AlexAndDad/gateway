@@ -5,7 +5,7 @@
 // Official repository: https://github.com/AlexAndDad/gateway
 //
 
-namespace polyfill::net
+namespace polyfill::async
 {
     template < class T >
     promise< T >::promise()
@@ -68,7 +68,7 @@ namespace polyfill::net
     {
         if (impl_)
         {
-            impl_->set_value(error_code(error::operation_aborted));
+            impl_->set_value(error_code(net::error::operation_aborted));
             impl_.reset();
         }
     }

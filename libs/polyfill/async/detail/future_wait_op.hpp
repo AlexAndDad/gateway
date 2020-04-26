@@ -6,14 +6,14 @@
 //
 
 #pragma once
+#include "future_invoker.hpp"
+#include "future_state_impl.hpp"
+#include "polyfill/async/future_types.hpp"
 #include "polyfill/net.hpp"
-#include "polyfill/net/future_types.hpp"
-#include "polyfill/net/detail/future_invoker.hpp"
-#include "polyfill/net/detail/future_state_impl.hpp"
 
 #include <memory>
 
-namespace polyfill::net::detail
+namespace polyfill::async::detail
 {
     template < class T >
     struct future_wait_op

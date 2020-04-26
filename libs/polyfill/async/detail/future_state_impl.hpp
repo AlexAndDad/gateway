@@ -6,14 +6,14 @@
 //
 
 #pragma once
+#include "future_invoker_base.hpp"
+#include "polyfill/async/future_types.hpp"
 #include "polyfill/net.hpp"
-#include "polyfill/net/detail/future_invoker_base.hpp"
-#include "polyfill/net/future_types.hpp"
 #include "polyfill/outcome.hpp"
 
 #include <variant>
 
-namespace polyfill::net::detail
+namespace polyfill::async::detail
 {
     /// A signal type indicating that the future does not yet have state
     struct future_pending

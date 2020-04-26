@@ -7,23 +7,14 @@
 
 #pragma once
 
-#include "polyfill/net/future.hpp"
+#include "future.hpp"
 
-namespace polyfill::net
+namespace polyfill::async
 {
-    template < class F >
-    struct async_execute_op;
-
-    template < class Ret >
-    struct async_execute_op< net::future_result_type< Ret >() >
-    {
-        using result_type = net::future_result_type< Ret >;
-    };
-
     template<class T, class Func>
     auto co_future(Func func) -> future<T>
     {
-        auto p = net::promise< T >();
+        auto p = async::promise< T >();
         auto f = p.get_future();
 
         auto exec = net::get_associated_executor(func);

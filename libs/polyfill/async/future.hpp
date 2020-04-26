@@ -6,10 +6,10 @@
 //
 
 #pragma once
+#include "polyfill/async/detail/future_wait_op.hpp"
 #include "polyfill/net.hpp"
-#include "polyfill/net/detail/future_wait_op.hpp"
 
-namespace polyfill::net
+namespace polyfill::async
 {
     template < class T >
     struct promise;
@@ -25,7 +25,7 @@ namespace polyfill::net
         template < class CompletionHandler >
         auto async_wait(CompletionHandler &&token);
 
-        auto operator()() -> awaitable< T >;
+        auto operator()() -> net::awaitable< T >;
 
       private:
         friend promise< T >;

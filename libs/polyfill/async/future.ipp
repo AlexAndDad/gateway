@@ -5,7 +5,7 @@
 // Official repository: https://github.com/AlexAndDad/gateway
 //
 
-namespace polyfill::net
+namespace polyfill::async
 {
     template < class T >
     template < class CompletionHandler >
@@ -16,7 +16,7 @@ namespace polyfill::net
     }
 
     template < class T >
-    auto future< T >::operator()() -> awaitable< T >
+    auto future< T >::operator()() -> net::awaitable< T >
     {
         auto r = co_await async_wait(net::use_awaitable);
         if (r.has_value())

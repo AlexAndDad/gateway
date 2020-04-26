@@ -1,7 +1,7 @@
 #pragma once
 #include "config/net.hpp"
-#include "polyfill/net/co_future.hpp"
-#include "polyfill/net/future.hpp"
+#include "polyfill/async/co_future.hpp"
+#include "polyfill/async/future.hpp"
 
 #include <deque>
 #include <memory>
@@ -13,7 +13,7 @@ namespace minecraft::region
     template < class MessageType >
     struct async_queue_impl : std::enable_shared_from_this< async_queue_impl< MessageType > >
     {
-        using promise_type = polyfill::net::promise< MessageType >;
+        using promise_type = polyfill::async::promise< MessageType >;
 
         async_queue_impl(net::io_context::executor_type exec)
         : strand_(exec.context())
@@ -22,7 +22,7 @@ namespace minecraft::region
 
         net::awaitable< MessageType > consume()
         {
-            co_return co_await polyfill::net::co_future< MessageType >(
+            co_return co_await polyfill::async::co_future< MessageType >(
                 net::bind_executor(strand_, [self = this->shared_from_this()]() -> net::awaitable< MessageType > {
                     BOOST_ASSERT(self->get_strand().running_in_this_thread());
                     if (self->deque_.empty())   // await on a future
