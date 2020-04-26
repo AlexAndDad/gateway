@@ -5,12 +5,12 @@
 #pragma once
 
 #include "minecraft/multibyte.hpp"
+#include "minecraft/wise_enum.hpp"
 
 #include <bitset>
 #include <boost/operators.hpp>
 #include <iostream>
 #include <polyfill/bitset_tools.hpp>
-#include <wise_enum/wise_enum.h>
 #include "minecraft/span.hpp"
 
 
@@ -156,9 +156,15 @@ namespace minecraft
     };
 
     template < class Enum >
+    wise_enum::string_type to_string(var_enum< Enum > const &ve)
+    {
+        return to_string(static_cast< Enum >(ve));
+    }
+
+    template < class Enum >
     std::ostream &operator<<(std::ostream &os, var_enum< Enum > const &ve)
     {
-        os << wise_enum::to_string< Enum >(static_cast< Enum >(ve));
+        os << to_string(static_cast< Enum >(ve));
         return os;
     }
 

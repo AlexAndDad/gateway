@@ -10,12 +10,15 @@ namespace polyfill::async
     template < class T >
     promise< T >::promise()
     : impl_(std::make_shared< detail::future_state_impl< T > >())
+    , future_impl_(impl_)   // copy to keep the shared state alive until the future has been acquired
     {
     }
 
     template < class T >
     promise< T >::promise(promise &&other) noexcept
     : impl_(std::move(other.impl_))
+    , future_impl_(
+          std::move(other.future_impl_))   // copy to keep the shared state alive until the future has been acquired
     {
     }
 
@@ -24,6 +27,7 @@ namespace polyfill::async
     {
         destroy();
         impl_ = std::move(other.impl_);
+        future_impl_ = std::move(other.future_impl_);
         return *this;
     }
 
@@ -60,7 +64,8 @@ namespace polyfill::async
     template < class T >
     auto promise< T >::get_future() -> future< T >
     {
-        return future< T >(impl_);
+        assert(future_impl_);
+        return future< T >(std::move(future_impl_));
     }
 
     template < class T >
@@ -71,5 +76,6 @@ namespace polyfill::async
             impl_->set_value(error_code(net::error::operation_aborted));
             impl_.reset();
         }
+        future_impl_.reset();
     }
-}   // namespace polyfill::net
+}   // namespace polyfill::async

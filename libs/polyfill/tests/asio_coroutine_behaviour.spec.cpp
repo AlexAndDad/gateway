@@ -75,16 +75,17 @@ TEST_CASE("polyfill::tests::asio_coroutine_behaviour")
                 std::cout << "Checkpoint 2 : thread " << which_thread() << std::endl;
 
                 auto ap = async::promise< int >();
+                auto f = ap.get_future();
                 net::co_spawn(
                     b.ioc.get_executor(),
-                    [&]() -> net::awaitable< int > {
+                    [&which_thread]() -> net::awaitable< int > {
                         CHECK(which_thread() == "b");
                         std::cout << "Checkpoint 3 : thread " << which_thread() << std::endl;
                         co_return 0;
                     },
-                    [&](std::exception_ptr, int x) { ap.set_value(x); });
+                    [ap = std::move(ap)](std::exception_ptr, int x) mutable { ap.set_value(x); });
 
-                auto v = co_await ap.get_future()();
+                auto v = co_await f();
                 CHECK(which_thread() == "a");
                 CHECK(v == 0);
                 std::cout << "Checkpoint 4 : thread " << which_thread() << " with value " << v << std::endl;

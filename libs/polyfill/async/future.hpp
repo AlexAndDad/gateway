@@ -64,6 +64,7 @@ namespace polyfill::async
         void destroy();
 
         impl_type impl_;
+        impl_type future_impl_;
     };
 
 }   // namespace polyfill::net

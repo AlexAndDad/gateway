@@ -235,7 +235,7 @@ namespace gateway
                                        client_queue.client_producer.produce(std::move(pack));
                                        boost::ignore_unused(pack);
                                        spdlog::warn(
-                                           "{}::{}({})", this, func_name, "unhandled packet type with ID: " + arg.id());
+                                           "{}::{} unhandled client packet {})", this, func_name, arg);
                                    },
                                    [&keep_alive](minecraft::packets::client::keep_alive &arg) {
                                        boost::ignore_unused(arg);

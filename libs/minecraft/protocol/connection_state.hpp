@@ -1,10 +1,11 @@
 #pragma once
 
-#include <wise_enum/wise_enum.h>
+#include "minecraft/wise_enum.hpp"
 
 namespace minecraft::protocol
 {
     WISE_ENUM_CLASS((connection_state, std::int32_t), (initial, 0), (status, 1), (login, 2))
+    WISE_ENUM_ENABLE_IO(connection_state);
 
     inline constexpr bool verify(connection_state x)
     {

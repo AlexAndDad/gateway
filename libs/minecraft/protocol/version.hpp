@@ -1,10 +1,11 @@
 #pragma once
 
-#include <wise_enum/wise_enum.h>
+#include "minecraft/wise_enum.hpp"
 
 namespace minecraft::protocol
 {
     WISE_ENUM_CLASS((version_type, std::int32_t), (not_set, 0), (v1_11, 315), (v1_15_2, 578));
+    WISE_ENUM_ENABLE_IO(version_type);
 
     constexpr bool verify(version_type x)
     {
