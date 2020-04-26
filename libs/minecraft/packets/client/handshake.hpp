@@ -44,22 +44,6 @@ namespace minecraft::packets::client
         }
     };
 
-    template < class Container >
-    void encode(handshake const &arg, Container &target)
-    {
-        using minecraft::encode;
-        thread_local static std::vector< std::uint8_t > buf;
-        buf.clear();
-        auto i1 = std::back_inserter(buf);
-        i1      = encode(variable_length(arg.id()), i1);
-        i1      = encode(arg.protocol_version, i1);
-        i1      = encode(arg.server_address, i1);
-        i1      = encode(arg.server_port, i1);
-        i1      = encode(arg.next_state, i1);
-
-        return encode_to_container(buf, target);
-    }
-
     inline std::size_t compose(handshake const &arg, std::vector< char > &target)
     {
         using minecraft::encode;

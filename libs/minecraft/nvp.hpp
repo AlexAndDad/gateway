@@ -16,20 +16,20 @@
 
 namespace minecraft
 {
-    /// @brief A nam-value pair, designed to live until the end of the current statement in order to facilitate printing
-    /// or parsing
+    /// @brief A name-value pair, designed to live until the end of the current statement in order to facilitate
+    /// printing or parsing
     /// @tparam N A reference to the characters yielding the name of the element
     /// @tparam T a reference to the value of the element
     template < std::size_t N, class T >
     struct nvp
     {
-        nvp(const char (&name)[N], T &value)
+        constexpr nvp(const char (&name)[N], T &value)
         : name(name)
         , value(value)
         {
         }
 
-        std::string_view name;
+        const char (&name)[N];
         T &value;
     };
 
