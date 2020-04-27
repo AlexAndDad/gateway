@@ -45,10 +45,10 @@ namespace region
                     BOOST_ASSERT(self->get_strand().running_in_this_thread());
                     while (true)
                     {
-                        auto player_update_queue = co_await self->queue_.consume_new_player();
-                        std::string name = player_update_queue.name;
-                        auto player_connection = player::player_connection(std::move(player_update_queue));
-                        self->player_manager_.add_player(std::move(name),std::move(player_connection));
+                        auto        player_update_queue = co_await self->queue_.consume_new_player();
+                        std::string name                = player_update_queue.name;
+                        auto        player_connection   = player::player_connection(std::move(player_update_queue));
+                        self->player_manager_.add_player(std::move(name), std::move(player_connection));
                     }
                 },
                 config::net::detached);
