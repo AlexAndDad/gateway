@@ -5,6 +5,8 @@
 #include "polyfill/explain.hpp"
 #include "region_server.hpp"
 
+#include "minecraft/region/player_updates_queue.hpp"
+
 #include <iostream>
 #include <memory>
 
@@ -15,9 +17,9 @@ namespace region
         using executor_type = config::net::io_context::executor_type;
         application(executor_type exec)
         : exec_(exec)
-        , bus_(exec)
-        , region_server_(exec, bus_)
-        , gateway_server_(exec, bus_)
+        , queue_(exec)
+        , region_server_(exec, queue_)
+        , gateway_server_(exec, queue_)
         {
         }
 
@@ -39,7 +41,7 @@ namespace region
         }
 
         executor_type               exec_;
-        minecraft::region::fake_bus bus_;
+        minecraft::region::player_update_queue queue_;
         region_server               region_server_;
         gateway::application        gateway_server_;
     };
