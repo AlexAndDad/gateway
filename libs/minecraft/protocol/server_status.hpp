@@ -9,7 +9,6 @@
 #include "minecraft/protocol/stream.hpp"
 #include "minecraft/status_packets.hpp"
 
-
 namespace minecraft::protocol
 {
     template < class NextLayer, class CompletionToken >
@@ -24,33 +23,48 @@ namespace minecraft::protocol
             var_enum< minecraft::client::status_packet_id > client_which;
         };
 
-        auto state                  = std::make_unique< op_state >();
-        state->server_response.json = "{\n"
-                                      "    \"version\": {\n"
-                                      "        \"name\": \"1.15.2\",\n"
-                                      "        \"protocol\": 578\n"
-                                      "    },\n"
-                                      "    \"players\": {\n"
-                                      "        \"max\": 1000000000,\n"
-                                      "        \"online\": 1000000,\n"
-                                      "        \"sample\": [\n"
-                                      "            {\n"
-                                      "                \"name\": \"MadMongo38\",\n"
-                                      "                \"id\": \"00000000-0000-0000-0000-000000000000\"\n"
-                                      "            }\n"
-                                      "        ]\n"
-                                      "    },\n"
-                                      "    \"description\": {\n"
-                                      "        \"text\": \"Welcome to Awesomeness!\"\n"
-                                      "    },\n"
-                                      "    \"favicon\": \"data:image/png;base64,<data>\"\n"
-                                      "}";
+        auto state = std::make_unique< op_state >();
+        state->server_response.json =
+            "{\n"
+            "    \"version\": {\n"
+            "        \"name\": \"1.15.2\",\n"
+            "        \"protocol\": 578\n"
+            "    },\n"
+            "    \"players\": {\n"
+            "        \"max\": 1000000000,\n"
+            "        \"online\": 1000000,\n"
+            "        \"sample\": [\n"
+            "            {\n"
+            "                \"name\": \"MadMongo38\",\n"
+            "                \"id\": \"00000000-0000-0000-0000-000000000000\"\n"
+            "            }\n"
+            "        ]\n"
+            "    },\n"
+            "    \"description\": {\n"
+            "        \"text\": \"Welcome to Awesomeness!\"\n"
+            "    },\n"
+            "    \"favicon\": "
+            "\"data:image/"
+            "png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAHYYAAB2GAV"
+            "2iE4EAAAIXSURBVHhe7ZqxSgNBFEWzgZAYIaC16bRLZelnBAQtUllKirQ2goVREDsL/8DKbxC/"
+            "IZ12sQuoRCWEQFbzMhd04jA7u7OT3cw7sNytsjD3zJslSRD+"
+            "UPCYokhv4QUQ6S28ACK9hRdApLcYvwdMHh4pv05OKaf9F0odxfoW5VqnTVneb1LKxP18EPU5gA2IagCa+"
+            "TzuUIbDIaUpQblMWe2eUaIhW58PVM+"
+            "RYQN0BthuBsgNjbpXlNPBgNIWOhPYAJ0B77t7lLabAWgoHI8p0wLP2XjuUQI2QGUA9v5H64hyVVi/vqTELGADVAaY7v1m407c/"
+            "eW+dyDusoE8C9gAlQGv9R1x9z+qxlVkzYTN/hOl9wYoF2C2V7BfkjBrPmvt/4YNELlAUKvRtWpUWod0AT4FVKfA23aDUvWOnpdzXwbTH/"
+            "AMELlApdOmS0XWp7uMvPcBzwDVDAC6WZB10Hr1fP6NkAwboDNgdHM7z4v5d3Z5Q576MmyAzgCQNxN0ex+"
+            "wAVENAHkxQbf3ARtgagBQvR8EpRJlOJlQuibq3gdsQFwDdLPAtQmmzQM2IK4BYNmnQtzmARuQ1ADg2oSkzQM2wJYBQPl+YOl/"
+            "ALaaB2yAbQNMZwF+"
+            "e9D998h284ANsG0ASHoqpNW4DBuQlgHA1ARXzQM2IG0DgM4E180DNsCVAUA2YVnNAzbAtQFZw3sDeAFEegsvgEhPKRS+"
+            "ATQUJpxfcw2UAAAAAElFTkSuQmCC"
+            "\"\n"
+            "}";
 
         auto op = [&stream, coro = net::coroutine(), pstate = std::move(state)](
                       auto &self, error_code ec = {}, std::size_t /*bytes_transferred*/ = 0) mutable {
 #include <boost/asio/yield.hpp>
-            auto not_eof = [&ec]() -> error_code&
-            {
+            auto not_eof = [&ec]() -> error_code & {
                 if (ec == net::error::eof)
                     ec.clear();
                 return ec;
