@@ -86,23 +86,53 @@ namespace minecraft::utils
         return out;
     }
 
-    auto encoding4(std::uint64_t val) -> std::array< char, 4 >
+    mutable_buffer_iterator base64_encode_unchecked2(const_buffer_iterator   first,
+                                                     const_buffer_iterator   last,
+                                                     mutable_buffer_iterator out_iter,
+                                                     char                    pad)
     {
-        auto low    = encoding2(val >> 12);
-        auto high   = encoding2(val);
-        auto result = std::array< char, 4 > {};
-        std::memcpy(result.data(), low.data(), 2);
-        std::memcpy(result.data() + 2, high.data(), 2);
-        return result;
+        assert(std::distance(first, last) == 2);
+        auto acc = boost::endian::big_uint32_at(0);
+        std::memcpy(acc.data() + 1, first, 2);
+        auto outbuf = std::array< char, 4 >();
+        encoding4(acc.value(), outbuf.data());
+        if (pad)
+        {
+            outbuf[3] = pad;
+            out_iter  = std::copy(outbuf.begin(), outbuf.end(), out_iter);
+        }
+        else
+            out_iter = std::copy(outbuf.data(), outbuf.data() + 3, out_iter);
+        return out_iter;
     }
 
-    void base64_encode(const_buffer_iterator first, const_buffer_iterator last, compose_buffer &target)
+    mutable_buffer_iterator base64_encode_unchecked1(const_buffer_iterator   first,
+                                                     const_buffer_iterator   last,
+                                                     mutable_buffer_iterator out_iter,
+                                                     char                    pad)
     {
-        auto input_size = static_cast< std::size_t >(std::distance(first, last));
-        auto op         = target.size();
-        target.resize(op + padded_encoded_size(input_size));
-        auto out_iter = target.data() + op;
+        assert(std::distance(first, last) == 1);
+        auto acc          = boost::endian::big_uint32_at(0);
+        *(acc.data() + 1) = *first;
+        auto outbuf       = std::array< char, 4 >();
+        encoding4(acc.value(), outbuf.data());
+        if (pad)
+        {
+            outbuf[2] = pad;
+            outbuf[3] = pad;
+            out_iter  = std::copy(outbuf.begin(), outbuf.end(), out_iter);
+        }
+        else
+            out_iter = std::copy(outbuf.data(), outbuf.data() + 2, out_iter);
 
+        return out_iter;
+    }
+
+    mutable_buffer_iterator base64_encode_unchecked(const_buffer_iterator   first,
+                                                    const_buffer_iterator   last,
+                                                    mutable_buffer_iterator out_iter,
+                                                    char                    pad)
+    {
         for (; std::distance(first, last) >= 24; first += 24)
         {
             std::array< unsigned char, 24 > cycle_buffer {};
@@ -133,36 +163,27 @@ namespace minecraft::utils
             out_iter = encoding4(acc.value(), out_iter);
             first += 3;
         }
-        // "VGhlIHF1aWNrIGJyb3duIGZv2ARhAQAAcyBvdmVyIHRoZSBsYXp5IGRvZy4="
-        // "VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZy4="
 
+        switch (std::distance(first, last))
         {
-            std::array< char, 4 > encode_buffer {};
-            auto                  acc      = std::bitset< 24 >();
-            auto                  get_byte = [&first] {
-                return std::bitset< 24 >(static_cast< std::uint64_t >(static_cast< std::uint8_t >(*first++)));
-            };
-
-            switch (std::distance(first, last))
-            {
-            default:
-                break;
-            case 1:
-                acc              = get_byte() << 16;
-                encode_buffer    = encoding4(acc.to_ulong());
-                encode_buffer[2] = '=';
-                encode_buffer[3] = '=';
-                out_iter         = std::copy(encode_buffer.begin(), encode_buffer.end(), out_iter);
-                break;
-            case 2:
-                acc = get_byte() << 16;
-                acc |= get_byte() << 8;
-                encode_buffer    = encoding4(acc.to_ulong());
-                encode_buffer[3] = '=';
-                out_iter         = std::copy(encode_buffer.begin(), encode_buffer.end(), out_iter);
-                break;
-            }
+        case 2:
+            out_iter = base64_encode_unchecked2(first, last, out_iter, pad);
+            break;
+        case 1:
+            out_iter = base64_encode_unchecked1(first, last, out_iter, pad);
+            break;
+        default:
+            break;
         }
+        return out_iter;
+    }
+
+    void base64_encode(const_buffer_iterator first, const_buffer_iterator last, compose_buffer &target, char pad)
+    {
+        auto input_size = static_cast< std::size_t >(std::distance(first, last));
+        auto op         = target.size();
+        target.resize(op + padded_encoded_size(input_size));
+        base64_encode_unchecked(first, last, target.data() + op, pad);
     }
 
 }   // namespace minecraft::utils

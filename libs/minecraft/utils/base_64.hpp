@@ -15,6 +15,6 @@
 
 namespace minecraft::utils
 {
-    void base64_encode(const_buffer_iterator first, const_buffer_iterator last, compose_buffer &target);
+    void base64_encode(const_buffer_iterator first, const_buffer_iterator last, compose_buffer &target, char pad = '=');
 
 }   // namespace minecraft::utils
