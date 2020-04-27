@@ -2,10 +2,9 @@
 
 #include "config/net.hpp"
 #include "gateway/application.hpp"
+#include "minecraft/region/player_updates_queue.hpp"
 #include "polyfill/explain.hpp"
 #include "region_server.hpp"
-
-#include "minecraft/region/player_updates_queue.hpp"
 
 #include <iostream>
 #include <memory>
@@ -40,10 +39,10 @@ namespace region
             co_return;
         }
 
-        executor_type               exec_;
+        executor_type                          exec_;
         minecraft::region::player_update_queue queue_;
-        region_server               region_server_;
-        gateway::application        gateway_server_;
+        region_server                          region_server_;
+        gateway::application                   gateway_server_;
     };
 
     void run()
