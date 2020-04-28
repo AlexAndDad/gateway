@@ -7,7 +7,7 @@ namespace minecraft
         using value_type          = std::decay_t< decltype(target) >;
         constexpr auto byte_count = sizeof(value_type);
 
-        if (ec.failed())
+        if (not ec.failed())
         {
             if (std::distance(first, last) < static_cast< std::ptrdiff_t >(byte_count))
             {
@@ -30,7 +30,7 @@ namespace minecraft
         using value_type          = std::decay_t< decltype(target) >;
         constexpr auto byte_count = sizeof(value_type);
 
-        if (ec.failed())
+        if (not ec.failed())
         {
             if (std::distance(first, last) < static_cast< std::ptrdiff_t >(byte_count))
             {
