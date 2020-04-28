@@ -8,7 +8,7 @@
 namespace region::player
 {
     using namespace config;
-    struct player_manager : std::enable_shared_from_this< player_manager >
+    struct player_manager
     {
         using player_type        = minecraft::player< player_connection >;
         using player_handle_type = player_handle< player_type >;
@@ -24,21 +24,19 @@ namespace region::player
         {
             net::co_spawn(
                 get_strand(),
-                [self       = shared_from_this(),
-                 player_con = std::move(player_con),
-                 name       = std::move(name)]() -> net::awaitable< void > {
-                    BOOST_ASSERT(self->get_strand().running_in_this_thread());
+                [this, player_con = std::move(player_con), name = std::move(name)]() -> net::awaitable< void > {
+                    BOOST_ASSERT(get_strand().running_in_this_thread());
 
                     // Construct a player and give it to a handle to be managed
                     auto player = std::make_shared< player_type >(
-                        name, std::move(player_con), self->get_strand().context().get_executor());
+                        name, std::move(player_con), get_strand().context().get_executor());
                     auto p_handle = player_handle_type(std::move(player));
 
                     // Start the player
                     p_handle.get().start();
 
                     // Store the player in the cache
-                    self->players_.emplace(std::move(name), std::move(p_handle));
+                    players_.emplace(std::move(name), std::move(p_handle));
 
                     co_return;
                 },
@@ -49,14 +47,14 @@ namespace region::player
         {
             net::co_spawn(
                 get_strand(),
-                [self = shared_from_this(), name = std::move(player_name)]() -> net::awaitable< void > {
-                    BOOST_ASSERT(self->get_strand().running_in_this_thread());
+                [this, name = std::move(player_name)]() -> net::awaitable< void > {
+                    BOOST_ASSERT(get_strand().running_in_this_thread());
 
-                    auto iter = self->players_.find(name);
+                    auto iter = players_.find(name);
                     iter->second.get().stop();
-                    if (iter != self->players_.end())
+                    if (iter != players_.end())
                     {
-                        self->players_.erase(iter);
+                        players_.erase(iter);
                     }
                     co_return;
                 },

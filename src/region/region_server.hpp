@@ -12,7 +12,7 @@
 
 namespace region
 {
-    struct region_server : std::enable_shared_from_this< region_server >
+    struct region_server
     {
         using executor_type = config::net::io_context::executor_type;
         using strand_type   = config::net::io_context::strand;
@@ -31,7 +31,7 @@ namespace region
             std::cout << "Region Server starting\n";
             config::net::co_spawn(
                 get_strand(),
-                [self = shared_from_this()]() -> config::net::awaitable< void > { co_await self->run(); },
+                [this]() -> config::net::awaitable< void > { co_await this->run(); },
                 config::net::detached);
         }
 
@@ -43,14 +43,14 @@ namespace region
             // Start accepting new players
             config::net::co_spawn(
                 get_strand(),
-                [self = shared_from_this()]() -> config::net::awaitable< void > {
-                    BOOST_ASSERT(self->get_strand().running_in_this_thread());
+                [this]() -> config::net::awaitable< void > {
+                    BOOST_ASSERT(get_strand().running_in_this_thread());
                     while (true)
                     {
-                        auto        player_update_queue = co_await self->queue_.consume_new_player();
+                        auto        player_update_queue = co_await queue_.consume_new_player();
                         std::string name                = player_update_queue.name;
                         auto        player_connection   = player::player_connection(std::move(player_update_queue));
-                        self->player_manager_.add_player(std::move(name), std::move(player_connection));
+                        player_manager_.add_player(std::move(name), std::move(player_connection));
                     }
                 },
                 config::net::detached);

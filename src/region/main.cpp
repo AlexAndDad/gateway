@@ -3,6 +3,7 @@
 #include "config/net.hpp"
 #include "gateway/application.hpp"
 #include "minecraft/region/player_updates_queue.hpp"
+#include "minecraft/utils/exception_handler.hpp"
 #include "polyfill/explain.hpp"
 #include "region_server.hpp"
 
@@ -11,7 +12,7 @@
 
 namespace region
 {
-    struct application : std::enable_shared_from_this< application >
+    struct application
     {
         using executor_type = config::net::io_context::executor_type;
         application(executor_type exec)
@@ -26,8 +27,8 @@ namespace region
         {
             config::net::co_spawn(
                 exec_,
-                [self = shared_from_this()]() -> config::net::awaitable< void > { co_await self->run(); },
-                config::net::detached);
+                [this]() -> config::net::awaitable< void > { co_await this->run(); },
+                minecraft::utils::make_exception_handler_standalone("region application run"));
         }
 
       private:
