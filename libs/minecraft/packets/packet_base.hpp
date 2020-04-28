@@ -18,6 +18,20 @@
 
 namespace minecraft::packets
 {
+
+    template<class Impl>
+    struct packet_enable_json
+    {
+        void to_json(boost::json::value& jv) const
+        {
+            auto& self = static_cast<Impl const&>(*this);
+            auto& object = jv.emplace_object();
+            object.reserve(2);
+            object.emplace("type", to_string(self.id()));
+            object.emplace("data", boost::json::to_value(Impl::as_nvps(self), object.storage()));
+        }
+    };
+
     template < auto Ident, class Impl, class = std::enable_if_t< wise_enum::is_wise_enum_v< decltype(Ident) > > >
     struct packet_base
     {

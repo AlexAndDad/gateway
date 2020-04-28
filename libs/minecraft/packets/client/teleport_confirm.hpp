@@ -1,13 +1,15 @@
 #include "minecraft/packets/client/play_id.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/utils/has_json.hpp"
 
 namespace minecraft::packets::client
 {
-    struct teleport_confirm : packet_base< play_id::teleport_confirm, teleport_confirm >
+    struct teleport_confirm
+    : packet_base< play_id::teleport_confirm, teleport_confirm >
+    , packet_enable_json< teleport_confirm >
     {
-
-        var<int32_t> teleport_id;
+        var< int32_t > teleport_id;
 
         template < class Self >
         static auto as_nvps(Self &self)

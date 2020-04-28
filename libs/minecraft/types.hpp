@@ -12,7 +12,7 @@
 #include <iostream>
 #include <polyfill/bitset_tools.hpp>
 #include "minecraft/span.hpp"
-
+#include <boost/json.hpp>
 
 namespace minecraft
 {
@@ -190,4 +190,19 @@ namespace minecraft
         return var< Integral >(i);
     }
 
+    // json converters
+
+
 }   // namespace minecraft
+
+namespace boost::json
+{
+    template<class T>
+    struct to_value_traits<minecraft::var<T>>
+    {
+        static void assign(value& jv, minecraft::var<T> const& var)
+        {
+            jv = to_value(static_cast<T const&>(var), jv.storage());
+        }
+    };
+}

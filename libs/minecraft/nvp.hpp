@@ -13,6 +13,7 @@
 #include <fmt/ostream.h>
 #include <string_view>
 #include <tuple>
+#include <boost/json.hpp>
 
 namespace minecraft
 {
@@ -93,7 +94,35 @@ namespace minecraft
         return fmt::format("{}", nvps);
     }
 
+    template < class... NVPs >
+    auto json_value(nvp_set< NVPs... > const &nvps) -> boost::json::value
+    {
+        auto  result = boost::json::value(boost::json::object_kind);
+        auto &object = result.as_object();
+
+        boost::mp11::tuple_for_each(nvps.tuple_, [&object](auto &&nvp) {
+            object.emplace(nvp.name, boost::json::to_value(nvp.value, object.storage()));
+        });
+
+        return result;
+    }
+
 }   // namespace minecraft
+
+namespace boost::json
+{
+    template < class... NVPs >
+    struct to_value_traits< minecraft::nvp_set< NVPs... > >
+    {
+        static void assign(value &jv, minecraft::nvp_set< NVPs... > const &nvps)
+        {
+            auto &object = jv.emplace_object();
+            object.reserve(sizeof...(NVPs));
+            boost::mp11::tuple_for_each(nvps.tuple_,
+                                        [&object](auto &&nvp) { object.emplace(nvp.name, to_value(nvp.value)); });
+        }
+    };
+}   // namespace boost::json
 
 namespace fmt
 {
