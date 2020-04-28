@@ -112,8 +112,9 @@ namespace gateway
 
             if (ec)
             {
-                spdlog::warn("Unable to parse packet from the client");
+                spdlog::warn("Unable to parse packet from the client with ID: {}", wise_enum::to_string(pack.id()));
                 spdlog::warn("{}::{}({})", this, __func__, polyfill::report(ec));
+                spdlog::warn("{}",pack);
             }
             co_return pack;
         }

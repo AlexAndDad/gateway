@@ -281,11 +281,10 @@ namespace gateway
                                        boost::ignore_unused(arg);
                                        boost::ignore_unused(pack);
                                    },
-                                   [this, &pack, &client_queue](auto &arg) {
+                                   [&pack, &client_queue](auto &arg) {
                                        // A normal play packet, send it to the queue to be handled
                                        client_queue.client_producer.produce(std::move(pack));
-                                       boost::ignore_unused(pack);
-                                       spdlog::warn("{}::{} unhandled client packet {})", this, func_name, arg);
+                                       boost::ignore_unused(arg);
                                    },
                                    [this](minecraft::packets::client::keep_alive &arg) {
                                        boost::ignore_unused(arg);
