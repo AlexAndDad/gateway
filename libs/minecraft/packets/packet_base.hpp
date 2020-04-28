@@ -6,10 +6,10 @@
 //
 
 #pragma once
-#include "minecraft/types.hpp"
 #include "minecraft/compose.hpp"
 #include "minecraft/nvp.hpp"
 #include "minecraft/parse.hpp"
+#include "minecraft/types.hpp"
 
 #include <boost/mp11/tuple.hpp>
 #include <fmt/format.h>
@@ -59,7 +59,7 @@ namespace minecraft::packets
 
             i1           = encode(variable_length(base.id()), i1);
             auto encoder = [&](auto &&nvp) { i1 = encode(nvp.value, i1); };
-            auto nvps = Impl::as_nvps(self);
+            auto nvps    = Impl::as_nvps(self);
             boost::mp11::tuple_for_each(nvps.tuple_, encoder);
         }
 
@@ -71,18 +71,26 @@ namespace minecraft::packets
             auto  parser   = [&](auto &nvp) {
                 using minecraft::parse;
                 first = parse(first, last, nvp.value, ec);
+                if (ec)
+                {
+                    spdlog::warn("parse failed at: {}", nvp.name);
+                }
             };
             auto nvps = Impl::as_nvps(self);
             boost::mp11::tuple_for_each(nvps.tuple_, parser);
             if (not ec and first != last)
+            {
                 ec = error::invalid_packet;
+                spdlog::warn("packet length mismatch (invalid structure): {} - remaining bytes: {}", to_string(target.id()), last-first);
+            }
+
             return ec ? original : first;
         }
 
-        friend auto operator==(packet_base const& a, packet_base const& b)
+        friend auto operator==(packet_base const &a, packet_base const &b)
         {
-            auto &self_a     = static_cast< Impl const & >(a);
-            auto &self_b     = static_cast< Impl const & >(b);
+            auto &self_a = static_cast< Impl const & >(a);
+            auto &self_b = static_cast< Impl const & >(b);
             return Impl::as_nvps(self_a) == Impl::as_nvps(self_b);
         }
     };

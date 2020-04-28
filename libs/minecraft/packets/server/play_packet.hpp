@@ -42,9 +42,9 @@ namespace minecraft::packets::server
             return std::get< Packet >(variant_);
         }
 
-        auto as_variant() -> play_packet_variant & { return variant_; }
+        auto as_variant() -> play_packet_variant_old & { return variant_; }
 
-        auto as_variant() const -> play_packet_variant const & { return variant_; }
+        auto as_variant() const -> play_packet_variant_old const & { return variant_; }
 
         template < class Stream >
         friend Stream &operator<<(Stream &os, play_packet const &arg)
@@ -60,7 +60,7 @@ namespace minecraft::packets::server
             return os;
         }
 
-        play_packet_variant variant_;
+        play_packet_variant_old variant_;
     };
 
     inline void compose(play_packet const &p, std::vector< char > &buf)
