@@ -1,6 +1,7 @@
 #include "minecraft/packets/client/play_id.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/wise_enum.hpp"
 
 namespace minecraft::packets::client
 {

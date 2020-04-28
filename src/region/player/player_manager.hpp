@@ -60,7 +60,7 @@ namespace region::player
                     }
                     co_return;
                 },
-                net::detached)
+                net::detached);
         }
 
       private:   // Functions

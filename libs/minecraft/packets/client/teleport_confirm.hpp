@@ -7,7 +7,6 @@ namespace minecraft::packets::client
 {
     struct teleport_confirm
     : packet_base< play_id::teleport_confirm, teleport_confirm >
-    , packet_enable_json< teleport_confirm >
     {
         var< int32_t > teleport_id;
 

@@ -13,7 +13,7 @@
 #include <fmt/ostream.h>
 #include <string_view>
 #include <tuple>
-#include <boost/json.hpp>
+#include "minecraft/to_json.hpp"
 
 namespace minecraft
 {
@@ -101,7 +101,7 @@ namespace minecraft
         auto &object = result.as_object();
 
         boost::mp11::tuple_for_each(nvps.tuple_, [&object](auto &&nvp) {
-            object.emplace(nvp.name, boost::json::to_value(nvp.value, object.storage()));
+            object.emplace(nvp.name, to_json(nvp.value, object.storage()));
         });
 
         return result;

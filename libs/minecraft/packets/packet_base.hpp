@@ -15,6 +15,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
+#include "minecraft/to_json.hpp"
 
 namespace minecraft::packets
 {
@@ -22,18 +23,19 @@ namespace minecraft::packets
     template<class Impl>
     struct packet_enable_json
     {
-        void to_json(boost::json::value& jv) const
+        auto to_json(boost::json::value& jv) const
         {
+            using minecraft::to_json;
             auto& self = static_cast<Impl const&>(*this);
             auto& object = jv.emplace_object();
             object.reserve(2);
-            object.emplace("type", to_string(self.id()));
-            object.emplace("data", boost::json::to_value(Impl::as_nvps(self), object.storage()));
+            object.emplace("type", to_json(self.id(), object.storage()));
+            object.emplace("data", to_json(Impl::as_nvps(self), object.storage()));
         }
     };
 
     template < auto Ident, class Impl, class = std::enable_if_t< wise_enum::is_wise_enum_v< decltype(Ident) > > >
-    struct packet_base
+    struct packet_base :  packet_enable_json<Impl>
     {
         static constexpr auto id() { return Ident; }
 

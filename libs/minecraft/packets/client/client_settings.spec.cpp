@@ -25,4 +25,9 @@ TEST_CASE("minecraft::packets::client::client_settings")
     CHECK(ss.str() == expected);
 
     minecraft::tests::packet_round_trip(pkt);
+
+    SECTION("json")
+    {
+        minecraft::tests::packet_to_json(pkt, R"_json({"type":"client_settings","data":{"locale":"en_GB","view_distance":30,"chat_mode":"enabled","chat_colours":true,"skin_parts":126,"main_hand":"right"}})_json");
+    }
 }

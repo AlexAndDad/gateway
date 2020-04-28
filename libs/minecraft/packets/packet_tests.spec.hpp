@@ -4,7 +4,8 @@
 
 #include "minecraft/parse.hpp"
 #include "minecraft/encode.hpp"
-
+#include "minecraft/to_json.hpp"
+#include <boost/json/serializer.hpp>
 
 namespace minecraft::tests
 {
@@ -27,5 +28,14 @@ namespace minecraft::tests
         CHECK(ec.message() == "Success");
         CHECK(next == last);
         CHECK(parsed == source);
+    }
+
+    template<class Packet>
+    void packet_to_json(Packet const& pkt, boost::json::string expected)
+    {
+        using boost::json::to_string;
+        auto json = boost::json::to_value(pkt);
+        auto rep = to_string(json);
+        CHECK(rep == expected);
     }
 }

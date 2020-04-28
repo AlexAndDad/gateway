@@ -1,5 +1,7 @@
 #pragma once
 
+#include "polyfill/bitset_tools.hpp"
+
 namespace minecraft
 {
     struct position
