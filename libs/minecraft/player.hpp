@@ -47,20 +47,23 @@ namespace minecraft
             // TODO Do start logic to setup the player
 
             // Handle packets
+            while (true)
+            {
+                auto packet = co_await connection_.consume_packet();
 
-            auto packet = co_await connection_.consume_packet();
-
-            visit(overloaded { [](monostate &arg) {
-                                  boost::ignore_unused(arg);
-                                  spdlog::warn("got monostate while consuming a packet in player.");
-                              },
-                               [](auto &arg) {
-                                   boost::ignore_unused(arg);
-                                   spdlog::warn("unhandled packet: {} consumed in player. Ignoring...",
-                                                wise_enum::to_string(arg.id()));
-                               },
-                               [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
-                  packet.as_variant());
+                visit(
+                    overloaded { [](monostate &arg) {
+                                    boost::ignore_unused(arg);
+                                    spdlog::warn("got monostate while consuming a packet in player.");
+                                },
+                                 [](auto &arg) {
+                                     boost::ignore_unused(arg);
+                                     spdlog::warn("unhandled packet: {} consumed in player. Ignoring...",
+                                                  wise_enum::to_string(arg.id()));
+                                 },
+                                 [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
+                    packet.as_variant());
+            }
         }
 
         name_type name_;

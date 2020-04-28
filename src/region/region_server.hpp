@@ -8,8 +8,6 @@
 #include <iostream>
 #include <memory>
 
-
-
 namespace region
 {
     struct region_server

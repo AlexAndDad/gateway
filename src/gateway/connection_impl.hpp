@@ -85,9 +85,7 @@ namespace gateway
         {
             try
             {
-                spdlog::info("Attempting to send packet: {}", wise_enum::to_string(p.id()));
                 co_await stream_.async_write_packet(p, net::use_awaitable);
-                spdlog::info("{}::{}({})", this, "async_write_packet", minecraft::report(error_code()));
             }
             catch (system_error &se)
             {
