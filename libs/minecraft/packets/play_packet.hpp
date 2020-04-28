@@ -13,7 +13,7 @@
 
 #include <spdlog/spdlog.h>
 #include <fmt/ostream.h>
-#include <variant>
+#include "minecraft/variant.hpp"
 #include <wise_enum.h>
 
 namespace minecraft::packets
@@ -41,9 +41,9 @@ namespace minecraft::packets
     template < class PlayID, class PlayPacketVariant >
     inline auto play_packet< PlayID, PlayPacketVariant >::id() const -> PlayID
     {
-        return std::visit(
+        return visit(
             [](auto &&pkt) {
-                if constexpr (std::is_same_v< std::decay_t< decltype(pkt) >, std::monostate >)
+                if constexpr (std::is_same_v< std::decay_t< decltype(pkt) >, monostate >)
                     return PlayID::invalid;
                 else
                     return pkt.id();
@@ -80,7 +80,7 @@ namespace minecraft::packets
     };
 
     template < class F, class... Ts >
-    bool for_all_types(F &&f, std::variant< Ts... > &var)
+    bool for_all_types(F &&f, variant< Ts... > &var)
     {
         return for_all_types_impl< Ts... >()(f, var);
     }
@@ -98,7 +98,7 @@ namespace minecraft::packets
             first      = parse(first, last, id, ec);
             auto found = for_all_types(
                 [&]< class Type >(identity< Type >, PlayPacketVariant &var) {
-                    if constexpr (std::is_same_v< Type, std::monostate >)
+                    if constexpr (std::is_same_v< Type, monostate >)
                         return false;
                     else if (Type::id() == id.value())
                     {
@@ -126,9 +126,9 @@ namespace minecraft::packets
     template < class PlayID, class PlayPacketVariant >
     void compose(play_packet< PlayID, PlayPacketVariant > const &pkt, compose_buffer &buf)
     {
-        std::visit(
+        visit(
             [&buf]< class T >(T const &actual) {
-                if constexpr (std::is_same_v< T, std::monostate >)
+                if constexpr (std::is_same_v< T, monostate >)
                     assert(!"logic error - composing an empty packet");
                 else
                     compose(actual, buf);
@@ -140,13 +140,13 @@ namespace minecraft::packets
     std::ostream &operator<<(std::ostream &os, play_packet< PlayID, PlayPacketVariant > const pkt)
     {
         auto visitor = [&os]< class Actual >(Actual const& actual) {
-            if constexpr (std::is_same_v< Actual, std::monostate >)
+            if constexpr (std::is_same_v< Actual, monostate >)
                 fmt::print(os, "[packet empty]");
             else
                 fmt::print(os, "{}", actual);
         };
 
-        std::visit(visitor, pkt.as_variant());
+        visit(visitor, pkt.as_variant());
         return os;
     }
 

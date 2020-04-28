@@ -14,13 +14,13 @@
 
 namespace minecraft::packets::client
 {
-    using play_packet_variant = std::variant< std::monostate,
-                                              teleport_confirm,
-                                              plugin_message,
-                                              keep_alive,
-                                              client_settings,
-                                              player_position_and_rotation,
-                                              animation >;
+    using play_packet_variant = variant< monostate,
+                                         teleport_confirm,
+                                         plugin_message,
+                                         keep_alive,
+                                         client_settings,
+                                         player_position_and_rotation,
+                                         animation >;
 
     struct client_play_packet : play_packet< client::play_id, play_packet_variant >
     {

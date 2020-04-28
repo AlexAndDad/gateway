@@ -37,8 +37,7 @@ namespace minecraft
         }
 
         /// @brief Signal the player object that it's time to 'disconnect' internally
-        void stop()
-        {}
+        void stop() {}
 
       public:
         // Packets yet to handle...
@@ -51,18 +50,17 @@ namespace minecraft
 
             auto packet = co_await connection_.consume_packet();
 
-            std::visit(
-                overloaded { [](std::monostate &arg) {
-                                boost::ignore_unused(arg);
-                                spdlog::warn("got monostate while consuming a packet in player.");
-                            },
-                             [](auto &arg) {
-                                 boost::ignore_unused(arg);
-                                 spdlog::warn("unhandled packet: {} consumed in player. Ignoring...",
-                                              wise_enum::to_string(arg.id()));
-                             },
-                             [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
-                packet.as_variant());
+            visit(overloaded { [](monostate &arg) {
+                                  boost::ignore_unused(arg);
+                                  spdlog::warn("got monostate while consuming a packet in player.");
+                              },
+                               [](auto &arg) {
+                                   boost::ignore_unused(arg);
+                                   spdlog::warn("unhandled packet: {} consumed in player. Ignoring...",
+                                                wise_enum::to_string(arg.id()));
+                               },
+                               [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
+                  packet.as_variant());
         }
 
         name_type name_;

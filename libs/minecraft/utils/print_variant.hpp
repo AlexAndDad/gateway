@@ -1,5 +1,5 @@
 #include <ostream>
-#include <variant>
+#include "minecraft/variant.hpp"
 
 namespace minecraft::utils
 {
@@ -15,21 +15,21 @@ namespace minecraft::utils
         friend std::ostream &operator<<(std::ostream &os, variant_printer const &vp)
         {
             auto visitor = [&os](auto &&item) {
-                if constexpr (same_type<decltype(item), std::monostate>())
+                if constexpr (same_type<decltype(item), monostate>())
                     os << "empty";
                 else
                     os << item;
             };
 
-            std::visit(visitor, vp.var);
+            visit(visitor, vp.var);
             return os;
         }
 
-        std::variant< Ts... > const& var;
+        variant< Ts... > const& var;
     };
 
     template < class... Ts >
-    auto print_variant(std::variant< Ts... > const &var)
+    auto print_variant(variant< Ts... > const &var)
     {
         return variant_printer< Ts... >{var};
     }

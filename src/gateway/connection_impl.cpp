@@ -171,23 +171,22 @@ namespace gateway
             auto ec     = error_code();
             auto packet = co_await async_read_packet(ec);
 
-            std::visit(
-                overloaded { [this](std::monostate &arg) {
-                                boost::ignore_unused(arg);
-                                spdlog::warn("{}::{}({})",
-                                             this,
-                                             __func__,
-                                             "got monostate when expecting teleport confirm packet.");
-                            },
-                             [this](auto &arg) {
-                                 boost::ignore_unused(arg);
-                                 spdlog::warn("{}::{}(got packet with id: {} when expecting client_settings packet.)",
-                                              this,
-                                              __func__,
-                                              wise_enum::to_string(arg.id()));
-                             },
-                             [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
-                packet.as_variant());
+            visit(overloaded { [this](monostate &arg) {
+                                  boost::ignore_unused(arg);
+                                  spdlog::warn("{}::{}({})",
+                                               this,
+                                               __func__,
+                                               "got monostate when expecting teleport confirm packet.");
+                              },
+                               [this](auto &arg) {
+                                   boost::ignore_unused(arg);
+                                   spdlog::warn("{}::{}(got packet with id: {} when expecting client_settings packet.)",
+                                                this,
+                                                __func__,
+                                                wise_enum::to_string(arg.id()));
+                               },
+                               [](minecraft::packets::client::client_settings &arg) { boost::ignore_unused(arg); } },
+                  packet.as_variant());
         }
 
         {
@@ -195,47 +194,43 @@ namespace gateway
             auto ec     = error_code();
             auto packet = co_await async_read_packet(ec);
 
-            std::visit(overloaded {
-                           [this](std::monostate &arg) {
-                               boost::ignore_unused(arg);
-                               spdlog::warn(
-                                   "{}::{}({})", this, __func__, "got monostate when expecting plugin message packet.");
-                           },
-                           [this](auto &arg) {
-                               boost::ignore_unused(arg);
-                               spdlog::warn("{}::{}(got packet with id: {} when expecting plugin_message packet.)",
-                                            this,
-                                            __func__,
-                                            wise_enum::to_string(arg.id()));
-                           },
-                           [](minecraft::packets::client::plugin_message &arg)
-                           {
-                               boost::ignore_unused(arg);
-                           } },
-                       packet.as_variant());
+            visit(overloaded { [this](monostate &arg) {
+                                  boost::ignore_unused(arg);
+                                  spdlog::warn("{}::{}({})",
+                                               this,
+                                               __func__,
+                                               "got monostate when expecting plugin message packet.");
+                              },
+                               [this](auto &arg) {
+                                   boost::ignore_unused(arg);
+                                   spdlog::warn("{}::{}(got packet with id: {} when expecting plugin_message packet.)",
+                                                this,
+                                                __func__,
+                                                wise_enum::to_string(arg.id()));
+                               },
+                               [](minecraft::packets::client::plugin_message &arg) { boost::ignore_unused(arg); } },
+                  packet.as_variant());
         }
 
         {   // Await a teleport confirm packet
             auto ec     = error_code();
             auto packet = co_await async_read_packet(ec);
 
-            std::visit(
-                overloaded { [this](std::monostate &arg) {
-                                boost::ignore_unused(arg);
-                                spdlog::warn("{}::{}({})",
-                                             this,
-                                             __func__,
-                                             "got monostate when expecting teleport confirm packet.");
-                            },
-                             [this](auto &arg) {
-                                 boost::ignore_unused(arg);
-                                 spdlog::warn("{}::{}(got packet with id: {} when expecting teleport confirm packet.)",
-                                              this,
-                                              __func__,
-                                              wise_enum::to_string(arg.id()));
-                             },
-                             [](minecraft::packets::client::teleport_confirm &arg) { boost::ignore_unused(arg); } },
-                packet.as_variant());
+            visit(overloaded {
+                      [this](monostate &arg) {
+                          boost::ignore_unused(arg);
+                          spdlog::warn(
+                              "{}::{}({})", this, __func__, "got monostate when expecting teleport confirm packet.");
+                      },
+                      [this](auto &arg) {
+                          boost::ignore_unused(arg);
+                          spdlog::warn("{}::{}(got packet with id: {} when expecting teleport confirm packet.)",
+                                       this,
+                                       __func__,
+                                       wise_enum::to_string(arg.id()));
+                      },
+                      [](minecraft::packets::client::teleport_confirm &arg) { boost::ignore_unused(arg); } },
+                  packet.as_variant());
         }
 
         // Client is now logged in.
@@ -275,23 +270,23 @@ namespace gateway
                 {
                     // Handle the packet, if its a ping we handle it here, else pass it to the bus
                     auto &func_name = __func__;
-                    std::visit(overloaded {
-                                   [this, &pack](std::monostate &arg) {
-                                       spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
-                                       boost::ignore_unused(arg);
-                                       boost::ignore_unused(pack);
-                                   },
-                                   [&pack, &client_queue](auto &arg) {
-                                       // A normal play packet, send it to the queue to be handled
-                                       client_queue.client_producer.produce(std::move(pack));
-                                       boost::ignore_unused(arg);
-                                   },
-                                   [this](minecraft::packets::client::keep_alive &arg) {
-                                       boost::ignore_unused(arg);
-                                       keep_alive_impl_.reset_expiry();
-                                   },
-                               },
-                               pack.as_variant());
+                    visit(overloaded {
+                              [this, &pack](monostate &arg) {
+                                  spdlog::warn("{}::{}({})", this, func_name, "got 'monostate' in packet_handler");
+                                  boost::ignore_unused(arg);
+                                  boost::ignore_unused(pack);
+                              },
+                              [&pack, &client_queue](auto &arg) {
+                                  // A normal play packet, send it to the queue to be handled
+                                  client_queue.client_producer.produce(std::move(pack));
+                                  boost::ignore_unused(arg);
+                              },
+                              [this](minecraft::packets::client::keep_alive &arg) {
+                                  boost::ignore_unused(arg);
+                                  keep_alive_impl_.reset_expiry();
+                              },
+                          },
+                          pack.as_variant());
                 }
             }
             catch (system_error &se)

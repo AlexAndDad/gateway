@@ -20,7 +20,7 @@ namespace minecraft::nbt
         {
             return value_equals(l, r);
         };
-        return std::visit(visitor, as_variant(), other.as_variant());
+        return visit(visitor, as_variant(), other.as_variant());
     }
 
     std::ostream& operator<<(std::ostream& os, value const& arg)
@@ -30,7 +30,7 @@ namespace minecraft::nbt
             os << x;
         };
 
-        std::visit(visitor, arg.as_variant());
+        visit(visitor, arg.as_variant());
 
         return os;
     }

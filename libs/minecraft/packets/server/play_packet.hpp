@@ -4,7 +4,7 @@
 #include "player_position_and_look.hpp"
 #include "spawn_position.hpp"
 
-#include <variant>
+#include "minecraft/variant.hpp"
 
 namespace minecraft::packets::server
 {

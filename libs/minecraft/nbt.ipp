@@ -6,7 +6,7 @@ namespace minecraft::nbt
     {
         auto visitor = [&iter](auto &element) { iter = encode(element, iter); };
 
-        std::visit(visitor, arg.as_variant());
+        visit(visitor, arg.as_variant());
         return iter;
     }
 

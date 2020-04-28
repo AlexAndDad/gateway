@@ -12,12 +12,12 @@
 
 namespace minecraft::packets::server
 {
-    using play_packet_variant = std::variant< std::monostate,
-                                              server::chat_message,
-                                              server::spawn_position,
-                                              server::keep_alive,
-                                              server::join_game,
-                                              server::player_position_and_look >;
+    using play_packet_variant = variant< monostate,
+                                         server::chat_message,
+                                         server::spawn_position,
+                                         server::keep_alive,
+                                         server::join_game,
+                                         server::player_position_and_look >;
 
     struct server_play_packet : play_packet< server::play_id, play_packet_variant >
     {

@@ -11,7 +11,7 @@
 #include "polyfill/net.hpp"
 #include "polyfill/outcome.hpp"
 
-#include <variant>
+#include "polyfill/variant.hpp"
 
 namespace polyfill::async::detail
 {
@@ -31,7 +31,7 @@ namespace polyfill::async::detail
     {
         using result_type = future_result_type< T >;
 
-        using variant_type = std::variant< future_pending, result_type, future_completed >;
+        using variant_type = variant< future_pending, result_type, future_completed >;
 
         explicit future_state_impl()
         : invoker_()
@@ -43,7 +43,7 @@ namespace polyfill::async::detail
         void set_value(result_type &&val)
         {
             auto lock = std::unique_lock(mutex_);
-            assert(std::holds_alternative< future_pending >(var_));
+            assert(holds_alternative< future_pending >(var_));
             if (invoker_)
             {
                 auto pinvoker = std::move(invoker_);
@@ -60,20 +60,20 @@ namespace polyfill::async::detail
             auto lock = std::unique_lock(mutex_);
             assert(not invoker_);
 
-            if (std::holds_alternative< future_pending >(var_))
+            if (holds_alternative< future_pending >(var_))
             {
                 invoker_ = std::move(pinvoker);
                 return;
             }
-            else if (std::holds_alternative< result_type >(var_))
+            else if (holds_alternative< result_type >(var_))
             {
-                auto val = std::move(std::get< result_type >(var_));
+                auto val = std::move(get< result_type >(var_));
                 var_     = future_completed();
                 lock.unlock();
                 pinvoker->notify_value(std::move(val));
                 return;
             }
-            else if (std::holds_alternative< future_completed >(var_))
+            else if (holds_alternative< future_completed >(var_))
             {
                 assert(!"promise invoked more than once");
             }

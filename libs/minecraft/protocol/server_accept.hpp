@@ -13,6 +13,7 @@
 #include "minecraft/protocol/mojang_login_data.hpp"
 #include "minecraft/report.hpp"
 #include "minecraft/security/private_key.hpp"
+#include "minecraft/variant.hpp"
 #include "read_frame.hpp"
 #include "stream.hpp"
 
@@ -22,7 +23,6 @@
 #include <boost/webclient/get.hpp>
 #include <boost/webclient/internet_session.hpp>
 #include <spdlog/spdlog.h>
-#include <variant>
 
 namespace minecraft::protocol
 {
@@ -41,11 +41,10 @@ namespace minecraft::protocol
 
         // frames
 
-        using client_packet_variant =
-            std::variant< packets::client::login_start, packets::client::encryption_response >;
-        using server_packet_variant = std::variant< packets::server::set_compression,
-                                                    packets::server::encryption_request,
-                                                    packets::server::login_success >;
+        using client_packet_variant = variant< packets::client::login_start, packets::client::encryption_response >;
+        using server_packet_variant = variant< packets::server::set_compression,
+                                               packets::server::encryption_request,
+                                               packets::server::login_success >;
 
         client_packet_variant                                   client_packet;
         server_packet_variant                                   server_packet;
@@ -124,7 +123,7 @@ namespace minecraft::protocol
                 }
 
                 {
-                    auto &logstart = std::get< packets::client::login_start >(state.client_packet);
+                    auto &logstart = get< packets::client::login_start >(state.client_packet);
                     if (verify(logstart, ec).failed())
                         return self.complete(log_fail(ec));
                     stream.player_name(logstart.name);
@@ -161,8 +160,8 @@ namespace minecraft::protocol
                     {
                         context = "verify with mojang";
                         using net::buffer;
-                        auto &request  = std::get< packets::server::encryption_request >(state.server_packet);
-                        auto &response = std::get< packets::client::encryption_response >(state.client_packet);
+                        auto &request  = get< packets::server::encryption_request >(state.server_packet);
+                        auto &response = get< packets::client::encryption_response >(state.client_packet);
                         auto  secret   = response.decrypt_secret(*state.server_key, request.verify_token, ec);
                         if (log_fail(ec).failed())
                             return self.complete(ec);

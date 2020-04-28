@@ -5,11 +5,12 @@
 #include "minecraft/net.hpp"
 
 #include <stack>
-#include <variant>
+#include "minecraft/variant.hpp"
+
 
 namespace minecraft::nbt
 {
-    using value_variant = std::variant< nbt::nbt_end >;
+    using value_variant = variant< nbt::nbt_end >;
 
     struct value
     {
