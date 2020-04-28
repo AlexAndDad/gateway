@@ -33,7 +33,7 @@ namespace gateway
         , queue_(queue)
         {
             acceptor_.open(protocol::v4());
-            acceptor_.set_option(socket_type::reuse_address());
+            acceptor_.set_option(socket_type::reuse_address(true));
             auto ec = error_code();
             do
             {
