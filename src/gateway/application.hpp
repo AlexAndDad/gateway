@@ -39,6 +39,7 @@ namespace gateway
 
         void start()
         {
+            std::cout << "Application start called" << std::endl;
             dispatch(bind_executor(get_executor(), [this]{
                 this->handle_start();
             }));
@@ -60,6 +61,7 @@ namespace gateway
 
         void handle_start()
         {
+            std::cout << "Application handle_start called" << std::endl;
             signals_.async_wait([this](error_code const& ec, int sig){
                 handle_signal(ec, sig);
             });
