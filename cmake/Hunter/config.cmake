@@ -20,7 +20,8 @@ hunter_config(boost_webclient
 hunter_config(boost_json
         GIT_SUBMODULE git-deps/boost_json
         CONFIGURATION_TYPES Release
-        CMAKE_ARGS BOOST_JSON_ALLOW_TESTS=NO)
+        CMAKE_ARGS
+            BOOST_JSON_STANDALONE=NO)
 
 hunter_config(uriparser
         URL https://github.com/uriparser/uriparser/releases/download/uriparser-0.9.3/uriparser-0.9.3.tar.gz
