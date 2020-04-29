@@ -4,13 +4,14 @@
 #include "play_packet.hpp"
 
 // Packets
-#include "minecraft/packets/client/animation.hpp"
-#include "minecraft/packets/client/client_settings.hpp"
-#include "minecraft/packets/client/keep_alive.hpp"
-#include "minecraft/packets/client/play_id.hpp"
-#include "minecraft/packets/client/player_position_and_rotation.hpp"
-#include "minecraft/packets/client/plugin_message.hpp"
-#include "minecraft/packets/client/teleport_confirm.hpp"
+#include "client/animation.hpp"
+#include "client/client_settings.hpp"
+#include "client/keep_alive.hpp"
+#include "client/play_id.hpp"
+#include "client/player_position_and_rotation.hpp"
+#include "client/plugin_message.hpp"
+#include "client/teleport_confirm.hpp"
+#include "client/held_item_change.hpp"
 
 namespace minecraft::packets::client
 {
@@ -20,7 +21,8 @@ namespace minecraft::packets::client
                                          keep_alive,
                                          client_settings,
                                          player_position_and_rotation,
-                                         animation >;
+                                         animation,
+                                         held_item_change>;
 
     struct client_play_packet : play_packet< client::play_id, play_packet_variant >
     {

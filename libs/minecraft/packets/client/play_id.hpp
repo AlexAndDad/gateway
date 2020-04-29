@@ -11,6 +11,7 @@ namespace minecraft::packets::client
                     (invalid, 0x7f),
                     (keep_alive, 0x0F),
                     (position_and_rotation, 0x12),
-                    (animation, 0x2A));
+                    (animation, 0x2A),
+                    (held_item_change, 0x23));
     WISE_ENUM_ENABLE_IO(play_id);
 }   // namespace minecraft::packets::client
