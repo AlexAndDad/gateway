@@ -78,6 +78,12 @@ namespace minecraft::utils
         return exception_handler< Self >(self->shared_from_this(), std::move(context));
     }
 
+    template < class Self >
+    auto make_exception_handler(std::shared_ptr<Self> self, std::string context)
+    {
+        return exception_handler< Self >(std::move(self), std::move(context));
+    }
+
     auto make_exception_handler_standalone(std::string context)
     {
         return exception_handler_standalone(std::move(context));
