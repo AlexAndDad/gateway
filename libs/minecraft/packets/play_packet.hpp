@@ -34,6 +34,28 @@ namespace minecraft::packets
             var_ = std::move(packet);
         }
 
+        template<class PacketType>
+        PacketType& emplace()
+        {
+            return var_.template emplace<PacketType>();
+        }
+
+        template<class PacketType>
+        PacketType* query() {
+            if (holds_alternative<PacketType>(var_))
+                return &get<PacketType>(var_);
+            else
+                return nullptr;
+        }
+
+        template<class PacketType>
+        PacketType const* query() const {
+            if (holds_alternative<PacketType>(var_))
+                return &get<PacketType>(var_);
+            else
+                return nullptr;
+        }
+
       private:
         PlayPacketVariant var_;
     };

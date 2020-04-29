@@ -41,12 +41,11 @@ namespace polyfill::async
             running_ = false;
             if (!ec)
                 ec = net::error::timed_out;
-            if (ec != net::error::operation_aborted)
-            {
-                auto &this_ = *static_cast< Derived * >(this);
-                this_.on_timeout();
-                this_(std::move(self), this_.set_error(ec));
-            }
+            else if (ec == net::error::operation_aborted)
+                ec.clear();
+            auto &this_ = *static_cast< Derived * >(this);
+            this_.on_timeout();
+            this_(std::move(self), this_.set_error(ec));
         }
 
         void on_timeout() { assert(!"implement me in the derived class"); }

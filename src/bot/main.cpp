@@ -76,8 +76,8 @@ namespace bot
             []() -> net::awaitable< void > {
                 auto stream = minecraft::protocol::stream<net::ip::tcp::socket>(net::ip::tcp::socket(co_await net::this_coro::executor));
                 spdlog::info("ping starting");
-                co_await async_client_ping(stream, "play.minesuperior.com", "25565", net::use_awaitable);
-                spdlog::info("ping completed");
+                auto result = co_await async_client_ping(stream, "play.minesuperior.com", "25565", net::use_awaitable);
+                spdlog::info("[ping {}us] [json {}]", result.ping_time.count(), result.json);
                 co_return;
             },
             [work = net::make_work_guard(ioc)](std::exception_ptr ep) {

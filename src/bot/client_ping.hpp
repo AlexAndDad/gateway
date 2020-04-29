@@ -10,7 +10,8 @@ namespace bot
                            std::string const &                       port,
                            CompletionToken &&                        token)
     {
-        return net::async_compose< CompletionToken, void(error_code) >(ping_op(stream, hostname, port), token, stream);
+        return net::async_compose< CompletionToken, void(error_code, ping_result) >(
+            ping_op(stream, hostname, port), token, stream);
     }
 
 }   // namespace bot
