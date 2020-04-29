@@ -11,20 +11,23 @@
 
 namespace polyfill::net
 {
-    template < class Impl, class Work, class Handler, class Signature>
-    struct shared_composed_op
+    template < class ComposedOp >
+    struct shared;
+
+    template < class Impl, class Work, class Handler, class Signature >
+    struct shared< net::detail::composed_op< Impl, Work, Handler, Signature > >
     {
         using composed_op_type = net::detail::composed_op< Impl, Work, Handler, Signature >;
 
         using allocator_type = typename net::associated_allocator< composed_op_type >::type;
         using executor_type  = typename net::associated_executor< composed_op_type >::type;
 
-        shared_composed_op(composed_op_type &&op)
+        shared(composed_op_type &&op)
         : impl_(std::make_shared< composed_op_type >(std::move(op)))
         {
         }
 
-        shared_composed_op(std::shared_ptr< composed_op_type > op)
+        shared(std::shared_ptr< composed_op_type > op)
         : impl_(std::move(op))
         {
         }
@@ -56,48 +59,53 @@ namespace polyfill::net
     template < class Impl, class Work, class Handler, class Signature >
     auto share(net::detail::composed_op< Impl, Work, Handler, Signature > &composed_op)
     {
-        auto op = shared_composed_op< Impl, Work, Handler, Signature >(std::move(composed_op));
+        using composed_op_type = net::detail::composed_op< Impl, Work, Handler, Signature >;
+        auto op                = shared< composed_op_type >(std::move(composed_op));
         op.initial_resume();
         return op;
     }
 
     template < class Impl, class Work, class Handler, class Signature >
-    auto share(shared_composed_op< Impl, Work, Handler, Signature > shared_thing)
+    auto share(net::detail::composed_op< Impl, Work, Handler, Signature > &&composed_op)
+    {
+        using composed_op_type = net::detail::composed_op< Impl, Work, Handler, Signature >;
+        auto op                = shared< composed_op_type >(std::move(composed_op));
+        op.initial_resume();
+        return op;
+    }
+
+    template < class ComposedOp >
+    auto share(shared< ComposedOp > shared_thing)
     {
         return shared_thing;
     }
 
-    template < typename Impl, typename Work, typename Handler, typename Signature >
-    inline void *asio_handler_allocate(std::size_t                                           size,
-                                       shared_composed_op< Impl, Work, Handler, Signature > *this_handler)
+    template < class ComposedOp >
+    inline void *asio_handler_allocate(std::size_t size, shared< ComposedOp > *this_handler)
     {
         return boost_asio_handler_alloc_helpers::allocate(size, this_handler->impl_->handler_);
     }
 
-    template < typename Impl, typename Work, typename Handler, typename Signature >
-    inline void asio_handler_deallocate(void *                                                pointer,
-                                        std::size_t                                           size,
-                                        shared_composed_op< Impl, Work, Handler, Signature > *this_handler)
+    template < typename ComposedOp >
+    inline void asio_handler_deallocate(void *pointer, std::size_t size, shared< ComposedOp > *this_handler)
     {
         boost_asio_handler_alloc_helpers::deallocate(pointer, size, this_handler->impl_->handler_);
     }
 
-    template < typename Impl, typename Work, typename Handler, typename Signature >
-    inline bool asio_handler_is_continuation(shared_composed_op< Impl, Work, Handler, Signature > *this_handler)
+    template < class ComposedOp >
+    inline bool asio_handler_is_continuation(shared< ComposedOp > *this_handler)
     {
         return asio_handler_is_continuation(this_handler->impl_.get());
     }
 
-    template < typename Function, typename Impl, typename Work, typename Handler, typename Signature >
-    inline void asio_handler_invoke(Function &                                            function,
-                                    shared_composed_op< Impl, Work, Handler, Signature > *this_handler)
+    template < typename Function, class ComposedOp >
+    inline void asio_handler_invoke(Function &function, shared< ComposedOp > *this_handler)
     {
         boost_asio_handler_invoke_helpers::invoke(function, this_handler->impl_->handler_);
     }
 
-    template < typename Function, typename Impl, typename Work, typename Handler, typename Signature >
-    inline void asio_handler_invoke(const Function &                                      function,
-                                    shared_composed_op< Impl, Work, Handler, Signature > *this_handler)
+    template < typename Function, class ComposedOp >
+    inline void asio_handler_invoke(const Function &function, shared< ComposedOp > *this_handler)
     {
         boost_asio_handler_invoke_helpers::invoke(function, this_handler->impl_->handler_);
     }

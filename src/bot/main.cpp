@@ -1,9 +1,13 @@
 //#include <experimental/coroutine>
+#include "client_ping.hpp"
+#include "minecraft/packets/server_play_packet.hpp"
 #include "minecraft/protocol/client_connect.hpp"
 #include "minecraft/protocol/stream.hpp"
 #include "polyfill/explain.hpp"
-#include "minecraft/packets/server_play_packet.hpp"
+
 #include <boost/asio/awaitable.hpp>
+#include <exception>
+
 
 namespace bot
 {
@@ -35,19 +39,18 @@ namespace bot
                     connect_state_.version(protocol::version_type::v1_11);
                     co_await protocol::async_client_connect(stream_, connect_state_, net::use_awaitable);
 
-                    while(1)
+                    while (1)
                     {
                         co_await stream_.async_read_frame(net::use_awaitable);
-                        auto packet = packets::server::server_play_packet();
-                        auto span = to_span(stream_.current_frame());
+                        auto       packet = packets::server::server_play_packet();
+                        auto       span   = to_span(stream_.current_frame());
                         error_code ec;
-                        auto next = parse(span.begin(), span.end(), packet, ec);
+                        auto       next = parse(span.begin(), span.end(), packet, ec);
                         boost::ignore_unused(next);
                         if (not ec.failed())
                         {
                             spdlog::info("recognised {}", packet);
                         }
-
                     }
                 },
                 [](auto...) {});
@@ -65,8 +68,31 @@ namespace bot
     {
         auto ioc = net::io_context();
 
-        auto c = client(net::make_strand(ioc.get_executor()));
+        auto c = client(ioc.get_executor());
         c.start();
+
+        net::co_spawn(
+            ioc.get_executor(),
+            []() -> net::awaitable< void > {
+                auto stream = minecraft::protocol::stream<net::ip::tcp::socket>(net::ip::tcp::socket(co_await net::this_coro::executor));
+                spdlog::info("ping starting");
+                co_await async_client_ping(stream, "play.minesuperior.com", "25565", net::use_awaitable);
+                spdlog::info("ping completed");
+                co_return;
+            },
+            [work = net::make_work_guard(ioc)](std::exception_ptr ep) {
+                try
+                {
+                    if (ep)
+                        std::rethrow_exception(ep);
+                    spdlog::info("ping completed");
+                }
+                catch (...)
+                {
+                    spdlog::error("error in ping: {}", polyfill::explain());
+                }
+            });
+
         ioc.run();
     }
 

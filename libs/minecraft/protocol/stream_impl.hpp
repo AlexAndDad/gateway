@@ -2,6 +2,7 @@
 
 #include "minecraft/protocol/stream_impl_base.hpp"
 #include "minecraft/stream_traits.hpp"
+#include "minecraft/report.hpp"
 
 namespace minecraft::protocol
 {
