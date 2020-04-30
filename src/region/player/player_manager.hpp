@@ -5,6 +5,8 @@
 #include "player_connection.hpp"
 #include "player_handle.hpp"
 
+#include "minecraft/time/ticker.hpp"
+
 namespace region::player
 {
     using namespace config;
@@ -17,7 +19,14 @@ namespace region::player
 
         player_manager(executor_type exec)
         : strand_(exec.context())
+        , ticker_(get_strand())
         {
+        }
+
+        void start()
+        {
+            // Start tick manager
+
         }
 
         void add_player(std::string name, player_connection player_con)
@@ -62,12 +71,19 @@ namespace region::player
         }
 
       private:   // Functions
-        strand_type get_strand() { return strand_; }
+
+         net::awaitable<void> player_ticker()
+         {
+
+         }
+
+
+        strand_type & get_strand() { return strand_; }
 
       private:   // Data
         // Net
         strand_type strand_;
-
         std::unordered_map< std::string, player_handle_type > players_;
+        minecraft::time::ticker ticker_;
     };
 }   // namespace region::player
