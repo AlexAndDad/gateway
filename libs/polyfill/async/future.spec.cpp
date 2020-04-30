@@ -73,4 +73,25 @@ TEST_CASE("polyfill::async::future")
         p = async::promise< std::string >();
         ioc.run();
     }
+
+}
+TEST_CASE("polyfill::async::future<void>")
+{
+    auto ioc  = net::io_context();
+
+    auto p = async::promise< void>();
+    auto f = p.get_future();
+
+    SECTION("test void return")
+    {
+        p.set_value();
+        f.async_wait([](polyfill::async::future_result_type<void> s) {
+
+            REQUIRE(s.has_value());
+        });
+
+        ioc.run();
+    }
+
+
 }
