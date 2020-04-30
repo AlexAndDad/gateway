@@ -29,6 +29,8 @@ namespace minecraft
             {
                 return nvp_set(nvp("payload", self.payload));
             }
+
+            static status_ping generate();
         };
 
         using status_packet_variant = variant< monostate, status_request, status_ping >;

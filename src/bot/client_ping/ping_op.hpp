@@ -240,4 +240,5 @@ namespace bot
         ping_result                                         result_;
         std::chrono::high_resolution_clock::time_point      rx_time_, tx_time_;
     };
+
 }   // namespace bot
