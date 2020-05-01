@@ -1,8 +1,11 @@
 #pragma once
 
 #include "minecraft/incomplete.hpp"
+#include "minecraft/net.hpp"
 #include "minecraft/parse_error.hpp"
-#include "types.hpp"
+#include "types/buffer.hpp"
+
+//#include "types.hpp"
 
 #include <boost/endian.hpp>
 #include <boost/mp11/tuple.hpp>
@@ -49,6 +52,25 @@ namespace minecraft
         }
         return first;
     }
+
+    template < class Integral, class U = Integral >
+    constexpr int max_var_encoded_bytes()
+    {
+        static_assert(not std::is_same_v< Integral, U >);
+        return 0;
+    };
+
+    template <>
+    constexpr int max_var_encoded_bytes< std::int32_t >()
+    {
+        return 5;
+    };
+
+    template <>
+    constexpr int max_var_encoded_bytes< std::int64_t >()
+    {
+        return 10;
+    };
 
     template < class Iter, class SignedType >
     auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec) -> Iter
@@ -121,27 +143,6 @@ namespace minecraft
                error_code &                 ec,
                std::int32_t                 byte_limit = 65536) -> const_buffer_iterator;
 
-    template < class Underlying >
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator second, var< Underlying > &target, error_code &ec)
-    {
-        return parse_var(first, second, static_cast< Underlying & >(target), ec);
-    }
-
-    template < class Enum >
-    [[nodiscard]] const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator second, var_enum< Enum > &target, error_code &ec)
-    {
-        if (not ec.failed())
-        {
-            using underlying = std::underlying_type_t< Enum >;
-            auto accum       = underlying();
-            first            = parse_var(first, second, accum, ec);
-            if (not ec.failed())
-                target = static_cast< Enum >(accum);
-        }
-        return first;
-    }
 
     template < class T >
     const_buffer_iterator
@@ -176,33 +177,6 @@ namespace minecraft
         boost::mp11::tuple_for_each(args, [&](auto &target) { first = parse(first, last, target, ec); });
         if (not ec.failed())
             return ret = first;
-        return ret;
-    }
-
-    template < std::size_t Limit>
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
-    {
-        auto ret = first;
-
-        auto size = std::int32_t();
-        first     = parse_var(first, last, size, ec);
-        if (not ec.failed())
-        {
-            constexpr auto byte_limit = static_cast< int >(Limit) * 4;
-            auto           available  = std::distance(first, last);
-            if (size > byte_limit)
-                ec = error::invalid_string;
-            else if (size > available)
-                ec = error::incomplete_parse;
-            else
-            {
-                result.append(first, first + size);
-                first += size;
-            }
-        }
-        if (not ec.failed())
-            ret = first;
         return ret;
     }
 

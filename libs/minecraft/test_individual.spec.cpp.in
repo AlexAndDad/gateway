@@ -1,0 +1,9 @@
+#include <cstdlib>
+#include <catch2/catch.hpp>
+
+TEST_CASE("@test_exe_name@")
+{
+    auto result = std::system("./@test_exe_name@");
+    CHECK(result == 0);
+}
+

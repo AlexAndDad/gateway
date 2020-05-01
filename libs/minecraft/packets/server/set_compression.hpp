@@ -5,7 +5,7 @@
 #pragma once
 
 #include "minecraft/packet_id.hpp"
-#include "minecraft/parse.hpp"
+#include "minecraft/types/var.hpp"
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>

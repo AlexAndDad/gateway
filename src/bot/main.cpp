@@ -1,13 +1,12 @@
 //#include <experimental/coroutine>
-#include "client_ping.hpp"
 #include "minecraft/packets/server_play_packet.hpp"
 #include "minecraft/protocol/client_connect.hpp"
+#include "minecraft/protocol/client_ping.hpp"
 #include "minecraft/protocol/stream.hpp"
 #include "polyfill/explain.hpp"
 
 #include <boost/asio/awaitable.hpp>
 #include <exception>
-
 
 namespace bot
 {
@@ -74,8 +73,7 @@ namespace bot
         net::co_spawn(
             ioc.get_executor(),
             []() -> net::awaitable< void > {
-                spdlog::info("ping starting");
-                auto result = co_await coro_ping("play.minesuperior.com", "25565");
+                auto result = co_await minecraft::protocol::ping("play.minesuperior.com", "25565");
                 spdlog::info("[ping {}us] [json {}]", result.ping_time.count(), result.json);
                 co_return;
             },

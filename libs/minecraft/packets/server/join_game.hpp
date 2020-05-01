@@ -7,7 +7,8 @@
 #include "minecraft/encode.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/parse_error.hpp"
-#include "minecraft/types.hpp"
+#include "minecraft/types/varchar.hpp"
+#include "minecraft/types/var.hpp"
 #include "minecraft/wise_enum.hpp"
 #include "play_id.hpp"
 

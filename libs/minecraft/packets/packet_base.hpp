@@ -10,6 +10,8 @@
 #include "minecraft/nvp.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/print.hpp"
+#include "minecraft/to_json.hpp"
 
 #include <boost/mp11/tuple.hpp>
 #include <fmt/format.h>
@@ -42,13 +44,13 @@ namespace minecraft::packets
         friend auto to_string(packet_base const &base) -> std::string
         {
             auto &self = static_cast< Impl const & >(base);
-            return fmt::format("[{} {}]", to_string(Ident), Impl::as_nvps(self));
+            return fmt::format("[{} {}]", print(Ident), Impl::as_nvps(self));
         }
 
         friend std::ostream &operator<<(std::ostream &os, packet_base const &base)
         {
             auto &self = static_cast< Impl const & >(base);
-            fmt::print(os, "[{} {}]", to_string(Ident), Impl::as_nvps(self));
+            fmt::print(os, "[{} {}]", print(Ident), Impl::as_nvps(self));
             return os;
         }
 

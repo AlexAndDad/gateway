@@ -1,11 +1,9 @@
 #pragma once
 
 #include <catch2/catch.hpp>
-
+#include "minecraft/net.hpp"
 #include "minecraft/parse.hpp"
-#include "minecraft/encode.hpp"
-#include "minecraft/to_json.hpp"
-#include <boost/json/serializer.hpp>
+#include "minecraft/compose.hpp"
 
 namespace minecraft::tests
 {

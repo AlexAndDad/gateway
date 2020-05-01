@@ -10,6 +10,8 @@
 #include "minecraft/to_json.hpp"
 #include "minecraft/types/integral.hpp"
 #include "minecraft/wise_enum.hpp"
+#include <boost/operators.hpp>
+#include "minecraft/parse.hpp"
 
 namespace minecraft
 {
@@ -66,6 +68,22 @@ namespace minecraft
     {
         return var_enum< Enum >(e);
     }
+
+    template < class Enum >
+    [[nodiscard]] const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator second, var_enum< Enum > &target, error_code &ec)
+    {
+        if (not ec.failed())
+        {
+            using underlying = std::underlying_type_t< Enum >;
+            auto accum       = underlying();
+            first            = parse_var(first, second, accum, ec);
+            if (not ec.failed())
+                target = static_cast< Enum >(accum);
+        }
+        return first;
+    }
+
 }   // namespace minecraft
 
 namespace boost::json
@@ -77,7 +95,7 @@ namespace boost::json
         {
             auto&str = jv.emplace_string();
             auto ps = wise_enum::to_string(ve.value());
-            str.assign(ps);
+            str.assign(ps.begin(), ps.end());
         }
     };
 }

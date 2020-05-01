@@ -7,29 +7,13 @@
 
 #pragma once
 
+#include "minecraft/parse.hpp"
 #include "minecraft/to_json.hpp"
+
 #include <boost/operators.hpp>
 
 namespace minecraft
 {
-    template < class Integral, class U = Integral >
-    constexpr int max_var_encoded_bytes()
-    {
-        static_assert(not std::is_same_v< Integral, U >);
-        return 0;
-    };
-
-    template <>
-    constexpr int max_var_encoded_bytes< std::int32_t >()
-    {
-        return 5;
-    };
-
-    template <>
-    constexpr int max_var_encoded_bytes< std::int64_t >()
-    {
-        return 10;
-    };
 
     template < class Integral >
     struct var : boost::operators< var< Integral > >
@@ -103,6 +87,13 @@ namespace minecraft
         return var< Integral >(i);
     }
 
+    template < class Underlying >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator second, var< Underlying > &target, error_code &ec)
+    {
+        return parse_var(first, second, static_cast< Underlying & >(target), ec);
+    }
+
 }   // namespace minecraft
 
 namespace boost::json
@@ -110,9 +101,6 @@ namespace boost::json
     template < class Integral >
     struct to_value_traits< minecraft::var< Integral > >
     {
-        static void assign(value &jv, minecraft::var< Integral > const &vi)
-        {
-            jv = static_cast<Integral>(vi);
-        }
+        static void assign(value &jv, minecraft::var< Integral > const &vi) { jv = static_cast< Integral >(vi); }
     };
-}
+}   // namespace boost::json

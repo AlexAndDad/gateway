@@ -14,6 +14,7 @@
 #include <string_view>
 #include <tuple>
 #include "minecraft/to_json.hpp"
+#include "minecraft/print.hpp"
 
 namespace minecraft
 {
@@ -81,6 +82,18 @@ namespace minecraft
         tuple_type tuple_;
     };
 
+    template<std::size_t N, class Type>
+    void tag_invoke(print_tag<nvp<N, Type>>, std::ostream& os, nvp<N, Type> const& arg)
+    {
+        fmt::print(os, "[{} {}]", arg.name, print(arg.value));
+    }
+
+    template<std::size_t N, class Type>
+    void tag_invoke(print_tag<nvp<N, Type>>, std::string& os, nvp<N, Type> const& arg)
+    {
+        fmt::print(os, "[{} {}]", arg.name, print(arg.value));
+    }
+
     template < class... NVPs >
     std::ostream &operator<<(std::ostream &os, nvp_set< NVPs... > const &nvps)
     {
@@ -141,7 +154,7 @@ namespace fmt
         template < typename FormatContext >
         auto format(nvp const &n, FormatContext &ctx)
         {
-            return fmt::format_to(ctx.out(), "[{} {}]", n.name, n.value);
+            return fmt::format_to(ctx.out(), "[{} {}]", n.name, minecraft::print(n.value));
         }
     };
 

@@ -8,5 +8,5 @@ TEST_CASE("minecraft::wise_enum")
 {
     auto a = Clock::tock;
 
-    CHECK(to_string(a) == "tock");
+    CHECK(minecraft::to_string(a) == "tock");
 }

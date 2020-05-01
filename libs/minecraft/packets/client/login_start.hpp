@@ -4,6 +4,7 @@
 #include "minecraft/parse.hpp"
 
 #include <minecraft/packet_id.hpp>
+#include "minecraft/types/varchar.hpp"
 
 namespace minecraft::packets::client
 {
