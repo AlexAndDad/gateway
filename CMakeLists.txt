@@ -13,13 +13,7 @@ option(SPDLOG_FMT_EXTERNAL "spdlog uses fmt library" ON)
 
 find_package(Threads REQUIRED)
 
-hunter_add_package(BZip2)
-find_package(BZip2)
-
-include(cmake/RequireBoost.cmake)
-RequireBoost(VERSION 1.73.0 COMPONENTS filesystem iostreams program_options)
-#hunter_add_package(Boost COMPONENTS filesystem iostreams program_options system)
-set(BOOST_DIR "${boost_BINARY_DIR}/install/lib/cmake/Boost-1.73.0")
+hunter_add_package(Boost COMPONENTS filesystem iostreams program_options system)
 find_package(Boost COMPONENTS filesystem iostreams program_options system REQUIRED CONFIG)
 
 hunter_add_package(boost_json)
@@ -50,18 +44,18 @@ hunter_add_package(Eigen)
 find_package(Eigen3 CONFIG REQUIRED)
 
 if (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
-if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
-# using Clang
-add_compile_options(-Wall -Wextra -pedantic -Werror -fchar8_t)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "[Gg][Nn][Uu]")
-# using GCC
-add_compile_options(-Wall -Wextra -pedantic -Werror)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-# using Intel C++
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-# using Visual Studio C++
-add_compile_options(/W4 /WX)
-endif ()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
+        # using Clang
+        add_compile_options(-Wall -Wextra -pedantic -Werror -fchar8_t)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "[Gg][Nn][Uu]")
+        # using GCC
+        add_compile_options(-Wall -Wextra -pedantic -Werror)
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        # using Intel C++
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # using Visual Studio C++
+        add_compile_options(/W4 /WX)
+    endif ()
 endif ()
 
 add_subdirectory(libs)
