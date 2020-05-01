@@ -9,6 +9,9 @@ HunterGate(
 )
 ]]
 
+include(ProcessorCount)
+ProcessorCount(processors)
+
 project(GateWay VERSION 0.1.0)
 include(FetchContent)
 
@@ -16,13 +19,86 @@ option(SPDLOG_FMT_EXTERNAL "spdlog uses fmt library" ON)
 
 find_package(Threads REQUIRED)
 
-FetchContent_Declare(catch2_build
+set(deps_root "${CMAKE_CURRENT_BINARY_DIR}/_deps")
+set(deps_prefix "${deps_root}/install")
+
+macro(BuildCmakeContent bcc_NAME bcc_PACKAGE)
+    cmake_parse_arguments(bcc
+            "" # options
+            "" #<one_value_keywords>
+            "CMAKE_ARGS" # multi_value keywords
+            ${ARGN}) #<args>...)
+    if (bcc_NAME STREQUAL "")
+        message(FATAL_ERROR "BuildDependency: requires name")
+    endif()
+    if (bcc_PACKAGE STREQUAL "")
+        message(FATAL_ERROR "BuildDependency: requires package")
+    endif()
+
+    if (NOT ${${bcc_NAME}_POPULATED})
+        message(STATUS "[dependencies] Populating ${bcc_PACKAGE}")
+        FetchContent_Populate(${bcc_NAME})
+    endif()
+
+    if (NOT ${${bcc_NAME}_CONFIGURED})
+        message(STATUS "[dependencies] Configuring ${bcc_PACKAGE}")
+        execute_process(COMMAND
+                "${CMAKE_COMMAND}"
+                "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+                "-DCMAKE_INSTALL_PREFIX=${deps_prefix}"
+                "-DCMAKE_PREFIX_PATH=${deps_prefix}"
+                ${name_CMAKE_ARGS}
+                "-H${${bcc_NAME}_SOURCE_DIR}"
+                "-B${${bcc_NAME}_BINARY_DIR}"
+                RESULT_VARIABLE bcc_RESULT
+                )
+        if (NOT bcc_RESULT)
+            set(${${bcc_NAME}_CONFIGURED} YES CACHE BOOL "${bcc_NAME} has been configured" FORCE)
+        else()
+            set(${${bcc_NAME}_CONFIGURED} NO CACHE BOOL "${bcc_NAME} has been configured" FORCE)
+            message(FATAL_ERROR "[dependency] failed to configure ${bcc_NAME}")
+        endif()
+    endif()
+
+    if (NOT ${${bcc_NAME}_BUILT})
+        message(STATUS "[dependencies] Building ${bcc_PACKAGE}")
+        execute_process(COMMAND "${CMAKE_COMMAND}" "--build" "${${bcc_NAME}_BINARY_DIR}" "--parallel" "${processors}"
+                RESULT_VARIABLE bcc_RESULT)
+        if (bcc_RESULT)
+            set(${${bcc_NAME}_BUILT} NO CACHE BOOL "${bcc_NAME} has been built" FORCE)
+            message(FATAL_ERROR "build failed")
+        else()
+            set(${${bcc_NAME}_BUILT} YES CACHE BOOL "${bcc_NAME} has been built" FORCE)
+        endif()
+    endif()
+
+    if (NOT ${${bcc_NAME}_INSTALLED})
+        message(STATUS "[dependencies] Installing ${bcc_PACKAGE}")
+        execute_process(COMMAND "${CMAKE_COMMAND}" "--install" "${${bcc_NAME}_BINARY_DIR}" RESULT_VARIABLE bcc_result)
+        if (bcc_RESULT)
+            set(${${bcc_NAME}_INSTALLED} NO CACHE BOOL "${bcc_NAME} has been installed" FORCE)
+            message(FATAL_ERROR "build failed")
+        else()
+            set(${${bcc_NAME}_INSTALLED} YES CACHE BOOL "${bcc_NAME} has been installed" FORCE)
+        endif()
+    endif()
+
+    message(STATUS "[dependencies] ${bcc_PACKAGE}_ROOT=${deps_prefix}")
+endmacro()
+
+list(APPEND CMAKE_PREFIX_PATH ${deps_prefix})
+
+FetchContent_Declare(catch2
         GIT_REPOSITORY  https://github.com/catchorg/Catch2.git
-        GIT_TAG v2.12.1
-        CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}")
-    FetchContent_GetProperties(catch2_build)
-FetchContent_MakeAvailable(catch2_build)
-set(Catch2_FOUND ON)
+        GIT_TAG v2.12.1)
+BuildCmakeContent(catch2 Catch2 CMAKE_ARGS
+        "-DCATCH_BUILD_TESTING=OFF"
+        "-DCATCH_INSTALL_DOCS=OFF"
+        "-DCATCH_INSTALL_HELPERS=OFF"
+        )
+find_package(Catch2 CONFIG REQUIRED)#
+
+message(FATAL_ERROR "done")
 find_package(Catch2)
 
 
