@@ -10,6 +10,7 @@
 #include "minecraft/to_json.hpp"
 #include <string>
 #include <cstddef>
+#include "minecraft/print.hpp"
 
 namespace minecraft
 {
@@ -21,6 +22,18 @@ namespace minecraft
 
         static constexpr std::size_t max_size() { return Limit; }
     };
+
+    template<std::size_t Limit>
+    void tag_invoke(print_tag<varchar<Limit>>, std::ostream& os, varchar<Limit> const& arg)
+    {
+        os << static_cast<std::string const&>(arg);
+    }
+
+    template<std::size_t Limit>
+    void tag_invoke(print_tag<varchar<Limit>>, std::string& os, varchar<Limit> const& arg)
+    {
+        os += static_cast<std::string const&>(arg);
+    }
 }
 
 namespace boost::json

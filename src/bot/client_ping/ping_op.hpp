@@ -22,11 +22,6 @@
 
 namespace bot
 {
-    struct ping_result
-    {
-        boost::json::value        json;
-        std::chrono::microseconds ping_time;
-    };
 
     template < class NextLayer >
     struct ping_op

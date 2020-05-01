@@ -7,7 +7,7 @@
 
 #pragma once
 #include <boost/json/to_value.hpp>
-#include "wise_enum.hpp"
+#include "minecraft/wise_enum.hpp"
 
 namespace minecraft
 {
