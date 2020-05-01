@@ -106,4 +106,6 @@ function(RequireBoost )
         endif()
     endif()
 
+    set(Boost_DIR "${boost_BINARY_DIR}/install/lib/cmake/Boost-${boost_VERSION}" PARENT_SCOPE)
+
 endfunction()
