@@ -13,7 +13,12 @@ list(FILTER config_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
 list(FILTER config_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
 
 add_library(config_lib INTERFACE)
-target_compile_definitions(config_lib INTERFACE -DBOOST_ASIO_NO_DEPRECATED -DWISE_ENUM_STRING_TYPE=std::string_view)
+target_compile_definitions(config_lib
+        INTERFACE
+        -DBOOST_ASIO_NO_DEPRECATED
+        -DWISE_ENUM_STRING_TYPE=std::string_view
+        -DBOOST_ASIO_DISABLE_CONCEPTS  # gcc10 and clang10 won't compile an asio program with coroutines and concepts
+        )
 target_link_libraries(config_lib INTERFACE WiseEnum::wise_enum)
 
 target_include_directories(config_lib

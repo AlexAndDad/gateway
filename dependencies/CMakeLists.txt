@@ -92,7 +92,10 @@ BuildCmakeContent(wise_enum WiseEnum)
 FetchContent_Declare(utf8cpp
         GIT_REPOSITORY  https://github.com/nemtrif/utfcpp.git
         GIT_TAG v3.1)
-BuildCmakeContent(utf8cpp utf8cpp)
+BuildCmakeContent(utf8cpp utf8cpp
+    CMAKE_ARGS
+        -DUTF8_TESTS=OFF
+        -DUTF8_SAMPLES=OFF)
 
 #
 # Eigen3

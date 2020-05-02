@@ -26,11 +26,6 @@ namespace minecraft
         {
         }
 
-        constexpr var &operator=(var const &r)
-        {
-            value_ = r.value_;
-            return *this;
-        }
         constexpr var &operator+=(var const &r)
         {
             value_ += r.value_;

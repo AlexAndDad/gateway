@@ -25,12 +25,13 @@ namespace minecraft
         : value_(e)
         {
         }
-
+/*
         constexpr var_enum &operator=(var_enum r)
         {
             value_ = r.value_;
             return *this;
         }
+        */
         constexpr var_enum &operator=(Enum r)
         {
             value_ = r;
