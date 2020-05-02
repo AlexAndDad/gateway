@@ -4,11 +4,16 @@ else()
     return()
 endif()
 
+#
+# file level configuation
+#
+
+set(boost_PATCHES_DIR ${CMAKE_CURRENT_LIST_DIR}/boost-patch)
+
 function(ListToString list outstr)
     set(result)
-    foreach(item IN LISTS "${list}")
-        message(STATUS "--${item}")
-        set(result "${result} " "\"" "${item}" "\"")
+    foreach(item IN LISTS ${list})
+        set(result "${result} \"${item}\"")
     endforeach()
     set(${outstr} "${result}" PARENT_SCOPE)
 endfunction()
@@ -47,65 +52,106 @@ function(RequireBoost )
     if (NOT boost_POPULATED)
         FetchContent_Populate(boost)
     endif ()
-    if (NOT boost_BOOTSTRAPPED)
-        message("[boost] bootstrapping at ${boost_SOURCE_DIR}")
+
+    #
+    # patch step
+    #
+
+    file(GLOB patches CONFIGURE_DEPENDS "${boost_PATCHES_DIR}/version-${boost_VERSION}-*.patch")
+    if (NOT boost_PATCHES_APPLIED STREQUAL "${patches}")
+        message(STATUS "[dependencies] applying boost patches ${patches}")
+
+        set(boost_BOOTSTRAPPED "" CACHE INTERNAL "")
+        set(boost_BUILT "" CACHE INTERNAL "")
+
+        foreach(patch IN LISTS patches)
+            string(REGEX MATCH "^(.*)/version-(.*)-(.*)\\.patch$" matched "${patch}")
+            if (NOT matched)
+                message(FATAL_ERROR "[dependencies] incorrect patch file format: ${patch}  ${matched}")
+            endif()
+            set(component ${CMAKE_MATCH_3})
+            set(proc_args "patch" "-p2" "--backup" "-i" "${patch}")
+            message(STATUS "[dependencies] patching boost component ${component} with ${proc_args}")
+            message(STATUS "[dependencies] patching in directory ${boost_SOURCE_DIR}/boost/${component}")
+            execute_process(COMMAND ${proc_args} WORKING_DIRECTORY "${boost_SOURCE_DIR}/boost/${component}" RESULT_VARIABLE res)
+            if (res)
+                message(WARNING "[dependencies] failed to patch boost component ${component} with ${proc_args} in directory ${boost_SOURCE_DIR}/boost/${component}")
+            endif()
+        endforeach()
+        set(boost_PATCHES_APPLIED "${patches}" CACHE INTERNAL "patches applied to boost")
+    endif()
+
+    #
+    # bootstrap
+    #
+
+    set(bootstrap_COMMAND "./bootstrap.sh")
+    if (NOT boost_BOOTSTRAPPED STREQUAL "${bootstrap_COMMAND}")
+        message("[boost] bootstrapping at ${boost_SOURCE_DIR} with ${bootstrap_COMMAND}")
+
+        set(boost_BUILT "" CACHE INTERNAL "")
+
         execute_process(
-                COMMAND "./bootstrap.sh"
+                COMMAND ${bootstrap_COMMAND}
                 WORKING_DIRECTORY ${boost_SOURCE_DIR}
                 RESULT_VARIABLE boost_BOOTSTRAP_ERROR)
         if (NOT boost_BOOTSTRAP_ERROR)
-            set(boost_BOOTSTRAPPED YES CACHE BOOL "boost has been bootstrapped" FORCE)
+            set(boost_BOOTSTRAPPED "${bootstrap_COMMAND}" CACHE INTERNAL "boost has been bootstrapped")
         else()
             message(FATAL_ERROR "cannot bootstrap boost, error code: ${boost_BOOTSTRAP_ERROR}")
         endif()
     endif ()
-    if(NOT boost_BUILT_COMPONENTS STREQUAL boost_COMPONENTS)
-        include(ProcessorCount)
-        ProcessorCount(processors)
-        set(b2_args
-                "variant=release"
-                "link=static"
-                "threading=multi"
-                "toolset=clang")
-        if ("${CMAKE_CXX_STANDARD}" STREQUAL "20")
-            list(APPEND b2_args "cxxstd=2a")
-        else()
-            list(APPEND b2_args "cxxstd=${CMAKE_CXX_STANDARD}")
-        endif()
-        if (CMAKE_CXX_FLAGS)
-            string(REGEX REPLACE "-std=[^ \t\r\n$]*" "" flags "${CMAKE_CXX_FLAGS}")
-            list(APPEND b2_args "cxxflags=${flags}")
-        endif()
-        if (CMAKE_C_FLAGS)
-            list(APPEND b2_args "cxxflags=${CMAKE_C_FLAGS}")
-        endif()
-        if (CMAKE_EXE_LINKER_FLAGS)
-            list(APPEND b2_args "linkflags=${CMAKE_EXE_LINKER_FLAGS}")
-        endif()
-        list(APPEND b2_args
-                "--build-dir=${boost_BINARY_DIR}/build"
-                "--stage-dir=${boost_BINARY_DIR}/stage"
-                "--prefix=${boost_PREFIX}"
-                "-j${processors}")
-        foreach(comp IN LISTS boost_COMPONENTS)
-            list(APPEND b2_args "--with-${comp}")
-        endforeach()
-        list(APPEND b2_args
-                "stage"
-                "install")
 
+    #
+    # build step
+    #
+
+    include(ProcessorCount)
+    ProcessorCount(processors)
+    set(b2_args
+            "variant=release"
+            "link=static"
+            "threading=multi"
+            "toolset=clang")
+    if ("${CMAKE_CXX_STANDARD}" STREQUAL "20")
+        list(APPEND b2_args "cxxstd=2a")
+    else()
+        list(APPEND b2_args "cxxstd=${CMAKE_CXX_STANDARD}")
+    endif()
+    if (CMAKE_CXX_FLAGS)
+        string(REGEX REPLACE "-std=[^ \t\r\n$]*" "" flags "${CMAKE_CXX_FLAGS}")
+        list(APPEND b2_args "cxxflags=${flags}")
+    endif()
+    if (CMAKE_C_FLAGS)
+        list(APPEND b2_args "cxxflags=${CMAKE_C_FLAGS}")
+    endif()
+    if (CMAKE_EXE_LINKER_FLAGS)
+        list(APPEND b2_args "linkflags=${CMAKE_EXE_LINKER_FLAGS}")
+    endif()
+    list(APPEND b2_args
+            "--build-dir=${boost_BINARY_DIR}/build"
+            "--stage-dir=${boost_BINARY_DIR}/stage"
+            "--prefix=${boost_PREFIX}"
+            "-j${processors}")
+    foreach(comp IN LISTS boost_COMPONENTS)
+        list(APPEND b2_args "--with-${comp}")
+    endforeach()
+    list(APPEND b2_args
+            "stage"
+            "install")
+
+    if(NOT boost_BUILT STREQUAL "${b2_args}")
         ListToString(b2_args args_str)
-        message(STATUS "[boost] ./b2${args_str}")
+        message(STATUS "[dependencies] building boost with ${args_str}")
 
         execute_process(
                 COMMAND "./b2" "--reconfigure" ${b2_args}
                 WORKING_DIRECTORY ${boost_SOURCE_DIR}
                 RESULT_VARIABLE boost_BUILD_ERROR)
         if (NOT boost_BUILD_ERROR)
-            set(boost_BUILT_COMPONENTS "${boost_COMPONENTS}" CACHE STRING "components built for boost" FORCE)
+            set(boost_BUILT "${b2_args}" CACHE INTERNAL "components built for boost")
         else()
-            set(boost_BUILT_COMPONENTS "" CACHE STRING "components built for boost" FORCE)
-            message(FATAL_ERROR "boost build failed")
+            message(FATAL_ERROR "[dependencies] boost build failed")
         endif()
     endif()
 
