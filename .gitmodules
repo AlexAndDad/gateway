@@ -1,15 +1,3 @@
-[submodule "git-deps/WiseEnum"]
-	path = git-deps/WiseEnum
-	url = git@github.com:quicknir/wise_enum.git
 [submodule "polly"]
 	path = polly
 	url = git@github.com:madmongo1/polly.git
-[submodule "git-deps/utfcpp"]
-	path = git-deps/utfcpp
-	url = git@github.com:AlexAndDad/utfcpp.git
-[submodule "git-deps/boost-webclient"]
-	path = git-deps/boost-webclient
-	url = git@github.com:madmongo1/webclient.git
-[submodule "git-deps/boost_json"]
-	path = git-deps/boost_json
-	url = git@github.com:madmongo1/json.git

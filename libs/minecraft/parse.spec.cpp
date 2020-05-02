@@ -17,7 +17,7 @@ TEST_CASE("parse fundamentals")
             auto       next = parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
-            CHECK(std::distance(data.begin(), next) == expected_length);
+            CHECK(std::size_t(std::distance(data.begin(), next)) == expected_length);
         };
 
         auto bad = [](vec v, minecraft::error_code expected, std::size_t expected_length = 0) {
@@ -27,7 +27,7 @@ TEST_CASE("parse fundamentals")
             auto       next = parse(data.begin(), data.end(), result, ec);
             CHECK(ec.failed());
             CHECK(expected.message() == ec.message());
-            CHECK(std::distance(data.begin(), next) == expected_length);
+            CHECK(std::size_t(std::distance(data.begin(), next)) == expected_length);
         };
 
         SECTION("00") { good(vec { 0x00 }, 0, 1); }
@@ -52,7 +52,7 @@ TEST_CASE("parse fundamentals")
             auto       next = minecraft::parse(data.begin(), data.end(), result, ec);
             CHECK(!ec.failed());
             CHECK(result == expected);
-            CHECK(std::distance(data.begin(), next) == expected_length);
+            CHECK(std::size_t(std::distance(data.begin(), next)) == expected_length);
         };
 
         /*
