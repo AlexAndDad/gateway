@@ -1,0 +1,6 @@
+FROM fedora:32
+
+RUN dnf update -y
+RUN dnf -y groupinstall "Development Tools"
+RUN dnf install -y cmake
+RUN dnf install -y openssl-devel

@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="gateway-clang-10-build" type="docker-deploy" factoryName="dockerfile" server-name="Docker">
+    <deployment type="dockerfile">
+      <settings>
+        <option name="imageTag" value="madmongo1/gateway-clang-10" />
+        <option name="buildCliOptions" value="" />
+        <option name="command" value="" />
+        <option name="containerName" value="gateway-clang-10-build" />
+        <option name="contextFolderPath" value="." />
+        <option name="entrypoint" value="/bin/bash" />
+        <option name="commandLineOptions" value="" />
+        <option name="sourceFilePath" value="dockers/fedora32-clang-10.docker" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>
