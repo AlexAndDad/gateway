@@ -38,7 +38,7 @@ namespace minecraft::protocol
                                       spdlog::to_hex(compressed_rx_data_.payload));
                         return self.complete(ec, compressed_rx_data_.payload.size());
                     }
-                    spdlog::debug(FMT_STRING("{}::read_more compressed_data={:n}"),
+                    spdlog::debug("{}::read_more compressed_data={:n}",
                                   log_id(),
                                   spdlog::to_hex(compressed_rx_data_.payload));
                 }
@@ -64,7 +64,7 @@ namespace minecraft::protocol
                     {
                         // not compressed
                         current_frame_data_ = compressed_rx_data_.get_data();
-                        spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
+                        spdlog::debug("{}::uncompressed frame={:n}",
                                       log_id(),
                                       spdlog::to_hex(to_span(current_frame_data_)));
                     }
@@ -76,8 +76,8 @@ namespace minecraft::protocol
                         ec = inflator_(compressed_rx_data_.get_data(), uncompressed_rx_data_.get_data());
                         if (ec.failed())
                         {
-                            spdlog::error(FMT_STRING("{}::packet inflation failed: packet_length={} offset={} "
-                                                     "uncompressed_size={} {:n}"),
+                            spdlog::error("{}::packet inflation failed: packet_length={} offset={} "
+                                                     "uncompressed_size={} {:n}",
                                           log_id(),
                                           compressed_rx_data_.payload_size,
                                           compressed_rx_data_.data_position,
@@ -87,7 +87,7 @@ namespace minecraft::protocol
                         }
 
                         current_frame_data_ = uncompressed_rx_data_.get_data();
-                        spdlog::debug(FMT_STRING("{}::compressed frame={:n}"),
+                        spdlog::debug("{}::compressed frame={:n}",
                                       log_id(),
                                       spdlog::to_hex(to_span(current_frame_data_)));
                     }
@@ -95,7 +95,7 @@ namespace minecraft::protocol
                 else
                 {
                     current_frame_data_ = compressed_rx_data_.get_data();
-                    spdlog::debug(FMT_STRING("{}::uncompressed frame={:n}"),
+                    spdlog::debug("{}::uncompressed frame={:n}",
                                   log_id(),
                                   spdlog::to_hex(to_span(current_frame_data_)));
                 }

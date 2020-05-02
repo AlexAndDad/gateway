@@ -22,6 +22,8 @@ find_package(Threads REQUIRED)
 set(deps_root "${CMAKE_CURRENT_BINARY_DIR}/_deps")
 set(deps_prefix "${deps_root}/install")
 
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Whether to check for updates" FORCE)
+
 macro(BuildCmakeContent bcc_NAME bcc_PACKAGE)
     cmake_parse_arguments(bcc
             "" # options
@@ -35,51 +37,73 @@ macro(BuildCmakeContent bcc_NAME bcc_PACKAGE)
         message(FATAL_ERROR "BuildDependency: requires package")
     endif()
 
-    if (NOT ${${bcc_NAME}_POPULATED})
-        message(STATUS "[dependencies] Populating ${bcc_PACKAGE}")
+    string(TOUPPER $bcc_NAME bcc_NAME_UPPER)
+    set("FETCHCONTENT_UPDATES_DISCONNECTED_${bcc_NAME_UPPER}" ON CACHE BOOL "Whether to check for updates" FORCE)
+
+
+    message(STATUS "[dependencies] fetching properties for ${bcc_NAME}")
+    FetchContent_GetProperties("${bcc_NAME}")
+    if (NOT "${${bcc_NAME}_POPULATED}")
         FetchContent_Populate(${bcc_NAME})
+        FetchContent_GetProperties("${bcc_NAME}")
+        message(STATUS "[dependencies] Populating ${bcc_NAME} in ${bcc_NAME}_SOURCE_DIR")
     endif()
 
-    if (NOT ${${bcc_NAME}_CONFIGURED})
-        message(STATUS "[dependencies] Configuring ${bcc_PACKAGE}")
-        execute_process(COMMAND
-                "${CMAKE_COMMAND}"
-                "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
-                "-DCMAKE_INSTALL_PREFIX=${deps_prefix}"
-                "-DCMAKE_PREFIX_PATH=${deps_prefix}"
-                ${name_CMAKE_ARGS}
-                "-H${${bcc_NAME}_SOURCE_DIR}"
-                "-B${${bcc_NAME}_BINARY_DIR}"
-                RESULT_VARIABLE bcc_RESULT
-                )
+    #
+    # configure step
+    #
+
+    set(bcc_configure_options
+            "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+            "-DCMAKE_INSTALL_PREFIX=${deps_prefix}"
+            "-DCMAKE_PREFIX_PATH=${deps_prefix}"
+            ${bcc_CMAKE_ARGS}
+            "-H${${bcc_NAME}_SOURCE_DIR}"
+            "-B${${bcc_NAME}_BINARY_DIR}")
+    if (NOT "${${bcc_NAME}_CONFIGURED}" STREQUAL "${bcc_configure_options}")
+        message(STATUS "[dependencies] ${bcc_NAME} previously configured with ${${bcc_NAME}_CONFIGURED}")
+        message(STATUS "[dependencies] Configuring ${bcc_NAME} with args ${bcc_configure_options}")
+        set(${bcc_NAME}_BUILT "" CACHE INTERNAL "")
+        set(${bcc_NAME}_INSTALLED "" CACHE INTERNAL "")
+        execute_process(COMMAND "${CMAKE_COMMAND}" ${bcc_configure_options})
         if (NOT bcc_RESULT)
-            set(${${bcc_NAME}_CONFIGURED} YES CACHE BOOL "${bcc_NAME} has been configured" FORCE)
+            set("${bcc_NAME}_CONFIGURED" "${bcc_configure_options}" CACHE INTERNAL "${bcc_NAME} has been configured")
         else()
-            set(${${bcc_NAME}_CONFIGURED} NO CACHE BOOL "${bcc_NAME} has been configured" FORCE)
             message(FATAL_ERROR "[dependency] failed to configure ${bcc_NAME}")
         endif()
     endif()
 
-    if (NOT ${${bcc_NAME}_BUILT})
-        message(STATUS "[dependencies] Building ${bcc_PACKAGE}")
-        execute_process(COMMAND "${CMAKE_COMMAND}" "--build" "${${bcc_NAME}_BINARY_DIR}" "--parallel" "${processors}"
+    #
+    # build step
+    #
+
+    set(bcc_build_options "--build" "${${bcc_NAME}_BINARY_DIR}" "--parallel" "${processors}")
+    if (NOT "${${bcc_NAME}_BUILT}" STREQUAL "${bcc_build_options}")
+        message(STATUS "[dependencies] ${bcc_NAME} previously built ${${bcc_NAME}_BUILT}")
+        message(STATUS "[dependencies] Building ${bcc_NAME}")
+        set(${bcc_NAME}_INSTALLED "" CACHE INTERNAL "")
+        execute_process(COMMAND "${CMAKE_COMMAND}" ${bcc_build_options}
                 RESULT_VARIABLE bcc_RESULT)
         if (bcc_RESULT)
-            set(${${bcc_NAME}_BUILT} NO CACHE BOOL "${bcc_NAME} has been built" FORCE)
             message(FATAL_ERROR "build failed")
         else()
-            set(${${bcc_NAME}_BUILT} YES CACHE BOOL "${bcc_NAME} has been built" FORCE)
+            set("${bcc_NAME}_BUILT" "${bcc_build_options}" CACHE INTERNAL "${bcc_NAME} has been built")
         endif()
     endif()
 
-    if (NOT ${${bcc_NAME}_INSTALLED})
-        message(STATUS "[dependencies] Installing ${bcc_PACKAGE}")
-        execute_process(COMMAND "${CMAKE_COMMAND}" "--install" "${${bcc_NAME}_BINARY_DIR}" RESULT_VARIABLE bcc_result)
+    #
+    # install step
+    #
+
+    set(bcc_install_options "--install" "${${bcc_NAME}_BINARY_DIR}")
+    if (NOT "${${bcc_NAME}_INSTALLED}" STREQUAL "${bcc_install_options}")
+        message(STATUS "[dependencies] ${bcc_NAME} previously installed ${${bcc_NAME}_INSTALLED}")
+        message(STATUS "[dependencies] Installing ${bcc_NAME}")
+        execute_process(COMMAND "${CMAKE_COMMAND}"  ${bcc_install_options} RESULT_VARIABLE bcc_result)
         if (bcc_RESULT)
-            set(${${bcc_NAME}_INSTALLED} NO CACHE BOOL "${bcc_NAME} has been installed" FORCE)
             message(FATAL_ERROR "build failed")
         else()
-            set(${${bcc_NAME}_INSTALLED} YES CACHE BOOL "${bcc_NAME} has been installed" FORCE)
+            set("${bcc_NAME}_INSTALLED" "${bcc_install_options}" CACHE INTERNAL "${bcc_NAME} has been installed")
         endif()
     endif()
 
@@ -91,6 +115,7 @@ list(APPEND CMAKE_PREFIX_PATH ${deps_prefix})
 FetchContent_Declare(catch2
         GIT_REPOSITORY  https://github.com/catchorg/Catch2.git
         GIT_TAG v2.12.1)
+FetchContent_GetProperties(catch2)
 BuildCmakeContent(catch2 Catch2 CMAKE_ARGS
         "-DCATCH_BUILD_TESTING=OFF"
         "-DCATCH_INSTALL_DOCS=OFF"
@@ -98,49 +123,117 @@ BuildCmakeContent(catch2 Catch2 CMAKE_ARGS
         )
 find_package(Catch2 CONFIG REQUIRED)#
 
-message(FATAL_ERROR "done")
-find_package(Catch2)
-
 
 #hunter_add_package(BZip2)
 find_package(BZip2 REQUIRED)
 
 include(cmake/RequireBoost.cmake)
-RequireBoost(VERSION 1.73.0 COMPONENTS filesystem iostreams program_options system)
+RequireBoost(VERSION 1.73.0 COMPONENTS filesystem iostreams program_options system PREFIX ${deps_prefix})
 #hunter_add_package(Boost COMPONENTS filesystem iostreams program_options system)
 find_package(Boost COMPONENTS filesystem iostreams program_options system REQUIRED CONFIG)
 
 
 FetchContent_Declare(boost_json
-        GIT_REPOSITORY  https://github.com/madmongo1/json.git
+        GIT_REPOSITORY  https://github.com/CPPAlliance/json.git
         GIT_TAG develop)
-FetchContent_MakeAvailable(boost_json)
+BuildCmakeContent(boost_json boost_json
+        CMAKE_ARGS
+            -DBOOST_JSON_BUILD_TESTS=OFF
+            -DBOOST_JSON_BUILD_EXAMPLES=OFF)
+find_package(boost_json REQUIRED)
+#FetchContent_MakeAvailable(boost_json)
+
+#
+# openssl
+#
+find_package(OpenSSL)
+
+#
+# boost_webclient
+#
+FetchContent_Declare(uriparser
+        GIT_REPOSITORY  https://github.com/uriparser/uriparser.git
+        GIT_TAG uriparser-0.9.3)
+BuildCMakeContent(uriparser uriparser
+        CMAKE_ARGS
+            -DBUILD_SHARED_LIBS=OFF
+            -DURIPARSER_BUILD_DOCS=OFF
+            -DURIPARSER_BUILD_TESTS=OFF
+            -DURIPARSER_BUILD_TOOLS=OFF)
+find_package(uriparser  REQUIRED)
 
 FetchContent_Declare(boost_webclient
         GIT_REPOSITORY  https://github.com/madmongo1/webclient.git
         GIT_TAG develop)
-FetchContent_MakeAvailable(boost_webclient)
+BuildCMakeContent(boost_webclient boost_webclient
+        CMAKE_ARGS
+            -Duriparser_DIR=${uriparser_DIR}
+            -DBOOST_ROOT=${BOOST_ROOT})
+find_package(boost_webclient  REQUIRED)
 
-
+#
+# wise_enum
+#
 FetchContent_Declare(wise_enum
     GIT_REPOSITORY  https://github.com/quicknir/wise_enum.git
-    GIT_TAG 3.0.0)
-FetchContent_MakeAvailable(wise_enum)
+    GIT_TAG master)
+BuildCmakeContent(wise_enum WiseEnum)
+find_package(WiseEnum REQUIRED)
 
-find_package(OpenSSL)
+#
+# utf8cpp
+#
 
 FetchContent_Declare(utf8cpp
         GIT_REPOSITORY  https://github.com/nemtrif/utfcpp.git
         GIT_TAG v3.1)
-FetchContent_MakeAvailable(utf8cpp)
+BuildCmakeContent(utf8cpp utf8cpp)
+find_package(utf8cpp)
 
-find_package(ZLIB CONFIG REQUIRED)
+
+FetchContent_Declare(zlib
+        URL https://www.zlib.net/zlib-1.2.11.tar.gz
+        URL_HASH SHA256=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1)
+BuildCmakeContent(zlib ZLIB
+        CMAKE_ARGS
+        )
+find_package(ZLIB REQUIRED)
 
 
-FetchContent_Declare(eigen
+FetchContent_Declare(eigen3
         GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
         GIT_TAG 3.3)
-FetchContent_MakeAvailable(eigen)
+BuildCMakeContent(eigen3 Eigen3)
+find_package(Eigen3 REQUIRED)
+
+#
+# fmt
+#
+
+FetchContent_Declare(fmt
+        GIT_REPOSITORY  https://github.com/fmtlib/fmt.git
+        GIT_TAG 6.2.0)
+BuildCMakeContent(fmt fmt
+        CMAKE_ARGS
+        -DFMT_DOC=OFF
+        -DFMT_INSTALL=ON
+        -DFMT_TEST=OFF)
+find_package(fmt REQUIRED)
+
+#
+# spdlog
+#
+
+FetchContent_Declare(spdlog
+        GIT_REPOSITORY  https://github.com/gabime/spdlog.git
+        GIT_TAG v1.5.0)
+BuildCMakeContent(spdlog spdlog
+        CMAKE_ARGS
+        -DSPDLOG_BUILD_EXAMPLE=OFF
+        -DSPDLOG_BUILD_TESTS=OFF
+        -DSPDLOG_INSTALL=ON
+        -DSPDLOG_FMT_EXTERNAL=ON)
+find_package(spdlog REQUIRED)
 
 if (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
 if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")

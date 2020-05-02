@@ -59,10 +59,10 @@ TEST_CASE("minecraft::protocol::compose_area")
     ec.clear();
     auto next = parse_var(chk.begin() ,chk.end(), frame_size, ec);
     REQUIRE(ec.message() == "Success");
-    REQUIRE(frame_size == data.size() - 1);
+    REQUIRE(frame_size == static_cast<std::int32_t>(data.size()) - 1);
     next = parse_var(next, chk.end(), uncompressed_size, ec);
     REQUIRE(ec.message() == "Success");
-    REQUIRE(uncompressed_size == input.size());
+    REQUIRE(uncompressed_size == static_cast<std::int32_t>(input.size()));
 
     fmt::print(std::cout, "{}", spdlog::to_hex(to_span(data)));
 }

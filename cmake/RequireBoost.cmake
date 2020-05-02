@@ -25,11 +25,14 @@ endfunction()
 function(RequireBoost )
     cmake_parse_arguments(boost
             "" # options
-            "VERSION" #<one_value_keywords>
+            "VERSION;PREFIX" #<one_value_keywords>
             "COMPONENTS" #<multi_value_keywords>
             ${ARGN}) #<args>...)
     if (NOT boost_VERSION)
         message(FATAL_ERROR "RequireBoost: requires VERSION argument")
+    endif()
+    if (NOT boost_PREFIX)
+        message(FATAL_ERROR "RequireBoost: requires PREFIX argument")
     endif()
     if (NOT boost_COMPONENTS)
         set(boost_COMPONENTS headers)
@@ -82,7 +85,7 @@ function(RequireBoost )
         list(APPEND b2_args
                 "--build-dir=${boost_BINARY_DIR}/build"
                 "--stage-dir=${boost_BINARY_DIR}/stage"
-                "--prefix=${boost_BINARY_DIR}/install"
+                "--prefix=${boost_PREFIX}"
                 "-j${processors}")
         foreach(comp IN LISTS boost_COMPONENTS)
             list(APPEND b2_args "--with-${comp}")
@@ -106,6 +109,8 @@ function(RequireBoost )
         endif()
     endif()
 
-    set(Boost_DIR "${boost_BINARY_DIR}/install/lib/cmake/Boost-${boost_VERSION}" PARENT_SCOPE)
+    set(BOOST_ROOT "${boost_BINARY_DIR}/install")
+    set(BOOST_ROOT "${BOOST_ROOT}" PARENT_SCOPE)
+    message(STATUS "[dependencies] BOOST_ROOT = ${BOOST_ROOT}")
 
 endfunction()
