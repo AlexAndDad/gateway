@@ -8,7 +8,7 @@ endif()
 # file level configuation
 #
 
-set(boost_PATCHES_DIR ${CMAKE_CURRENT_LIST_DIR}/boost-patch)
+set(boost_PATCHES_DIR boost-patch)
 
 function(ListToString list outstr)
     set(result)

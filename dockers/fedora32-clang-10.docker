@@ -1,6 +1,26 @@
 FROM fedora:32
 
 RUN dnf update -y
+RUN dnf install -y openssl
+
 RUN dnf -y groupinstall "Development Tools"
 RUN dnf install -y cmake
 RUN dnf install -y openssl-devel
+RUN dnf install -y clang libcxx-devel libcxxabi-devel
+RUN dnf install -y bzip2-devel
+
+WORKDIR /gateway
+COPY polly/ polly/
+COPY dependencies/ dependencies/
+RUN cmake -Hdependencies -Bcmake-build-clang-debug/dependencies -DCMAKE_TOOLCHAIN_FILE=/gateway/polly/clang-cxx20-libcxx.cmake
+
+WORKDIR /gateway
+COPY cmake/ cmake/
+COPY libs/ libs/
+COPY src/ src/
+COPY test/ test/
+COPY test_data/ test_data/
+COPY CMakeLists.txt CMakeLists.txt
+
+RUN cmake -H. -Bcmake-build-clang-debug -DCMAKE_TOOLCHAIN_FILE=/gateway/polly/clang-cxx20-libcxx.cmake
+
