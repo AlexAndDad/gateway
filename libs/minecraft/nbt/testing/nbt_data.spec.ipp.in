@@ -1,0 +1,8 @@
+namespace minecraft::nbt::testing
+{
+    namespace
+    {
+        const char hello_world_nbt_filename[] = "@PROJECT_SOURCE_DIR@/libs/minecraft/nbt/testing/hello_world.nbt";
+        const char bigtest_nbt_filename[] = "@PROJECT_SOURCE_DIR@/libs/minecraft/nbt/testing/bigtest.nbt";
+    }
+}

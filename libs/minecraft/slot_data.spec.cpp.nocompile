@@ -1,7 +1,7 @@
-#include <catch2/catch.hpp>
-
-#include "minecraft/slot_data.hpp"
 #include "minecraft/encode.hpp"
+#include "minecraft/slot_data.hpp.nocompile"
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("minecraft::slot_data")
 {

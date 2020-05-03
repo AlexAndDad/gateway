@@ -1,4 +1,17 @@
 file(GLOB_RECURSE
+        in_files
+        LIST_DIRECTORIES false
+        CONFIGURE_DEPENDS
+        "*.in")
+list(FILTER in_files EXCLUDE REGEX "test_individual\\.spec\\.cpp\\.in")
+foreach(file IN LISTS in_files)
+    get_filename_component(fname "${file}" NAME_WLE)
+    get_filename_component(fdir "${file}" DIRECTORY)
+    file(RELATIVE_PATH relpath "${CMAKE_CURRENT_SOURCE_DIR}" "${fdir}")
+    configure_file(${file} "${CMAKE_CURRENT_BINARY_DIR}/${relpath}/${fname}" @ONLY)
+endforeach()
+
+file(GLOB_RECURSE
         minecraft_src_files
         LIST_DIRECTORIES false
         CONFIGURE_DEPENDS
@@ -17,9 +30,9 @@ file(GLOB_RECURSE
         "*.hpp")
 list(APPEND minecraft_hdr_files ${generated_hdr_files})
 set(minecraft_spec_files ${minecraft_src_files})
-list(FILTER minecraft_spec_files INCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER minecraft_spec_files INCLUDE REGEX "^.*.\\.spec\\.[ch]pp$")
 list(FILTER minecraft_spec_files EXCLUDE REGEX "^.*.main\\.spec\\.cpp$")
-list(FILTER minecraft_src_files EXCLUDE REGEX "^.*.\\.spec\\.cpp$")
+list(FILTER minecraft_src_files EXCLUDE REGEX "^.*.\\.spec\\.[ch]pp$")
 
 add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 set(minecraft_dependencies
