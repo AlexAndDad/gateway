@@ -46,3 +46,27 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 
+file(GLOB_RECURSE toolchain_files LIST_DIRECTORIES false CONFIGURE_DEPENDS polly/*.cmake)
+add_custom_command(OUTPUT dev_image.flag
+        COMMENT "building development docker"
+        COMMAND docker build -t gateway/fedora-devel:latest ${CMAKE_CURRENT_LIST_DIR}/dockers/fedora-devel
+        COMMAND touch dev_image.flag
+        MAIN_DEPENDENCY dockers/fedora-devel/Dockerfile
+        USES_TERMINAL)
+
+get_filename_component(toolchain "${CMAKE_TOOLCHAIN_FILE}" NAME_WLE)
+message(STATUS "[docker] toolchain=${toolchain}")
+add_custom_command(OUTPUT build_container_created.flag
+        COMMENT "build dependencies in container"
+        COMMAND bash ${CMAKE_CURRENT_LIST_DIR}/dockers/run-dependency-container.sh ${toolchain} ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND docker exec -t gateway_${toolchain} mkdir /build
+        COMMAND docker exec -t gateway_${toolchain} cmake -H/src/dependencies -B/build/cmake-build-${toolchain}-${CMAKE_BUILD_TYPE}/dependencies -DCMAKE_TOOLCHAIN_FILE=/src/polly/${toolchain}.cmake
+        COMMAND docker stop gateway_${toolchain}
+        COMMAND docker commit gateway_${toolchain} gateway/dependencies-${toolchain}:latest
+        COMMAND touch build_container_created.flag
+        MAIN_DEPENDENCY dev_image.flag
+        DEPENDS dockers/run-dependency-container.sh
+        USES_TERMINAL)
+add_custom_target(docker-dependency
+        DEPENDS build_container_created.flag)
+

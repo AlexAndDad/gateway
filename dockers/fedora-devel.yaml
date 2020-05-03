@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  devenv:
+    build:
+      context: ./fedora-devel
+    image: madmongo1/fedora-devel:latest
+  dependencies:
+    depends_on: devenv
+    volumes:
+      - "src:${PWD}:ro"
+    command: "cmake -H/src/dependencies -B/build/cmake-build-clang-debug/dependencies -DCMAKE_TOOLCHAIN_FILE=/src/polly/clang-cxx20-libcxx.cmake"
+
+
