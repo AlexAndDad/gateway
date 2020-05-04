@@ -18,6 +18,7 @@ target_compile_definitions(config_lib
         -DBOOST_ASIO_NO_DEPRECATED
         -DWISE_ENUM_STRING_TYPE=std::string_view
         -DBOOST_ASIO_DISABLE_CONCEPTS  # gcc10 and clang10 won't compile an asio program with coroutines and concepts
+        -DSPDLOG_FMT_EXTERNAL=1
         )
 target_link_libraries(config_lib INTERFACE WiseEnum::wise_enum)
 
