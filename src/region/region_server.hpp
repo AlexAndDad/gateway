@@ -33,9 +33,8 @@ namespace region
                 get_strand(),
                 [this]() -> config::net::awaitable< void > {
                     // Do strand confined startup here
-                    signal_
-                        .async_wait(
-                            [this](error_code const &ec, int sig) { handler_signal(ec, sig); }) co_await this->run();
+                    signal_.async_wait([this](error_code const &ec, int sig) { handle_signal(ec, sig); });
+                    co_await this->run();
                 },
                 config::net::detached);
         }
@@ -60,19 +59,19 @@ namespace region
                             auto        player_connection   = player::player_connection(std::move(player_update_queue));
                             player_manager_.add_player(std::move(name), std::move(player_connection));
                         }
-                        catch (system_error & se)
+                        catch (system_error &se)
                         {
                             auto ec = se.code();
                             if (ec != net::error::operation_aborted)
                             {
-                                spdlog::error("region_server: error while consuming from player_update_queue. exception: {}", polyfill::explain());
+                                spdlog::error(
+                                    "region_server: error while consuming from player_update_queue. exception: {}",
+                                    polyfill::explain());
                             }
                             break;
                         }
-
                     }
                     spdlog::info("region_server: stopped accepting new players");
-
                 },
                 config::net::detached);
 

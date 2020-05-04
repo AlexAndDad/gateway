@@ -70,7 +70,14 @@ namespace region::player
                 net::detached);
         }
 
+        void cancel()
+        {
+            net::post(net::bind_executor(get_strand(), [this]() { this->handle_cancel(); }));
+        }
+
       private:   // Functions
+        void handle_cancel() { BOOST_ASSERT(get_strand().running_in_this_thread()); }
+
         net::awaitable< void > player_ticker()
         {
             ticker_.start();
@@ -85,7 +92,7 @@ namespace region::player
                 }
 
                 // Tick all players
-                for (auto & player : players_)
+                for (auto &player : players_)
                 {
                     player.second.get().handle_tick(tick_result.delta_time);
                 }
