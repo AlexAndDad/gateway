@@ -41,10 +41,11 @@ namespace polyfill
 
         // Error
         template < typename... Args >
-        void error(string_view_t fmt_str, const Args &... args)
+        void error(std::string_view fmt_str, const Args &... args)
         {
             spdlog::error(args_with_header(header_, fmt_str, args...));
         }
+
 
       private:
         std::string header_;
