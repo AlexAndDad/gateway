@@ -251,7 +251,12 @@ namespace gateway
             keep_alive.prepare();
             auto packet = minecraft::packets::server::server_play_packet();
             packet.set(std::move(keep_alive));
-            server_producer.produce(std::move(packet));
+            error_code ec = {};
+            server_producer.produce(std::move(packet), ec);
+            if (ec)
+            {
+                // TODO queue closed, log
+            }
         };
 
         keep_alive_impl_.set_callbacks(std::move(expiry_callback), std::move(update_callback));
@@ -278,7 +283,12 @@ namespace gateway
                               },
                               [&pack, &client_queue](auto &arg) {
                                   // A normal play packet, send it to the queue to be handled
-                                  client_queue.client_producer.produce(std::move(pack));
+                                  error_code ec = {};
+                                  client_queue.client_producer.produce(std::move(pack), ec);
+                                  if (ec)
+                                  {
+                                      // TODO check and log
+                                  }
                                   boost::ignore_unused(arg);
                               },
                               [this](minecraft::packets::client::keep_alive &arg) {
