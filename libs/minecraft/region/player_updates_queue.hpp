@@ -60,10 +60,14 @@ namespace minecraft::region
         using strand_type   = net::io_context::strand;
 
         player_update_queue(executor_type exec)
-        : strand_(exec.context())
-        , update_queue_consumer_(std::make_shared< async_queue_impl< server_queue_update > >(exec))
+        : update_queue_consumer_(std::make_shared< async_queue_impl< server_queue_update > >(exec))
         , update_queue_producer_(update_queue_consumer_.get())
         {
+        }
+
+        void cancel()
+        {
+            update_queue_consumer_.cancel();
         }
 
         net::awaitable< server_queue_update > consume_new_player()
@@ -73,8 +77,10 @@ namespace minecraft::region
 
         client_queue_update produce_new_player(std::string name)
         {
-            auto server_queue_impl = std::make_shared< async_queue_impl< packets::client::client_play_packet > >(get_exec());
-            auto client_queue_impl = std::make_shared< async_queue_impl< packets::server::server_play_packet > >(get_exec());
+            auto server_queue_impl =
+                std::make_shared< async_queue_impl< packets::client::client_play_packet > >(get_exec());
+            auto client_queue_impl =
+                std::make_shared< async_queue_impl< packets::server::server_play_packet > >(get_exec());
 
             update_queue_producer_.produce(server_queue_update(
                 name, async_queue_produce_handle(client_queue_impl), async_queue_consume_handle(server_queue_impl)));
@@ -84,9 +90,6 @@ namespace minecraft::region
         }
 
       private:
-        strand_type   get_strand() { return strand_; }
-        executor_type get_exec() { return strand_.context().get_executor(); }
-        strand_type   strand_;
 
         async_queue_consume_handle< server_queue_update > update_queue_consumer_;
         async_queue_produce_handle< server_queue_update > update_queue_producer_;
