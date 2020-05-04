@@ -59,7 +59,7 @@ namespace minecraft::region
                     }
                 }));
 
-            co_return future();
+            co_return co_await future();
         }
 
         void produce(MessageType message, error_code & ec)
