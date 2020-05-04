@@ -16,7 +16,7 @@ namespace minecraft::region
         {
         }
 
-        void      produce(MessageType message) { impl_->produce(std::move(message)); }
+        void      produce(MessageType message, error_code & ec) { impl_->produce(std::move(message),ec); }
         impl_type get() { return impl_; }
 
       private:
