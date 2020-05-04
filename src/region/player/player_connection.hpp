@@ -16,9 +16,9 @@ namespace region::player
             co_return co_await update_queue_.server_consumer.consume();
         }
 
-        void send_packet(minecraft::packets::server::server_play_packet packet)
+        void send_packet(minecraft::packets::server::server_play_packet packet, error_code &ec)
         {
-            update_queue_.server_producer.produce(std::move(packet));
+            update_queue_.server_producer.produce(std::move(packet), ec);
         }
 
       private:
