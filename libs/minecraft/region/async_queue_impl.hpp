@@ -17,33 +17,60 @@ namespace minecraft::region
 
         async_queue_impl(net::io_context::executor_type exec)
         : strand_(exec.context())
+        , canceled_(false)
         {
         }
 
+        void cancel()
+        {
+            net::dispatch(
+                net::bind_executor(get_strand(), [self = async_queue_impl< MessageType >::shared_from_this()]() {
+                    self->handle_cancel();
+                }));
+        }
+
+        /// @brief consume a <MessageType> from the bus
+        /// @throws system_error
+        /// operation_aborted when the queue is canceled.
+        /// @return MessageType
         net::awaitable< MessageType > consume()
         {
-            co_return co_await polyfill::async::co_future< MessageType >(
-                net::bind_executor(strand_, [self = this->shared_from_this()]() -> net::awaitable< MessageType > {
+            auto promise = promise_type();
+            auto future  = promise.get_future();
+
+            net::post(net::bind_executor(
+                get_strand(), [self = this->shared_from_this(), promise = std::move(promise)]() mutable {
                     BOOST_ASSERT(self->get_strand().running_in_this_thread());
+
+                    if (self->canceled_)
+                    {
+                        return;   // Destroys the promise, setting an error in future.
+                    }
+
                     if (self->deque_.empty())   // await on a future
                     {
-                        self->consumers_.emplace_back();   // Emplace a promise representing a consumer
-                        auto fut    = self->consumers_.back().get_future();   // Get a future
-                        auto result = co_await fut();                         // wait for a message
-                        co_return result;
+                        self->consumers_.push_back(std::move(promise));   // Emplace a promise representing a consumer
                     }
                     else   // return a message off the bus
                     {
                         MessageType message = std::move(self->deque_.front());
                         self->deque_.pop_front();
-                        co_return message;
+                        promise.set_value(std::move(message));
                     }
-                }))();
+                }));
+
+            co_return future();
         }
 
-        void produce(MessageType message)
+        void produce(MessageType message, error_code & ec)
         {
-            net::dispatch(net::bind_executor(get_strand(),
+            if (canceled_)
+            {
+                ec = net::error::operation_aborted;
+                return;
+            }
+
+            net::post(net::bind_executor(get_strand(),
                                              [self = this->shared_from_this(), message = std::move(message)]() mutable {
                                                  BOOST_ASSERT(self->get_strand().running_in_this_thread());
                                                  if (self->consumers_.empty())
@@ -60,10 +87,18 @@ namespace minecraft::region
         }
 
       private:
+        void handle_cancel()
+        {
+            BOOST_ASSERT(get_strand().running_in_this_thread());
+            canceled_ = true;
+            consumers_.clear();   // Cancel all consumers
+        }
+
         net::io_context::strand get_strand() { return strand_; }
 
         net::io_context::strand    strand_;
         std::deque< MessageType >  deque_;
         std::deque< promise_type > consumers_;
+        bool                       canceled_;
     };
 }   // namespace minecraft::region

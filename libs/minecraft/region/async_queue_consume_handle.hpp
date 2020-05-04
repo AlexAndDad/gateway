@@ -18,6 +18,7 @@ namespace minecraft::region
 
         net::awaitable< MessageType > consume() { co_return co_await impl_->consume(); }
         impl_type                     get() { return impl_; }
+        void                          cancel() { impl_->cancel(); }
 
       private:
         impl_type impl_;
