@@ -56,19 +56,12 @@ namespace minecraft
         net::awaitable< void > handle_tick(delta_time_type delta_time) // Handle logic changes here
         {
             boost::ignore_unused(delta_time);
+            co_return;
         }
 
         net::awaitable< void > run()
         {
             // TODO Do start logic to setup the player
-
-            // Start tick loop
-            net::co_spawn(
-                get_strand(),
-                [self = player< Connection >::shared_from_this()]() -> net::awaitable< void > {
-                    co_await self->tick_loop();
-                },
-                net::detached);
 
             // Handle packets
             while (true)
