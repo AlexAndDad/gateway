@@ -2,10 +2,9 @@
 
 #include "config/net.hpp"
 #include "minecraft/player.hpp"
+#include "minecraft/time/ticker.hpp"
 #include "player_connection.hpp"
 #include "player_handle.hpp"
-
-#include "minecraft/time/ticker.hpp"
 
 namespace region::player
 {
@@ -19,14 +18,15 @@ namespace region::player
 
         player_manager(executor_type exec)
         : strand_(exec.context())
-        , ticker_(get_strand())
+        , ticker_(get_strand(), minecraft::time::delta_time_type(20))
         {
         }
 
         void start()
         {
             // Start tick manager
-
+            net::co_spawn(
+                get_strand(), [this]() -> net::awaitable< void > { co_await this->player_ticker(); }, net::detached);
         }
 
         void add_player(std::string name, player_connection player_con)
@@ -71,19 +71,33 @@ namespace region::player
         }
 
       private:   // Functions
+        net::awaitable< void > player_ticker()
+        {
+            ticker_.start();
+            while (true)
+            {
+                // Await the next tick
+                minecraft::time::tick_result tick_result = co_await ticker_.await_next_tick();
 
-         net::awaitable<void> player_ticker()
-         {
+                if (tick_result.slow)
+                {
+                    spdlog::warn("Slow player tick...");
+                }
 
-         }
+                // Tick all players
+                for (auto & player : players_)
+                {
+                    player.second.get().handle_tick(tick_result.delta_time);
+                }
+            }
+        }
 
-
-        strand_type & get_strand() { return strand_; }
+        strand_type &get_strand() { return strand_; }
 
       private:   // Data
         // Net
-        strand_type strand_;
+        strand_type                                           strand_;
         std::unordered_map< std::string, player_handle_type > players_;
-        minecraft::time::ticker ticker_;
+        minecraft::time::ticker                               ticker_;
     };
 }   // namespace region::player
