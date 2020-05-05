@@ -63,6 +63,8 @@ int main()
     using polyfill::deduce_return_code;
     using polyfill::explain;
 
+    spdlog::set_level(spdlog::level::info);
+
     try
     {
         region::run();
