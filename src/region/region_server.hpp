@@ -29,6 +29,11 @@ namespace region
         void start()
         {
             std::cout << "Region Server starting\n";
+
+            // Start the player_manager
+            player_manager_.start();
+
+            // Start the main loop
             config::net::co_spawn(
                 get_strand(),
                 [this]() -> config::net::awaitable< void > {
@@ -106,6 +111,7 @@ namespace region
             BOOST_ASSERT(get_strand().running_in_this_thread());
             player_manager_.cancel();
             queue_.cancel();
+            signal_.cancel();
         }
 
         strand_type &                           get_strand() { return strand_; }
