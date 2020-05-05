@@ -144,6 +144,7 @@ namespace minecraft::protocol
                 //
                 // Hello and inform server of protocol version
                 //
+                state.client_handshake.next_state = protocol::connection_state::login;
                 yield s.async_write_packet(state.client_handshake, std::move(self));
                 if (log_fail("client_handshake"))
                     return self.complete(ec);
