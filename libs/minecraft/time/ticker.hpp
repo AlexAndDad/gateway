@@ -36,6 +36,7 @@ namespace minecraft::time
         , timer_(strand_)
         , tick_interval_(tick_interval)
         , last_tick_()
+        , canceled_(false)
         , tick_callback_()
         {
         }
@@ -46,9 +47,16 @@ namespace minecraft::time
             last_tick_ = cur_time();
         }
 
+        void cancel() { BOOST_ASSERT(this_thread()); }
+
         config::net::awaitable< tick_result > await_next_tick()
         {
             BOOST_ASSERT(this_thread());
+            if (canceled_)
+            {
+                throw system_error(net::error::operation_aborted);
+            }
+
             BOOST_ASSERT(not awaited_);
             // Figure out when the next tick should be
             auto current_time   = cur_time();
@@ -83,6 +91,7 @@ namespace minecraft::time
         timer_type      timer_;
         delta_time_type tick_interval_;
         time_point_type last_tick_;
+        bool            canceled_;
 
         polyfill::async::promise< void > tick_callback_;
     };
