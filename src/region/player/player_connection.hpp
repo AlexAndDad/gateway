@@ -21,7 +21,13 @@ namespace region::player
             update_queue_.server_producer.produce(std::move(packet), ec);
         }
 
+        void cancel()
+        {
+            update_queue_.server_consumer.cancel();
+        }
+
       private:
+
         minecraft::region::server_queue_update update_queue_;
     };
 }   // namespace region::player
