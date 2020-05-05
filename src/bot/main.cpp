@@ -35,7 +35,7 @@ namespace bot
                     spdlog::info("connected to {}", ep);
                     connect_state_.name("MadMongo38");
                     connect_state_.connection_args("127.0.0.1", stream_.next_layer().remote_endpoint().port());
-                    connect_state_.version(protocol::version_type::v1_11);
+                    connect_state_.version(protocol::version_type::v1_15_2);
                     co_await protocol::async_client_connect(stream_, connect_state_, net::use_awaitable);
 
                     while (1)
@@ -70,9 +70,9 @@ namespace bot
         auto c = client(ioc.get_executor());
         c.start();
 
-        net::co_spawn(
+        /*net::co_spawn(
             ioc.get_executor(),
-            []() -> net::awaitable< void > {
+            [&ioc]() -> net::awaitable< void > {
                 auto result = co_await minecraft::protocol::ping("play.minesuperior.com", "25565");
                 spdlog::info("[ping {}us] [json {}]", result.ping_time.count(), result.json);
                 co_return;
@@ -88,6 +88,7 @@ namespace bot
                     spdlog::error("error in ping: {}", polyfill::explain());
                 }
             });
+            */
 
         ioc.run();
     }
