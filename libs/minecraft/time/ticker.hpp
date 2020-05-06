@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config/net.hpp"
+#include "minecraft/net.hpp"
 #include "polyfill/async/future.hpp"
 
 #include <boost/asio/high_resolution_timer.hpp>
