@@ -19,7 +19,19 @@ TEST_CASE("minecraft::nbt::impl")
     {
         auto i = impl();
         auto cmp = i.to_offset(i.new_compound(1));
-        i.compound_set(cmp, i.acquire_string("name"), i.make_string_ref(i.acquire_string("Richard")));
-        i.compound_set(cmp, i.acquire_string("age"), i.make_long(400));
+        cmp = i.compound_set(cmp, i.acquire_string("name"), i.make_string_ref(i.acquire_string("Richard")));
+        cmp = i.compound_set(cmp, i.acquire_string("age"), i.make_long(400));
+        auto foo = i.acquire_string("foo");
+        i.acquire_string("foo");
+        i.acquire_string("foo");
+        i.acquire_string("foo");
+        i.release_string(foo);
+
+        auto gst = i.from_offset<hash_table<void>>(i.global_string_table());
+        REQUIRE(gst);
+        std::ostringstream ss;
+        print(ss, &i, gst);
+        print(ss, &i, i.from_offset<compound_header>(cmp));
+        CHECK(ss.str() == "");
     }
 }

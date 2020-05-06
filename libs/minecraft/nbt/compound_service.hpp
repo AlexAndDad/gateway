@@ -55,6 +55,9 @@ namespace minecraft::nbt
         data_ref value;
     };
 
+    template<class Self>
+    void print(std::ostream& os, Self* self, compound_bucket* bucket, std::size_t depth = 0);
+
     struct compound_header
     {
         compound_header(std::int32_t nbuckets)
@@ -120,6 +123,15 @@ namespace minecraft::nbt
         }
         auto use_count() const -> uint8_t { return use_count_; }
     };
+
+    template<class Self>
+    void print(std::ostream& os, Self* self, std::string_view name, compound_header* hdr, std::size_t depth = 0);
+
+    template<class Self>
+    void print(std::ostream& os, Self* self, compound_header* hdr, std::size_t depth = 0)
+    {
+        print(os, self, std::string_view(), hdr, depth);
+    }
 
     template < class Derived >
     struct const_compound_bucket_iterator

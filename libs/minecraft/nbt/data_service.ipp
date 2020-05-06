@@ -2,6 +2,8 @@
 #include "data_service.hpp"
 #include "string_service.hpp"
 
+#include <fmt/ostream.h>
+
 namespace minecraft::nbt
 {
     template < class Derived >
@@ -37,6 +39,27 @@ namespace minecraft::nbt
     auto data_service< Derived >::self() const -> Derived const *
     {
         return static_cast< Derived const * >(this);
+    }
+
+    template < class Self >
+    void print(std::ostream &os, Self *self, std::string_view name, data_ref *ref, std::size_t depth)
+    {
+        switch (ref->type)
+        {
+        case tag_type::String:
+            fmt::print(os,
+                       "{}{}('{}') : {}\n",
+                       std::string(depth, ' '),
+                       ref->type,
+                       name,
+                       *(self->template from_offset< string_header >(ref->data.ref_)));
+            break;
+        case tag_type::Long:
+            fmt::print(os, "{}{}('{}') : {}\n", std::string(depth, ' '), ref->type, name, ref->data.long_);
+            break;
+        default:
+            assert(!"not implemented");
+        }
     }
 
 }   // namespace minecraft::nbt

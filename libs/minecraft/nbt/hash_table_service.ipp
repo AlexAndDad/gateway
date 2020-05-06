@@ -3,12 +3,7 @@
 
 namespace minecraft::nbt
 {
-    template<class Derived>
-    auto hash_table_service<Derived>::construct_hash_table(int32_t buckets) -> hash_table *
-    {
-        return new (self()->alloc(size_to_blocks(hash_table::extent(buckets)))) hash_table(buckets);
-    }
-
+    /*
     template<class Derived>
     std::int32_t *hash_table_service<Derived>::reverse_lookup(hash_table *ht, std::uint32_t hash, offset id)
     {
@@ -36,6 +31,6 @@ namespace minecraft::nbt
         return nullptr;
     }
 
-
+*/
 
 }

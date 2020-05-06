@@ -35,7 +35,6 @@ namespace minecraft::nbt
             return *this;
         }
 
-        tag_type type;
         union
         {
             std::int8_t  byte_;
@@ -46,6 +45,7 @@ namespace minecraft::nbt
             double       double_;
             offset       ref_;
         } data;
+        tag_type type;
 
         bool empty() const noexcept { return this->type == tag_type::End; }
 
@@ -65,6 +65,10 @@ namespace minecraft::nbt
             return result;
         }
     };
+
+    template < class Self >
+    void print(std::ostream &os, Self *self, std::string_view name, data_ref *ref, std::size_t depth = 0);
+
 
     struct data_service_base
     {

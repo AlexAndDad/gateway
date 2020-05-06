@@ -2,11 +2,21 @@
 #include "minecraft/nbt/offset.hpp"
 #include <memory>
 #include <cassert>
+#include <algorithm>
 
 namespace minecraft::nbt
 {
+    template<class T, class...Ts>
+    constexpr auto most_stringent()
+    {
+        if constexpr (sizeof...(Ts) == 0)
+            return alignof(T);
+        else
+            return (std::max)(alignof(T), most_stringent<Ts...>());
+    }
+
     // the shape of the header of free space
-    struct free_block
+    struct alignas(most_stringent<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>()) free_block
     {
         offset       next = -1;   // offset of next free block
         std::int32_t size = 0;    // size of free space (not including this block)
@@ -37,8 +47,9 @@ namespace minecraft::nbt
 
     inline std::int32_t size_to_blocks(std::size_t object_extent)
     {
-        object_extent += sizeof(block_storage) - 1;
-        object_extent /= sizeof(block_storage);
+        constexpr auto block_size = sizeof(block_storage);
+        object_extent += block_size - 1;
+        object_extent /= block_size;
         return static_cast< int32_t >(object_extent);
     }
 

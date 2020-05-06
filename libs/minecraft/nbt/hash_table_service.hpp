@@ -6,6 +6,7 @@
 
 namespace minecraft::nbt
 {
+    /*
     struct hash_bucket
     {
         offset next_bucket  = -1;                   // location of next bucket if this bucket is full
@@ -45,7 +46,7 @@ namespace minecraft::nbt
             return pbucket;
         }
     };
-
+*/
     struct hash_table_service_base
     {
         hash_table_service_base(std::uint32_t hash_poison)
@@ -64,6 +65,7 @@ namespace minecraft::nbt
     {
         using hash_table_service_base::hash_table_service_base;
 
+        /*
         auto construct_hash_table(int32_t buckets) -> hash_table *;
 
         auto          find_empty_slot(hash_table *ht, std::uint32_t hash) -> offset *;
@@ -71,6 +73,7 @@ namespace minecraft::nbt
 
       private:
         auto self() -> Derived * { return static_cast< Derived * >(this); }
+         */
     };
 
 }   // namespace minecraft::nbt

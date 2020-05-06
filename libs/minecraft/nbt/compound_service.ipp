@@ -9,6 +9,7 @@
 
 #include <boost/core/ignore_unused.hpp>
 #include <cstdint>
+#include <fmt/ostream.h>
 #include <utility>
 
 namespace minecraft::nbt
@@ -18,7 +19,7 @@ namespace minecraft::nbt
     template < class Derived >
     auto compound_service< Derived >::new_compound(std::int32_t nbuckets) -> compound_header *
     {
-        auto pmem     = self()->alloc(size_to_blocks(compound_header::extent(nbuckets)));
+        auto pmem = self()->alloc(size_to_blocks(compound_header::extent(nbuckets)));
         return new (pmem) compound_header(nbuckets);
     }
 
@@ -286,6 +287,35 @@ namespace minecraft::nbt
     auto compound_service< Derived >::self() const -> Derived const *
     {
         return static_cast< Derived const * >(this);
+    }
+
+    template < class Self >
+    void print(std::ostream &os, Self *self, compound_bucket *bucket, std::size_t depth)
+    {
+        auto nh = self->template from_offset<string_header>(bucket->name);
+        print(os, self, std::string_view(nh->data(), nh->size()), &bucket->value, depth);
+    }
+
+    template < class Self >
+    void print(std::ostream &os, Self *self, std::string_view name, compound_header *hdr, std::size_t depth)
+    {
+        auto indent = std::string(depth, ' ');
+        fmt::print(os, "{}{}('') : {} entries\n", indent, hdr->type_, name, hdr->size_);
+        fmt::print(os, "{}{{\n", indent);
+        for (auto &head_bucket : hdr->buckets())
+        {
+            if (not head_bucket.empty())
+            {
+                print(os, self, &head_bucket, depth + 1);
+                auto pnext = self->template from_offset< compound_bucket >(head_bucket.next);
+                while (pnext)
+                {
+                    print(os, self, &head_bucket, depth + 1);
+                    pnext = self->template from_offset< compound_bucket >(pnext->next);
+                }
+            }
+        }
+        fmt::print(os, "{}}}\n", indent);
     }
 
 }   // namespace minecraft::nbt
