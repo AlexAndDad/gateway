@@ -9,6 +9,7 @@
 #include "server/keep_alive.hpp"
 #include "server/player_position_and_look.hpp"
 #include "server/spawn_position.hpp"
+#include "server/chunk_data.hpp"
 
 namespace minecraft::packets::server
 {
@@ -17,7 +18,8 @@ namespace minecraft::packets::server
                                          server::spawn_position,
                                          server::keep_alive,
                                          server::join_game,
-                                         server::player_position_and_look >;
+                                         server::player_position_and_look,
+                                         server::chunk_data>;
 
     struct server_play_packet : play_packet< server::play_id, play_packet_variant >
     {

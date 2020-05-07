@@ -10,7 +10,8 @@ namespace minecraft::packets::server
                     (spawn_position, 0x4E),
                     (keep_alive, 0x21),
                     (join_game, 0x26),
-                    (player_position_and_look, 0x36))
+                    (player_position_and_look, 0x36),
+                    (chunk_data, 0x22))
     WISE_ENUM_ENABLE_IO(play_id)
 
 }   // namespace minecraft::packets::server
