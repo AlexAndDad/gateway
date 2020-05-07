@@ -21,8 +21,6 @@ namespace minecraft::packets::server
         WISE_ENUM_MEMBER((chat_position, std::uint8_t), (chat_box, 0), (system_message, 1), (game_info, 2))
         WISE_ENUM_MEMBER_ENABLE_IO(chat_position)
 
-        static constexpr auto id() { return play_id::chat_message; }
-
         varchar< 32767 > json_data;
         chat_position    position;
 
