@@ -9,8 +9,6 @@
 #include <string_view>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 TEST_CASE("minecraft::nbt::value_impl")
 {
@@ -30,15 +28,15 @@ TEST_CASE("minecraft::nbt::value_impl")
 
         CHECK(ec.message() == "Success");
         CHECK(next == inbuf.data() + inbuf.size());
-        auto output = std::string();
+        auto output = std::ostringstream();
         pretty_print(output, val);
 
-        const char expected[] = R"__text(TAG_Compound('hello world'): 1 entry
+        const char expected[] = R"__text(Compound('') : 1 entries
 {
- TAG_String('name'): 'Bananrama'
+  String('name') : 'Bananrama'
 }
 )__text";
-        CHECK(output == expected);
+        CHECK(output.str() == expected);
         ::munmap(addr, size);
     }
 /*

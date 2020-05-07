@@ -8,14 +8,15 @@ namespace minecraft::nbt
 {
     struct string_header
     {
-        tag_type      type;
+//        tag_type      type;
         std::uint8_t  use_count;   // usage counter. becomes sticky at 255 (i.e. string is assumed to never be deleted
         std::uint16_t length;
         std::uint32_t hash;
 
         string_header(std::uint32_t hash, std::string_view src)
-        : type(tag_type::String)
-        , use_count(1)
+        :
+        //    type(tag_type::String) ,
+        use_count(1)
         , length(static_cast< std::uint16_t >(src.size()))
         , hash(hash)
         {
@@ -29,7 +30,7 @@ namespace minecraft::nbt
 
         std::size_t extent() const { return extent(size()); }
 
-        auto is_valid() const -> bool { return type == tag_type::String; }
+        auto is_valid() const -> bool { return true; }//type == tag_type::String; }
 
         auto data() const -> const char * { return reinterpret_cast< const char * >(this + 1); }
         auto data() -> char * { return reinterpret_cast< char * >(this + 1); }

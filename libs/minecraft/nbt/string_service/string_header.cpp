@@ -9,7 +9,7 @@ namespace minecraft::nbt
     std::ostream &operator<<(std::ostream &os, string_header *phdr)
     {
         fmt::print(
-            os, "{} (refs: {}): '{}'", phdr->type, phdr->use_count, std::string_view(phdr->data(), phdr->size()));
+            os, "{} (refs: {}): '{}'", tag_type::String, phdr->use_count, std::string_view(phdr->data(), phdr->size()));
         return os;
     }
 

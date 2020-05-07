@@ -10,27 +10,6 @@
 
 namespace minecraft::nbt
 {
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, value_impl &value, parse_context &ctx)
-    {
-        auto type = tag_type();
-        auto next = parse(first, last, type, ctx);
-        if (ctx.error())
-            return first;
-
-        if (type == tag_type::End)
-        {
-            value.var.emplace<empty>();
-            return next;
-        }
-
-        auto& nv = value.var.emplace<nvp>(type);
-        next = parse(next, last, nv, ctx);
-        if (ctx.error())
-            return first;
-        return next;
-    }
-
     struct print_context
     {
         const_buffer_iterator storage;
@@ -109,10 +88,5 @@ namespace minecraft::nbt
         print_context ctx;
     };
 
-    void pretty_print(std::string &os, value_impl const &vi, const_buffer_iterator storage, std::size_t depth)
-    {
-        auto printer = pretty_printer(print_context { storage, os, depth });
-        printer(vi);
-    }
 
 }   // namespace minecraft::nbt

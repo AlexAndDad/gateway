@@ -2,6 +2,7 @@
 
 #include "minecraft/nbt/offset.hpp"
 #include "string_header.hpp"
+#include "minecraft/nbt/storage_provider.hpp"
 
 namespace minecraft::nbt
 {
@@ -43,11 +44,19 @@ namespace minecraft::nbt
         using value_type = offset;
     };
 
-    template<class Self>
-    auto deref_key(Self*self, hash_bucket<void>* pbucket) -> string_header*;
+    auto deref_key(storage_provider*self, hash_bucket<void>* pbucket) -> string_header*;
 
-    template<class MappedType, class Self>
-    auto new_bucket(Self* self, string_header* key) -> hash_bucket<MappedType>*;
+    template<class MappedType>
+    auto link(storage_provider* self, hash_bucket<MappedType>* parent, hash_bucket<MappedType>* bucket)-> hash_bucket<MappedType>*;
+
+    template<class MappedType, class...Args>
+    auto new_bucket(storage_provider* self, Args&&...args) -> hash_bucket<MappedType>*;
+
+    template<class MappedType>
+    auto new_bucket(storage_provider* self, string_header* key) -> hash_bucket<MappedType>*;
+
+    template<class MappedType>
+    auto unlink(storage_provider* self, hash_bucket<MappedType>* parent) -> hash_bucket<MappedType>*;
 
 
 }   // namespace minecraft::nbt

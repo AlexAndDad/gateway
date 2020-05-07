@@ -62,7 +62,7 @@ namespace minecraft::nbt
             auto [index, pbucket] = lookup(self(), hash_tab, hdr->hash, std::string_view(hdr->data(), hdr->size()));
             assert(pbucket);
             unlink(self(), hash_tab, index, pbucket);
-            self()->free(hdr, size_to_blocks(hdr->extent()));
+            self()->storage_provider::free(hdr, size_to_blocks(hdr->extent()));
         }
         return use_count;
     }

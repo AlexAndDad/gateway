@@ -173,7 +173,7 @@ TEST_CASE("minecraft::nbt::fundamental")
         check_tag(tag_type::Int_Array);
         check_tag(tag_type::Long_Array);
     }
-
+/*
     SECTION("string_atom")
     {
         const char data[] = "      \x00\x0dHello, World!";
@@ -201,7 +201,7 @@ TEST_CASE("minecraft::nbt::fundamental")
         CHECK(ctx.error().message() == "Incomplete parse");
         CHECK(next == first);
     }
-
+*/
     SECTION("hello_world.nbt")
     {
         using namespace minecraft;

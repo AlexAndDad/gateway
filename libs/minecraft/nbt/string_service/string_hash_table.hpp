@@ -1,5 +1,6 @@
 #pragma once
 
+#include "minecraft/nbt/storage_provider.hpp"
 #include "minecraft/nbt/string_service/string_header.hpp"
 #include "string_bucket.hpp"
 
@@ -18,8 +19,8 @@ namespace minecraft::nbt
     /// \param self
     /// \param buckets
     /// \return
-    template < class MappedType, class Self >
-    auto new_hash_table(Self *self, std::uint32_t buckets) -> hash_table< MappedType > *;
+    template < class MappedType >
+    auto new_hash_table(storage_provider *self, std::uint32_t buckets) -> hash_table< MappedType > *;
 
     /// Lookup the bucket index and optionally the matching bucket for a given value and hash
     /// \tparam Self
@@ -29,8 +30,8 @@ namespace minecraft::nbt
     /// \param hash
     /// \param str
     /// \return
-    template < class Self, class MappedType >
-    auto lookup(Self *self, hash_table< MappedType > *table, std::uint32_t hash, std::string_view str)
+    template < class MappedType >
+    auto lookup(storage_provider *self, hash_table< MappedType > *table, std::uint32_t hash, std::string_view str)
         -> std::tuple< std::int32_t, hash_bucket< MappedType > * >;
 
     /// Insert a new entry into the hash table, possibly rehashing as a result
@@ -42,15 +43,39 @@ namespace minecraft::nbt
     /// \param key
     /// \return a tuple of the (possibly new) address of the hash table and the address of the hash bucket that received
     /// the value
-    template < class Self, class MappedType >
-    auto insert(Self *self, hash_table< MappedType > *table, string_header *key)
+    template < class MappedType >
+    auto insert(storage_provider *self, hash_table< MappedType > *table, string_header *key)
         -> std::tuple< hash_table< MappedType > *, hash_bucket< MappedType > * >;
+
+    template < class MappedType >
+    auto link(storage_provider *self, hash_table< MappedType > *table, hash_bucket< MappedType > *bucket)
+        -> hash_bucket< MappedType > *;
+
+    template < class MappedType >
+    auto link(storage_provider *self, hash_table< MappedType > *table, hash_bucket< MappedType > &&root_bucket)
+        -> hash_bucket< MappedType > *;
+
+    template < class MappedType >
+    auto maybe_rehash(storage_provider *self, hash_table< MappedType > *table) -> hash_table< MappedType > *;
+
+    auto next_prime(std::int32_t) -> std::int32_t;
 
     /// Unlink a bucket from a slot. If the bucket was an owned allocated bucket, return it's address otherwise return
     /// nullptr \tparam Self \tparam MappedType \param self \param table \param index \param bucket \return
-    template < class Self, class MappedType >
-    auto unlink(Self *self, hash_table< MappedType > *table, std::int32_t index, hash_bucket< MappedType > *bucket)
-        -> hash_bucket< MappedType > *;
+    template < class MappedType >
+    auto unlink(storage_provider *         self,
+                hash_table< MappedType > * table,
+                std::int32_t               index,
+                hash_bucket< MappedType > *bucket) -> hash_bucket< MappedType > *;
+
+    template < class MappedType >
+    auto unlink(storage_provider *         self,
+                hash_table< MappedType > * table,
+                hash_bucket< MappedType > &root_bucket,
+                hash_bucket< MappedType > *bucket) -> hash_bucket< MappedType > *;
+
+    template < class MappedType >
+    auto rehash(storage_provider *self, hash_table< MappedType > *table, std::uint32_t new_buckets) -> hash_table< MappedType > *;
 
     template <>
     struct hash_table< void >
@@ -78,13 +103,13 @@ namespace minecraft::nbt
         auto is_valid() const -> bool { return size_ <= nbuckets_; }
 
         auto collisions() const -> std::int32_t { return collisions_; }
-        auto adjust_collisions(std::int32_t delta) -> std::int32_t ;
+        auto adjust_collisions(std::int32_t delta) -> std::int32_t;
 
         auto nbuckets() const -> std::int32_t { return nbuckets_; }
 
         auto size() const -> std::int32_t { return size_; }
 
-        auto adjust_size(std::int32_t delta) -> std::int32_t ;
+        auto adjust_size(std::int32_t delta) -> std::int32_t;
 
       private:
         std::int32_t collisions_;   // number of detected collisions.
@@ -95,8 +120,8 @@ namespace minecraft::nbt
         // management
     };
 
-    template < class Self, class MappedType >
-    auto print(std::ostream &os, Self *self, hash_table< MappedType > *table) -> void;
+    template <  class MappedType >
+    auto print(std::ostream &os, storage_provider *self, hash_table< MappedType > *table) -> void;
 
 }   // namespace minecraft::nbt
 

@@ -3,8 +3,8 @@
 
 namespace minecraft::nbt
 {
-
     /// public-facing string value object
+    /*
     struct string : handle
     {
         using handle::handle;
@@ -45,5 +45,5 @@ namespace minecraft::nbt
 
         friend bool operator==(string const &a, std::string_view const &b) { return a.view() == b; }
     };
-
+*/
 }   // namespace minecraft::nbt

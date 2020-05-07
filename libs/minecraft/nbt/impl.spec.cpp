@@ -32,6 +32,13 @@ TEST_CASE("minecraft::nbt::impl")
         std::ostringstream ss;
         print(ss, &i, gst);
         print(ss, &i, i.from_offset<compound_header>(cmp));
-        CHECK(ss.str() == "");
+        CHECK(ss.str() == "size      : 4\n"
+                          "buckets   : 7\n"
+                          "collisions: 0\n"
+                          "Compound('') :  entries\n"
+                          "{\n"
+                          " String('name') : 'Richard'\n"
+                          " Long('age') : 400\n"
+                          "}\n");
     }
 }

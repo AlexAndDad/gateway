@@ -27,7 +27,10 @@ namespace minecraft::nbt
         /// \param blocks the number of blocks to pre-allocate
         impl();
 
-        std::int32_t root_object_;   // position of first structure (-1 for empty)
+        friend
+        void pretty_print(std::ostream& os, impl* self);
+
+        data_ref root_object_;   // position of first structure (-1 for empty)
     };
 
     /// Parse a data stream into an impl, destroying the impl
@@ -38,6 +41,9 @@ namespace minecraft::nbt
     /// \return
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, impl& target, error_code& ec);
 
-    using storage_ptr = boost::shared_ptr< impl >;
+    void pretty_print(std::ostream& os, impl* self);
+
+
+    using storage_ptr = std::unique_ptr< impl >;
 
 }   // namespace minecraft::nbt

@@ -9,18 +9,7 @@ namespace minecraft::nbt
     struct value : handle
     {
         using handle::handle;
-
-        void assign(storage_ptr sp)
-        {
-            handle::assign(sp->root_object_, sp);
-        }
     };
-
-    void pretty_print(std::string& , value const& )
-    {
-
-    }
-
 
 
     inline const_buffer_iterator
@@ -29,11 +18,11 @@ namespace minecraft::nbt
         if (ec) return first;
         if (first == last)
         {
-            target.assign(nullptr);
+            target.reset();
         }
         else
         {
-            target.assign(boost::make_shared<impl>());
+            target.reset(boost::make_unique<impl>());
             first = parse(first, last, *target.get_storage(), ec);
         }
         return first;

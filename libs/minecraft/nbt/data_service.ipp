@@ -10,7 +10,6 @@ namespace minecraft::nbt
     auto data_service< Derived >::make_string_ref(offset id) -> data_ref
     {
         auto str = self()->template from_offset< string_header >(id);
-        assert(str->type == tag_type::String);
         assert(str->use_count > 0);
         return data_ref::create_reference(tag_type::String, id);
     }

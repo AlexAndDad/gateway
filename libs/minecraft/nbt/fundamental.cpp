@@ -7,49 +7,9 @@ namespace minecraft::nbt
 {
     // -- string_atom
 
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, string_atom &target, parse_context &ctx)
-    {
-        auto size = std::uint16_t();
-        auto next = parse(first, last, size, ctx);
-        if (ctx.error())
-            return first;
-        target.offset = ctx.to_index(first);
-        if (std::distance(next, last) < static_cast< std::ptrdiff_t >(size))
-        {
-            ctx.error(error::incomplete);
-            return first;
-        }
-        next += size;
-        return next;
-    }
-
-    std::string_view to_string(string_atom const &atom, const_buffer_iterator storage)
-    {
-        return std::string_view(storage + atom.offset + 2, size(atom, storage));
-    }
-
-    std::size_t size(string_atom const &atom, const_buffer_iterator storage)
-    {
-        auto buf = boost::endian::big_uint16_buf_at();
-        std::memcpy(buf.data(), storage + atom.offset, 2);
-        return buf.value();
-    }
 
     // - nvp
 
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, nvp &target, parse_context &ctx)
-    {
-        if (ctx.error())
-            return first;
-
-        ctx.error(error::not_implemented);
-
-        boost::ignore_unused(last, target);
-
-        return first;
-    }
 
     auto parse_atom(tag_type tag, const_buffer_iterator first, const_buffer_iterator last, parse_context &ctx)
         -> const_buffer_iterator

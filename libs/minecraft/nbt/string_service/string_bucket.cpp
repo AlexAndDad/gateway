@@ -32,4 +32,12 @@ namespace minecraft::nbt
         return *this;
     }
 
+    auto deref_key(storage_provider *self, hash_bucket< void > *pbucket) -> string_header *
+    {
+        assert(pbucket);
+        assert(not pbucket->empty());
+        return self->template from_offset< string_header >(pbucket->value);
+    }
+
+
 }   // namespace minecraft::nbt

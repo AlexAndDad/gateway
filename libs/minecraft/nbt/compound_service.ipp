@@ -41,7 +41,7 @@ namespace minecraft::nbt
         compound_header *hdr = self()->template from_offset< compound_header >(compound_id);
         string_header *  str = self()->template from_offset< string_header >(name);
         assert(str);
-        assert(str->type = tag_type::String);
+        //        assert(str->type = tag_type::String);
 
         compound_bucket *bucket = find_matching_bucket(hdr, str);
         if (not bucket)
@@ -82,7 +82,7 @@ namespace minecraft::nbt
         else
         {
             self()->release_string(bucket->name);
-            self()->release(bucket->value);
+            minecraft::nbt::release(self(), bucket->value_type, bucket->value_atom);
         }
         return next;
     }
@@ -93,7 +93,7 @@ namespace minecraft::nbt
         while (bucket)
         {
             auto next = destroy_contents(bucket);
-            self()->free(bucket, size_to_blocks(sizeof(bucket)));
+            self()->storage_provider::free(bucket, size_to_blocks(sizeof(bucket)));
             bucket = next;
         }
     }
@@ -128,16 +128,18 @@ namespace minecraft::nbt
 
         if (bucket->empty())
         {
-            bucket->name  = self()->to_offset(name);
-            bucket->value = std::move(data);
+            bucket->name       = self()->to_offset(name);
+            bucket->value_type = std::exchange(data.type, tag_type::End);
+            move_assign(bucket->value_atom, std::move(data.data));
             assert(invalid_offset(bucket->next));
         }
         else
         {
             compound_bucket *pnext = new_bucket();
             // set value
-            pnext->name  = self()->to_offset(name);
-            pnext->value = std::move(data);
+            pnext->name        = self()->to_offset(name);
+            bucket->value_type = std::exchange(data.type, tag_type::End);
+            move_assign(bucket->value_atom, std::move(data.data));
             // link
             pnext->next  = bucket->next;
             bucket->next = self()->to_offset(pnext);
@@ -178,7 +180,7 @@ namespace minecraft::nbt
                         ;
             // the old container is guaranteed to be empty so we don't need to cleanly deallocate it, we can
             // just free its memory
-            self()->free(hdr, size_to_blocks(hdr->extent()));
+            self()->storage_provider::free(hdr, size_to_blocks(hdr->extent()));
             hdr = new_hdr;
         }
         return hdr;
@@ -201,7 +203,7 @@ namespace minecraft::nbt
             // going into a fresh bucket, so move and deallocate
             assert(invalid_offset(bucket->next));
             *bucket = std::move(*source);
-            self()->free(source, size_to_blocks(sizeof(bucket)));
+            self()->storage_provider::free(source, size_to_blocks(sizeof(bucket)));
         }
         else
         {
@@ -249,7 +251,7 @@ namespace minecraft::nbt
         auto pnext = unlink_after(&source);
         this->insert_impl(hdr,
                           self()->template from_offset< string_header >(std::exchange(source.name, invalid_offset())),
-                          std::exchange(source.value, data_ref()));
+                          data_ref(std::exchange(source.value_type, tag_type::End), std::move(source.value_atom)));
         while (pnext)
         {
         }
@@ -274,8 +276,9 @@ namespace minecraft::nbt
     template < class Derived >
     auto compound_service< Derived >::replace_impl(compound_bucket *bucket, data_ref data) -> void
     {
-        self()->release(bucket->value);
-        bucket->value = std::move(data);
+        minecraft::nbt::release(self(), bucket->value_type, bucket->value_atom);
+        bucket->value_type = data.type;
+        move_assign(bucket->value_atom, std::move(data.data));
     }
 
     template < class Derived >
@@ -292,8 +295,9 @@ namespace minecraft::nbt
     template < class Self >
     void print(std::ostream &os, Self *self, compound_bucket *bucket, std::size_t depth)
     {
-        auto nh = self->template from_offset<string_header>(bucket->name);
-        print(os, self, std::string_view(nh->data(), nh->size()), &bucket->value, depth);
+        auto nh = self->template from_offset< string_header >(bucket->name);
+        auto view = data_ref(bucket->value_type, bucket->value_atom);
+        print(os, self, std::string_view(nh->data(), nh->size()), &view, depth);
     }
 
     template < class Self >

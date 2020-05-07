@@ -17,46 +17,55 @@ namespace minecraft::nbt
     struct compound_bucket
     {
         compound_bucket()
-        : next(invalid_offset())
+        : value_atom()
+        , next(invalid_offset())
         , name(invalid_offset())
-        , value()
+        , value_type(tag_type::End)
         {
         }
 
-        compound_bucket(offset name, data_ref&& value)
-            : next(invalid_offset())
-            , name(name)
-            , value(std::move(value))
+        compound_bucket(offset name, data_ref &&value)
+        : value_atom()
+        , next(invalid_offset())
+        , name(name)
+        , value_type(std::exchange(value.type, tag_type::End))
         {
+            move_assign(value_atom, std::move(value.data));
         }
 
         // moves are destructive to the source
         compound_bucket(compound_bucket &&other) noexcept
-        : next(std::exchange(other.next, invalid_offset()))
+        : value_atom()
+        , next(std::exchange(other.next, invalid_offset()))
         , name(std::exchange(other.name, invalid_offset()))
-        , value(std::move(other.value))
+        , value_type(std::exchange(other.value_type, tag_type::End))
         {
+            move_assign(value_atom, std::move(other.value_atom));
         }
 
-        compound_bucket& operator=(compound_bucket &&other) noexcept
+        compound_bucket &operator=(compound_bucket &&other) noexcept
         {
             assert(empty());
             assert(invalid_offset(next));
-            next = std::exchange(other.next, invalid_offset());
-            name = std::exchange(other.name, invalid_offset());
-            value = std::move(other.value);
+            move_assign(value_atom, std::move(other.value_atom));
+            next       = std::exchange(other.next, invalid_offset());
+            name       = std::exchange(other.name, invalid_offset());
+            value_type = std::exchange(other.value_type, tag_type::End);
             return *this;
         }
 
         auto empty() const -> bool { return invalid_offset(name); }
 
+        atom     value_atom;
         offset   next;   // position of the next bucket in case of a collision
         offset   name;
-        data_ref value;
+        tag_type value_type;
+
+        static constexpr std::size_t extent() { return sizeof(compound_bucket); }
     };
 
-    template<class Self>
-    void print(std::ostream& os, Self* self, compound_bucket* bucket, std::size_t depth = 0);
+    template < class Self >
+    void print(std::ostream &os, Self *self, compound_bucket *bucket, std::size_t depth = 0);
 
     struct compound_header
     {
@@ -124,11 +133,11 @@ namespace minecraft::nbt
         auto use_count() const -> uint8_t { return use_count_; }
     };
 
-    template<class Self>
-    void print(std::ostream& os, Self* self, std::string_view name, compound_header* hdr, std::size_t depth = 0);
+    template < class Self >
+    void print(std::ostream &os, Self *self, std::string_view name, compound_header *hdr, std::size_t depth = 0);
 
-    template<class Self>
-    void print(std::ostream& os, Self* self, compound_header* hdr, std::size_t depth = 0)
+    template < class Self >
+    void print(std::ostream &os, Self *self, compound_header *hdr, std::size_t depth = 0)
     {
         print(os, self, std::string_view(), hdr, depth);
     }
@@ -184,8 +193,57 @@ namespace minecraft::nbt
         compound_bucket *bucket;
     };
 
+    struct compound_pretty_printer
+    {
+        storage_provider *storage;
+        std::string_view  name;
+        compound_header * hdr;
+        std::size_t       depth;
+
+        void operator()(std::ostream &os) const;
+
+        friend std::ostream &operator<<(std::ostream &os, compound_pretty_printer const &printer)
+        {
+            printer(os);
+            return os;
+        }
+    };
+
+    inline auto
+    pretty_print(storage_provider *storage, std::string_view name, compound_header *hdr, std::size_t depth = 0)
+        -> compound_pretty_printer
+    {
+        return compound_pretty_printer { storage, name, hdr, depth };
+    }
+
+    inline auto pretty_print(storage_provider *storage, compound_header *hdr, std::size_t depth = 0)
+        -> compound_pretty_printer
+    {
+        return compound_pretty_printer { storage, std::string_view(), hdr, depth };
+    }
+
+    struct compound_service_base
+    {
+        static std::int8_t release(storage_provider* storage, compound_header* cmp);
+
+        static auto unlink(storage_provider* storage, compound_bucket* prev) -> compound_bucket*;
+
+        static auto compound_advise_buckets(std::int32_t anticipated_size) -> std::int32_t;
+
+        // destroy contents then destroy and free all extension buckets
+        static void destroy_contents(storage_provider* storage, compound_bucket& base);
+
+        // destroy contents of a single object. don't free it but return its address
+        static auto destroy(storage_provider* storage, compound_bucket* bucket) -> compound_bucket*;
+        static auto destroy(storage_provider* storage, compound_header* hdr) -> compound_header*;
+
+        // free memory associated with the object
+        static void deallocate(storage_provider* storage, compound_bucket* bucket);
+        static void deallocate(storage_provider* storage, compound_header* hdr);
+    };
+
     template < class Derived >
-    struct compound_service
+    struct compound_service : compound_service_base
     {
         /// Create a new compound
         /// \param n a hint as to the number of items expected to be in the compound.
@@ -203,6 +261,8 @@ namespace minecraft::nbt
         /// \param value
         /// \return
         auto compound_set(offset compound_id, offset item_name, data_ref value) -> offset;
+
+
 
       private:
         /// Totally destroy the compund and release all objects in it
@@ -252,8 +312,8 @@ namespace minecraft::nbt
 
         auto replace_impl(compound_bucket *bucket, data_ref data) -> void;
 
-        template<class...Args>
-        auto new_bucket(Args&&...) -> compound_bucket *;
+        template < class... Args >
+        auto new_bucket(Args &&...) -> compound_bucket *;
         auto maybe_rehash(compound_header *hdr) -> compound_header *;
 
       private:
