@@ -1,6 +1,8 @@
 #include "minecraft/types/var.hpp"
 
 #include <catch2/catch.hpp>
+#include <span>
+#include <boost/core/ignore_unused.hpp>
 
 TEST_CASE("parse fundamentals")
 {
@@ -98,4 +100,73 @@ TEST_CASE("parse fundamentals")
                  10);
         }
     }
+}
+
+TEST_CASE("tuple testing")
+{
+    using namespace minecraft;
+    using vec = compose_buffer;
+
+    SECTION("uint32")
+    {
+        using vec_type = std::vector< std::uint32_t >;
+        using tup_type = std::tuple< vec_type &, std::size_t & >;
+        auto good      = [](vec v, tup_type result, vec_type expected) {
+            auto data = to_span(v);
+            error_code ec;
+            auto first = parse(std::begin(data),std::end(data),result,ec);
+            CHECK(not ec.failed());
+            CHECK(expected == std::get<0>(result));
+            CHECK(first == std::end(data));
+        };
+
+        auto bad      = [](vec v, tup_type result) {
+            auto data = to_span(v);
+            error_code ec;
+            parse(std::begin(data),std::end(data),result,ec);
+            CHECK(ec.failed());
+        };
+        boost::ignore_unused(bad);
+
+        SECTION("05 05 05 05 05 05 05 05")
+        {
+            std::size_t element_quantity = 2;
+            vec_type    data;
+            good(
+                vec {'\x05','\x05','\x05','\x05','\x05','\x05','\x05','\x05',},
+                    std::tie(data, element_quantity),
+                    vec_type { 84215045, 84215045 });
+        }
+        SECTION("1-15")
+        {
+            auto byte_per_element = 4;
+
+            vec v;
+            v.resize(15 * byte_per_element);
+
+            vec_type expected;
+            expected.resize(15);
+
+            std::uint8_t val = 1;
+            auto offset = 0;
+            for (;val != 16;val++)
+            {
+                v[offset] = 0;
+                v[offset+1] = 0;
+                v[offset+2] = 0;
+                v[offset+3] = val;
+                offset += 4;
+                expected[val-1] = val;
+            }
+
+
+            std::size_t element_quantity = 15;
+            vec_type    data;
+            good(
+                std::move(v),
+                std::tie(data, element_quantity),
+                std::move(expected));
+        }
+    }
+
 }

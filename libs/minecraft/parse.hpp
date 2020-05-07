@@ -143,7 +143,6 @@ namespace minecraft
                error_code &                 ec,
                std::int32_t                 byte_limit = 65536) -> const_buffer_iterator;
 
-
     template < class T >
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, std::optional< T > &opt, error_code &ec)
@@ -182,5 +181,29 @@ namespace minecraft
 
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, std::u16string &result, error_code &ec);
+
+    // parse std::size_t quantity of T into std::vector.
+    template < class T >
+    const_buffer_iterator parse(const_buffer_iterator                           first,
+                                const_buffer_iterator                           last,
+                                std::tuple< std::vector< T > &, std::size_t & > result,
+                                error_code &                                    ec)
+    {
+        if (not ec.failed())
+        {
+            auto &vec = std::get< 0 >(result);
+            vec.resize(std::get< 1 >(result));
+
+            for (auto &item : vec)
+            {
+                first = parse(first, last, item, ec);
+                if (ec.failed())
+                {
+                    break;
+                }
+            }
+        }
+        return first;
+    }
 
 }   // namespace minecraft
