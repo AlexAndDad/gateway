@@ -8,15 +8,17 @@ namespace minecraft::nbt
     {
         auto visitor = [&]< tag_type Type >(list_tag< Type >) -> offset
         {
+            list_header* generic = sp->from_offset<list_header>(id);
+            assert(generic->type == Type);
             using list_type = basic_list_header<Type>;
-            auto list = sp->from_offset<list_type>(id);
+            auto list = static_cast<list_type*>(generic);
             if (list->capacity <= list->length)
                 list = grow(sp, list, std::min(8, (list->capacity * 3) / 2));
-            list->data_[list->length++] = data_service_base::access(atom_type<Type>(), arg.data);
+            list->data_[list->length++] = get<to_data_ref_t<Type>>(arg.as_variant());
             return sp->to_offset(list);
 
         };
-        return visit(visitor, arg.type);
+        return visit(visitor, arg.type());
     }
 
     template < tag_type Type >

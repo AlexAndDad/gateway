@@ -8,13 +8,14 @@
 #include <cstddef>
 #include <algorithm>
 #include "storage_provider.hpp"
+#include "tag_type.hpp"
 
 namespace minecraft::nbt
 {
-    template<class Integral>
+    template<tag_type Type>
     struct integral_array
     {
-        using value_type = Integral;
+        using value_type = atom_type_t<Type>;
 
         std::int32_t length;
         value_type first_data[1];
@@ -26,9 +27,8 @@ namespace minecraft::nbt
 
     struct array_service
     {
-
-        template<class Integral>
-        static std::int8_t release(storage_provider* storage, integral_array<Integral>* array)
+        template<tag_type Type>
+        static std::int8_t release(storage_provider* storage, integral_array<Type>* array)
         {
             storage->free(array, size_to_blocks(array->extent()));
             return 0;

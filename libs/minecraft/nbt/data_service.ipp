@@ -11,7 +11,7 @@ namespace minecraft::nbt
     {
         auto str = self()->template from_offset< string_header >(id);
         assert(str->use_count > 0);
-        return data_ref::create_reference(tag_type::String, id);
+        return data_ref(storage_svc::ptr<string_header>(id));
     }
 
     template < class Derived >

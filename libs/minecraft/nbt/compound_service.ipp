@@ -36,12 +36,14 @@ namespace minecraft::nbt
     }
 
     template < class Derived >
-    auto compound_service< Derived >::compound_set(offset compound_id, offset name, data_ref value) -> offset
+    auto compound_service< Derived >::compound_set(offset compound_id, offset n, data_ref value) -> offset
     {
-        compound_header *hdr = self()->template from_offset< compound_header >(compound_id);
-        string_header *  str = self()->template from_offset< string_header >(name);
+        auto name = storage_svc::ptr<string_header>(n);
+        auto compound = storage_svc::ptr<compound_header>(compound_id);
+
+        compound_header *hdr = compound.get(self());
+        string_header *  str = name.get(self());
         assert(str);
-        //        assert(str->type = tag_type::String);
 
         compound_bucket *bucket = find_matching_bucket(hdr, str);
         if (not bucket)

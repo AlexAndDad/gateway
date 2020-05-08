@@ -2,6 +2,7 @@
 // Created by rhodges on 05/05/2020.
 //
 #pragma once
+#include "minecraft/variant.hpp"
 #include "offset.hpp"
 #include "storage_provider.hpp"
 #include "tag_type.hpp"
@@ -13,100 +14,115 @@
 
 namespace minecraft::nbt
 {
-    // a funadmental unit of storage which cannot move
-    union atom
+    struct compound_header;
+    struct string_header;
+    struct list_header;
+    template < tag_type >
+    struct integral_array;
+
+    template < tag_type >
+    struct to_data_ref;
+
+    template <>
+    struct to_data_ref< tag_type ::End >
     {
-        std::int8_t  byte_;
-        std::int16_t short_;
-        std::int32_t int_;
-        std::int64_t long_;
-        float        float_;
-        double       double_;
-        offset       ref_ = invalid_offset();
+        using type = monostate;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Byte >
+    {
+        using type = std::int8_t;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Short >
+    {
+        using type = std::int16_t;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Int >
+    {
+        using type = std::int32_t;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Long >
+    {
+        using type = std::int64_t;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Float >
+    {
+        using type = float;
+    };
+    template <>
+    struct to_data_ref< tag_type ::Double >
+    {
+        using type = double;
     };
 
-    inline void move_assign(atom &dest, atom &&src)
+    template <>
+    struct to_data_ref< tag_type ::String >
     {
-        std::memcpy(&dest, &src, sizeof(atom));
-        src.ref_ = invalid_offset();
-    }
+        using type = storage_svc::ptr< string_header >;
+    };
 
-    void release(storage_provider *storage, tag_type type, atom &a);
+    template <>
+    struct to_data_ref< tag_type ::Compound >
+    {
+        using type = storage_svc::ptr< compound_header >;
+    };
 
+    template < tag_type Type >
+    using to_data_ref_t = typename atom_type< Type >::type;
+
+    // a funadmental unit of storage which cannot move
     struct data_ref
     {
+        using vtype = variant< monostate,
+                               std::int8_t,
+                               std::int16_t,
+                               std::int32_t,
+                               std::int64_t,
+                               float,
+                               double,
+                               storage_svc::ptr< string_header >,
+                               storage_svc::ptr< list_header >,
+                               storage_svc::ptr< integral_array< tag_type::Byte > >,
+                               storage_svc::ptr< integral_array< tag_type::Int > >,
+                               storage_svc::ptr< integral_array< tag_type::Long > > >;
+
+        vtype &      as_variant() { return var_; }
+        vtype const &as_variant() const { return var_; }
+
+        tag_type type() const;
+
         data_ref()
-        : type(tag_type::End)
-        {
-            data.ref_ = invalid_offset();
-        }
-
-        data_ref(tag_type type, atom &&a)
-        : type(type)
-        , data(a)
-        {
-            switch (type)
-            {
-            case tag_type::End:
-            case tag_type::Byte:
-            case tag_type::Short:
-            case tag_type::Int:
-            case tag_type::Long:
-            case tag_type::Float:
-            case tag_type::Double:
-                break;
-            case tag_type::Byte_Array:
-            case tag_type::String:
-            case tag_type::List:
-            case tag_type::Compound:
-            case tag_type::Int_Array:
-            case tag_type::Long_Array:
-                a.ref_ = invalid_offset();
-                break;
-            }
-        }
-
-        data_ref(tag_type type, atom const &a)
-        : type(type)
-        , data(a)
+        : var_(monostate())
         {
         }
 
-        data_ref(data_ref &&other) noexcept
+        template<class T>
+        data_ref(std::in_place_t, T&& arg)
+            : var_()
+        {
+            var_.emplace<std::decay_t<T>>(std::forward<T>(arg));
+        }
 
-        : data_ref(std::exchange(other.type, tag_type::End), std::move(other.data))
+        data_ref(data_ref &&other)
+        : var_(std::exchange(other.var_, vtype()))
         {
         }
 
-        data_ref &operator=(data_ref &&other) noexcept
+        data_ref &operator==(data_ref &&other)
         {
-            assert(empty());
-            type = std::exchange(other.type, tag_type::End);
-            std::memcpy(&data, &other.data, sizeof(data));
-            other.data.ref_ = invalid_offset();
+            assert(holds_alternative< monostate >(var_));
+            var_ = std::exchange(other.var_, vtype());
             return *this;
         }
 
-        tag_type type;
-        atom     data;
+        void release(storage_provider *sp);
 
-        bool empty() const noexcept { return this->type == tag_type::End; }
-
-        static auto create_long(std::int64_t n) -> data_ref
-        {
-            auto result       = data_ref();
-            result.type       = tag_type::Long;
-            result.data.long_ = n;
-            return result;
-        }
-
-        static auto create_reference(tag_type tag, offset ref) -> data_ref
-        {
-            auto result      = data_ref();
-            result.type      = tag;
-            result.data.ref_ = ref;
-            return result;
-        }
+      private:
+        vtype var_;
     };
 
     template < class Self >
@@ -121,62 +137,6 @@ namespace minecraft::nbt
 
     struct data_service_base
     {
-        struct releaser
-        {
-            std::int8_t operator()(atom_type< tag_type::End >, storage_provider *, std::int8_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Byte >, storage_provider *, std::int8_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Short >, storage_provider *, std::int16_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Int >, storage_provider *, std::int32_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Long >, storage_provider *, std::int64_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Float >, storage_provider *, float &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Double >, storage_provider *, double &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::String >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Compound >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Byte_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Int_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Long_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::List >, storage_provider *, offset &) const;
-        };
-
-        struct acessor
-        {
-            std::int8_t &operator()(atom_type< tag_type::End >, atom &a) const { return a.byte_; }
-            std::int8_t  operator()(atom_type< tag_type::Byte >, storage_provider *, std::int8_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Short >, storage_provider *, std::int16_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Int >, storage_provider *, std::int32_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Long >, storage_provider *, std::int64_t &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Float >, storage_provider *, float &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::Double >, storage_provider *, double &) const { return 0; }
-            std::int8_t operator()(atom_type< tag_type::String >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Compound >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Byte_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Int_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::Long_Array >, storage_provider *, offset &) const;
-            std::int8_t operator()(atom_type< tag_type::List >, storage_provider *, offset &) const;
-        };
-
-        template < tag_type Type, class Actual = atom_type_t< Type > >
-        static auto impl_release(storage_provider *storage, Actual &atype) -> std::int8_t
-        {
-            auto op = releaser();
-            return op(atom_type< Type >(), storage, atype);
-        }
-
-        template < tag_type Type >
-        static auto access(atom_type< Type >, atom &a) -> offset &
-        {
-            return a.ref_;
-        }
-
-        static auto access(atom_type< tag_type::End >, atom &a) -> std::int8_t & { return a.byte_; }
-        static auto access(atom_type< tag_type::Byte >, atom &a) -> std::int8_t & { return a.byte_; }
-        static auto access(atom_type< tag_type::Short >, atom &a) -> std::int16_t & { return a.short_; }
-        static auto access(atom_type< tag_type::Int >, atom &a) -> std::int32_t & { return a.int_; }
-        static auto access(atom_type< tag_type::Long >, atom &a) -> std::int64_t & { return a.long_; }
-        static auto access(atom_type< tag_type::Float >, atom &a) -> float & { return a.float_; }
-        static auto access(atom_type< tag_type::Double >, atom &a) -> double & { return a.double_; }
-
-        static auto make_long(std::int64_t n) { return data_ref::create_long(n); }
     };
 
     template < class Derived >

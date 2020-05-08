@@ -14,52 +14,19 @@
 
 namespace minecraft::nbt
 {
+    struct data_ref;
+
     struct compound_bucket
     {
-        compound_bucket()
-        : value_atom()
-        , next(invalid_offset())
-        , name(invalid_offset())
-        , value_type(tag_type::End)
-        {
-        }
+        compound_bucket();
 
-        compound_bucket(offset name, data_ref &&value)
-        : value_atom()
-        , next(invalid_offset())
-        , name(name)
-        , value_type(std::exchange(value.type, tag_type::End))
-        {
-            move_assign(value_atom, std::move(value.data));
-        }
-
-        // moves are destructive to the source
-        compound_bucket(compound_bucket &&other) noexcept
-        : value_atom()
-        , next(std::exchange(other.next, invalid_offset()))
-        , name(std::exchange(other.name, invalid_offset()))
-        , value_type(std::exchange(other.value_type, tag_type::End))
-        {
-            move_assign(value_atom, std::move(other.value_atom));
-        }
-
-        compound_bucket &operator=(compound_bucket &&other) noexcept
-        {
-            assert(empty());
-            assert(invalid_offset(next));
-            move_assign(value_atom, std::move(other.value_atom));
-            next       = std::exchange(other.next, invalid_offset());
-            name       = std::exchange(other.name, invalid_offset());
-            value_type = std::exchange(other.value_type, tag_type::End);
-            return *this;
-        }
+        compound_bucket(storage_svc::ptr<string_header> name, data_ref value);
 
         auto empty() const -> bool { return invalid_offset(name); }
 
-        atom     value_atom;
-        offset   next;   // position of the next bucket in case of a collision
-        offset   name;
-        tag_type value_type;
+        storage_svc::ptr< compound_bucket > next;   // position of the next bucket in case of a collision
+        storage_svc::ptr< string_header >   name;
+        data_ref                            value;
 
         static constexpr std::size_t extent() { return sizeof(compound_bucket); }
     };
@@ -224,22 +191,22 @@ namespace minecraft::nbt
 
     struct compound_service_base
     {
-        static std::int8_t release(storage_provider* storage, compound_header* cmp);
+        static std::int8_t release(storage_provider *storage, compound_header *cmp);
 
-        static auto unlink(storage_provider* storage, compound_bucket* prev) -> compound_bucket*;
+        static auto unlink(storage_provider *storage, compound_bucket *prev) -> compound_bucket *;
 
         static auto compound_advise_buckets(std::int32_t anticipated_size) -> std::int32_t;
 
         // destroy contents then destroy and free all extension buckets
-        static void destroy_contents(storage_provider* storage, compound_bucket& base);
+        static void destroy_contents(storage_provider *storage, compound_bucket &base);
 
         // destroy contents of a single object. don't free it but return its address
-        static auto destroy(storage_provider* storage, compound_bucket* bucket) -> compound_bucket*;
-        static auto destroy(storage_provider* storage, compound_header* hdr) -> compound_header*;
+        static auto destroy(storage_provider *storage, compound_bucket *bucket) -> compound_bucket *;
+        static auto destroy(storage_provider *storage, compound_header *hdr) -> compound_header *;
 
         // free memory associated with the object
-        static void deallocate(storage_provider* storage, compound_bucket* bucket);
-        static void deallocate(storage_provider* storage, compound_header* hdr);
+        static void deallocate(storage_provider *storage, compound_bucket *bucket);
+        static void deallocate(storage_provider *storage, compound_header *hdr);
     };
 
     template < class Derived >
@@ -261,8 +228,6 @@ namespace minecraft::nbt
         /// \param value
         /// \return
         auto compound_set(offset compound_id, offset item_name, data_ref value) -> offset;
-
-
 
       private:
         /// Totally destroy the compund and release all objects in it

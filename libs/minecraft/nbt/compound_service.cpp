@@ -5,10 +5,25 @@
 #include "compound_service.hpp"
 
 #include "compound_service.ipp"
+#include "data_service.hpp"
 #include "impl.hpp"
 
 namespace minecraft::nbt
 {
+    compound_bucket::compound_bucket()
+    : next()
+    , name()
+    , value()
+    {
+    }
+
+    compound_bucket::compound_bucket(storage_svc::ptr<string_header> name, data_ref value)
+    : next()
+    , name(name)
+    , value(std::move(value))
+    {
+    }
+
     template struct compound_service< impl >;
 
     template void
@@ -16,7 +31,7 @@ namespace minecraft::nbt
 
     auto compound_service_base::compound_advise_buckets(std::int32_t anticipated_size) -> std::int32_t
     {
-        auto n = double(anticipated_size) * 1.3;
+        auto n      = double(anticipated_size) * 1.3;
         auto result = std::min(7, next_prime(std::int32_t(n)));
         return result;
     }
@@ -63,20 +78,19 @@ namespace minecraft::nbt
         return hdr;
     }
 
-    auto compound_service_base::unlink(storage_provider* storage, compound_bucket* prev) -> compound_bucket*
+    auto compound_service_base::unlink(storage_provider *storage, compound_bucket *prev) -> compound_bucket *
     {
-        compound_bucket* result = nullptr;
+        compound_bucket *result = nullptr;
         if (prev)
         {
-            result = storage->from_offset<compound_bucket>(prev->next);
+            result = storage->from_offset< compound_bucket >(prev->next);
             if (result)
                 prev->next = std::exchange(result->next, invalid_offset());
         }
         return result;
     }
 
-
-    std::int8_t  compound_service_base::release(storage_provider *storage, compound_header *cmp)
+    std::int8_t compound_service_base::release(storage_provider *storage, compound_header *cmp)
     {
         deallocate(storage, destroy(storage, cmp));
         return 0;
@@ -90,7 +104,7 @@ namespace minecraft::nbt
         auto print_bucket = [&](compound_bucket &b) {
             auto pname = storage->from_offset< string_header >(b.name);
             auto n     = std::string_view(pname->data(), pname->size());
-            pretty_print(os, storage, n, data_ref(b.value_type, b.value_atom), depth+2);
+            pretty_print(os, storage, n, data_ref(b.value_type, b.value_atom), depth + 2);
         };
         for (auto &root_bucket : hdr->buckets())
         {

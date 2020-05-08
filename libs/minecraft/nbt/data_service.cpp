@@ -7,6 +7,47 @@
 
 namespace minecraft::nbt
 {
+    namespace
+    {
+        struct type_visitor
+        {
+            tag_type operator()(monostate const&) const { return  tag_type::End; }
+            tag_type operator()(int8_t const &) const { return tag_type::Byte }
+            tag_type operator()(int16_t const &) const { return tag_type::Short; }
+            tag_type operator()(int32_t const &) const { return tag_type::Int; }
+            tag_type operator()(int64_t const &) const { return tag_type::Long; }
+            tag_type operator()(float const &) const { return tag_type::Float; }
+            tag_type operator()(double const &) const { return tag_type::Double; }
+            tag_type operator()(storage_svc::ptr<string_header> const &) const { return tag_type::String; }
+            tag_type operator()(storage_svc::ptr<compound_header> const &) const { return tag_type::Compound; }
+        };
+        struct releaser
+        {
+            void operator()(monostate &) const {}
+            void operator()(int8_t &) const {}
+            void operator()(int16_t &) const {}
+            void operator()(int32_t &) const {}
+            void operator()(int64_t &) const {}
+            void operator()(float &) const {}
+            void operator()(double &) const {}
+            void operator()(storage_svc::ptr<string_header>& str) const
+            {
+                if(auto pstr= str.get(sp))
+                    if (pstr->release() == 0)
+                        str->destroy(sp);
+                str.reset();
+            }
+
+            storage_provider* sp;
+        };
+    }
+
+    void data_ref::release(storage_provider* sp)
+    {
+        visit(releaser{sp}, var_);
+        var_ = monostate();
+    }
+
     std::int8_t data_service_base::releaser::operator()(atom_type<tag_type::String>, storage_provider * sp, offset &o) const
     {
         auto str = sp->from_offset<string_header>(std::exchange(o, invalid_offset()));

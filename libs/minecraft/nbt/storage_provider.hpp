@@ -67,4 +67,54 @@ namespace minecraft::nbt
         free_block                         free_list_;
     };
 
+    struct storage_svc
+    {
+        template < class T >
+        struct ptr
+        {
+            using value_type = T;
+            explicit ptr(offset off = invalid_offset())
+            : off_(off)
+            {
+            }
+
+            ptr(ptr const &) = default;
+            ptr(ptr &&other)
+            : off_(std::exchange(other.off_, invalid_offset()))
+            {
+            }
+
+            ptr &operator=(ptr const &) = default;
+            ptr &operator               =(ptr &&other) { off_ = std::exchange(other.off_, invalid_offset()); }
+
+            value_type *get(storage_provider *sp) const { return sp->from_offset< T >(off_); }
+
+            operator bool() const { return not invalid_offset(off_); }
+
+            offset reset() { return std::exchange(off_, invalid_offset()); }
+
+            offset reset(storage_provider *sp, T *p) { return std::exchange(off_, sp->to_offset(p)); }
+
+            template < class... Args >
+            T *create(storage_provider *sp, Args &&... args)
+            {
+                void *p      = sp->alloc(size_to_blocks(T::extent(args...)));
+                T *   result = new (p) T(std::forward< Args >(args)...);
+                off_         = sp->to_offset(result);
+                return result;
+            }
+
+            void destroy(storage_provider *sp)
+            {
+                auto p      = get();
+                auto extent = p->extent();
+                p->~T();
+                sp->free(size_to_blocks(extent));
+            }
+
+          private:
+            offset off_;
+        };
+    };
+
 }   // namespace minecraft::nbt

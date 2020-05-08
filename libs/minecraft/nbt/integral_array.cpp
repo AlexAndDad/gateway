@@ -6,7 +6,7 @@
 
 namespace minecraft::nbt
 {
-    template struct integral_array<std::int8_t>;
-    template struct integral_array<std::int32_t>;
-    template struct integral_array<std::int64_t>;
+    template struct integral_array<tag_type::Byte>;
+    template struct integral_array<tag_type::Int>;
+    template struct integral_array<tag_type::Long>;
 }
