@@ -1,6 +1,5 @@
 #include "minecraft/nbt/value_impl.hpp"
 
-#include "minecraft/nbt/fundamental.hpp"
 
 #include <boost/core/demangle.hpp>
 #include <boost/core/ignore_unused.hpp>

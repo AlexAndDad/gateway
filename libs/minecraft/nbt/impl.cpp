@@ -1,6 +1,7 @@
 #include "minecraft/nbt/impl.hpp"
 
 #include "list_service.hpp"
+#include "parse_context.hpp"
 
 #include <boost/functional/hash.hpp>
 
@@ -205,7 +206,8 @@ namespace minecraft::nbt
 
         auto parser  = impl_parse_handler(target);
         auto context = parse_context(parser);
-        first        = parse_value(first, last, context);
+        first        = context.parse_value(first, last);
+        ec = context.error();
 
         return first;
     }

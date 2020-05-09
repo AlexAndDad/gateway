@@ -1,14 +1,10 @@
 #include "minecraft/filesystem.hpp"
-#include "minecraft/nbt/fundamental.hpp"
 #include "minecraft/nbt/testing/nbt_data.spec.ipp"
+#include "parse_context_impl.hpp"
 
+#include <boost/endian/buffers.hpp>
 #include <catch2/catch.hpp>
-#include <fcntl.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 using namespace minecraft::nbt;
 
@@ -21,10 +17,7 @@ namespace
         std::string_view current_key_;
 
         auto indent() const -> std::string { return std::string(indent_, ' '); }
-        auto current_key() -> std::string_view
-        {
-            return std::exchange(current_key_, std::string_view());
-        }
+        auto current_key() -> std::string_view { return std::exchange(current_key_, std::string_view()); }
 
         void on_compound_start() override
         {
@@ -77,33 +70,34 @@ namespace
             buffer += fmt::format("{}}} ({} entries)\n", indent(), length);
         }
 
-        virtual void on_integral_list(tag_type tag, minecraft::const_byte_span extent) override {
+        virtual void on_integral_list(tag_type tag, minecraft::const_byte_span extent) override
+        {
             buffer += fmt::format("{0}{1}('{2}')(", indent(), wise_enum::to_string(tag), current_key());
-            const char* sep = "";
-            switch(tag)
+            const char *sep = "";
+            switch (tag)
             {
             default:
                 assert(!"logic error");
             case tag_type::Byte_Array:
-                for (auto& b : extent)
+                for (auto &b : extent)
                 {
                     buffer += fmt::format("{}{:02x}", sep, b);
                     sep = " ";
                 }
                 break;
             case tag_type::Int_Array:
-                for (auto first = extent.begin() ; first < extent.end() ; first+=4)
+                for (auto first = extent.begin(); first < extent.end(); first += 4)
                 {
-                    auto buf = boost::endian::big_int32_buf_at ();
+                    auto buf = boost::endian::big_int32_buf_at();
                     std::memcpy(buf.data(), first, 4);
                     buffer += fmt::format("{}{:08x}", sep, buf.value());
                     sep = " ";
                 }
                 break;
             case tag_type::Long_Array:
-                for (auto first = extent.begin() ; first < extent.end() ; first+=8)
+                for (auto first = extent.begin(); first < extent.end(); first += 8)
                 {
-                    auto buf = boost::endian::big_int64_buf_at ();
+                    auto buf = boost::endian::big_int64_buf_at();
                     std::memcpy(buf.data(), first, 8);
                     buffer += fmt::format("{}{:016x}", sep, buf.value());
                     sep = " ";
@@ -126,8 +120,9 @@ namespace
             }
         }
     };
+
 }   // namespace
-TEST_CASE("minecraft::nbt::fundamental")
+TEST_CASE("minecraft::nbt::parse_context")
 {
     auto handler = test_handler();
 
@@ -140,21 +135,21 @@ TEST_CASE("minecraft::nbt::fundamental")
             auto last  = first + 1;
             auto tag   = tag_type();
             auto ctx   = parse_context(handler);
-            auto next  = parse(first, last, tag, ctx);
+            auto next  = ctx.parse(first, last, tag);
             CHECK(tag == expected);
             CHECK(ctx.error().message() == "Success");
             CHECK(next == last);
 
             first = data.data();
             last  = first + 1;
-            next  = parse(first, last, tag, ctx);
+            next  = ctx.parse(first, last, tag);
             CHECK(ctx.error().message() == "Invalid tag");
             CHECK(next == first);
 
             ctx.error().clear();
             first = data.data();
             last  = first;
-            next  = parse(first, last, tag, ctx);
+            next  = ctx.parse(first, last, tag);
             CHECK(ctx.error().message() == "Incomplete parse");
             CHECK(next == first);
         };
@@ -173,35 +168,7 @@ TEST_CASE("minecraft::nbt::fundamental")
         check_tag(tag_type::Int_Array);
         check_tag(tag_type::Long_Array);
     }
-/*
-    SECTION("string_atom")
-    {
-        const char data[] = "      \x00\x0dHello, World!";
 
-        // successful parse
-        auto first  = data + 6;
-        auto last   = data + 21;
-        auto ctx    = parse_context(data, handler);
-        auto target = string_atom {};
-        auto next   = parse(first, last, target, ctx);
-        CHECK(ctx.error().message() == "Success");
-        CHECK(next == last);
-        CHECK(to_string(target, ctx.storage()) == "Hello, World!");
-
-        // existing error condition
-        ctx.error().clear();
-        ctx.error(error::invalid_tag);
-        next = parse(first, last, target, ctx);
-        CHECK(ctx.error().message() == "Invalid tag");
-        CHECK(next == first);
-
-        ctx.error().clear();
-        last -= 1;
-        next = parse(first, last, target, ctx);
-        CHECK(ctx.error().message() == "Incomplete parse");
-        CHECK(next == first);
-    }
-*/
     SECTION("hello_world.nbt")
     {
         using namespace minecraft;
@@ -214,7 +181,7 @@ TEST_CASE("minecraft::nbt::fundamental")
 
         error_code ec;
         auto       ctx  = parse_context(handler);
-        auto       next = nbt::parse_value(inbuf.data(), inbuf.data() + inbuf.size(), ctx);
+        auto       next = ctx.parse_value(inbuf.data(), inbuf.data() + inbuf.size());
 
         CHECK(ec.message() == "Success");
         CHECK(next == inbuf.data() + inbuf.size());
@@ -239,11 +206,12 @@ TEST_CASE("minecraft::nbt::fundamental")
         auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
         auto ctx  = nbt::parse_context(handler);
-        auto next = nbt::parse_value(inbuf.data(), inbuf.data() + inbuf.size(), ctx);
+        auto next = ctx.parse_value(inbuf.data(), inbuf.data() + inbuf.size());
 
         CHECK(ctx.error().message() == "Success");
-        auto       output     = handler.buffer;
-        const char expected[] = "Compound('Level')\n"
+        auto       output = handler.buffer;
+        const char expected[] =
+            "Compound('Level')\n"
             "{\n"
             " Long('longTest'): 9223372036854775807\n"
             " Short('shortTest'): 32767\n"
@@ -285,7 +253,36 @@ TEST_CASE("minecraft::nbt::fundamental")
             "  } (2 elements)\n"
             " } (2 entries)\n"
             " Byte('byteTest'): 127\n"
-            " Byte_Array('byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))')(00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30)\n"
+            " Byte_Array('byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, "
+            "8, ...))')(00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a "
+            "48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e "
+            "2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 "
+            "3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 "
+            "20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a "
+            "34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a "
+            "16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 "
+            "2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 "
+            "0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 "
+            "20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a "
+            "02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c "
+            "16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 "
+            "5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 "
+            "0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 "
+            "52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 "
+            "02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c "
+            "48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e "
+            "5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 "
+            "3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 "
+            "52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 "
+            "34 4a 06 30 00 3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a "
+            "48 2c 1a 12 14 20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e "
+            "2a 40 60 26 5a 34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 "
+            "3e 22 10 08 0a 16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 "
+            "20 36 56 1c 50 2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a "
+            "34 18 06 62 00 0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30 00 3e 22 10 08 0a "
+            "16 2c 4c 12 46 20 04 56 4e 50 5c 0e 2e 58 28 02 4a 38 30 32 3e 54 10 3a 0a 48 2c 1a 12 14 20 36 56 1c 50 "
+            "2a 0e 60 58 5a 02 18 38 62 32 0c 54 42 3a 3c 48 5e 1a 44 14 52 36 24 1c 1e 2a 40 60 26 5a 34 18 06 62 00 "
+            "0c 22 42 08 3c 16 5e 4c 44 46 52 04 24 4e 1e 5c 40 2e 26 28 34 4a 06 30)\n"
             " Double('doubleTest'): 0.4931287132182315\n"
             "} (11 elements)\n";
         REQUIRE(output == expected);

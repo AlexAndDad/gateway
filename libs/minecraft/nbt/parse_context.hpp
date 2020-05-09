@@ -6,6 +6,7 @@
 #include "tag_type.hpp"
 
 #include <boost/core/ignore_unused.hpp>
+#include <boost/endian/buffers.hpp>
 #include <string_view>
 
 namespace minecraft::nbt
@@ -65,6 +66,56 @@ namespace minecraft::nbt
         error_code const &error() const { return ec_; }
         error_code &      error() { return ec_; }
 
+        // parsing functions
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, std::uint8_t &target)
+            -> const_buffer_iterator;
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, std::int8_t &target)
+            -> const_buffer_iterator;
+
+        template < class Fundamental, auto Align, std::size_t Bits = sizeof(Fundamental) * 8 >
+        auto parse(const_buffer_iterator                                                                first,
+                   const_buffer_iterator                                                                last,
+                   boost::endian::endian_buffer< boost::endian::order::big, Fundamental, Bits, Align > &target)
+            -> const_buffer_iterator;
+
+        auto
+        parse(const_buffer_iterator first, const_buffer_iterator last, std::int16_t &target) -> const_buffer_iterator;
+
+        auto
+        parse(const_buffer_iterator first, const_buffer_iterator last, std::uint16_t &target) -> const_buffer_iterator;
+
+        auto
+        parse(const_buffer_iterator first, const_buffer_iterator last, std::int32_t &target) -> const_buffer_iterator;
+
+        auto
+        parse(const_buffer_iterator first, const_buffer_iterator last, std::int64_t &target) -> const_buffer_iterator;
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, float &target) -> const_buffer_iterator;
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, double &target) -> const_buffer_iterator;
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, std::string_view &target)
+            -> const_buffer_iterator;
+
+        auto parse(const_buffer_iterator first, const_buffer_iterator last, tag_type &tag) -> const_buffer_iterator;
+
+        auto parse_atom(tag_type tag, const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
+
+        auto parse_array(tag_type tag, const_buffer_iterator first, const_buffer_iterator last)
+            -> const_buffer_iterator;
+
+        auto parse_compound(const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
+
+        auto parse_list(const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
+
+        auto parse_nvp(tag_type tag, const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
+
+        // parse a value, expecting it to be a compound
+        auto parse_value(const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
+
+      private:
         auto on_compound_start() -> error_code const &;
 
         void on_key(std::string_view key);
@@ -89,8 +140,14 @@ namespace minecraft::nbt
         int depth = 0;
 
       private:
-        error_code     ec_;
+        error_code ec_;
     };
+
+    template < class Handler >
+    const_buffer_iterator parse(const_buffer_iterator           first,
+                                const_buffer_iterator           last,
+                                basic_parse_context< Handler > &context,
+                                error_code &                    ec);
 
     using parse_context = basic_parse_context< parse_handler & >;
 }   // namespace minecraft::nbt
