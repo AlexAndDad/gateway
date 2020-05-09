@@ -33,27 +33,27 @@ namespace
             buffer += fmt::format("{0}String('{1}'): '{2}'\n", indent(), current_key(), value);
         }
 
-        virtual void on_byte(std::int8_t value) override
+        virtual void on_byte(std::int8_t const& value) override
         {
             buffer += fmt::format("{0}Byte('{1}'): {2}\n", indent(), current_key(), std::int32_t(value));
         }
-        virtual void on_short(std::int16_t value) override
+        virtual void on_short(std::int16_t const& value) override
         {
             buffer += fmt::format("{0}Short('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_int(std::int32_t value) override
+        virtual void on_int(std::int32_t const& value) override
         {
             buffer += fmt::format("{0}Int('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_long(std::int64_t value) override
+        virtual void on_long(std::int64_t const& value) override
         {
             buffer += fmt::format("{0}Long('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_float(float value) override
+        virtual void on_float(float const& value) override
         {
             buffer += fmt::format("{0}Float('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_double(double value) override
+        virtual void on_double(double const& value) override
         {
             buffer += fmt::format("{0}Double('{1}'): {2}\n", indent(), current_key(), value);
         }

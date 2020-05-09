@@ -25,7 +25,7 @@ namespace config
 
         constexpr std::size_t size() const { return last_ - first_; }
 
-        constexpr value_type *data() const { return first_; }
+        constexpr auto data() const { return first_; }
 
       private:
         Iter first_, last_;

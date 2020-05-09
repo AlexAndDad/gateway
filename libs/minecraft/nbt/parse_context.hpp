@@ -16,12 +16,12 @@ namespace minecraft::nbt
         virtual void on_compound_start() {}
         virtual void on_key(std::string_view key) { boost::ignore_unused(key); }
         virtual void on_string(std::string_view value) { boost::ignore_unused(value); }
-        virtual void on_byte(std::int8_t value) { boost::ignore_unused(value); }
-        virtual void on_short(std::int16_t value) { boost::ignore_unused(value); }
-        virtual void on_int(std::int32_t value) { boost::ignore_unused(value); }
-        virtual void on_long(std::int64_t value) { boost::ignore_unused(value); }
-        virtual void on_float(float value) { boost::ignore_unused(value); }
-        virtual void on_double(double value) { boost::ignore_unused(value); }
+        virtual void on_byte(std::int8_t const& value) { boost::ignore_unused(value); }
+        virtual void on_short(std::int16_t const& value) { boost::ignore_unused(value); }
+        virtual void on_int(std::int32_t const& value) { boost::ignore_unused(value); }
+        virtual void on_long(std::int64_t const& value) { boost::ignore_unused(value); }
+        virtual void on_float(float const& value) { boost::ignore_unused(value); }
+        virtual void on_double(double const& value) { boost::ignore_unused(value); }
         virtual void on_end(std::size_t elements) { boost::ignore_unused(elements); }
         virtual void on_list(tag_type tag, std::size_t length) { boost::ignore_unused(tag, length); }
         virtual void on_list_end(std::size_t length) { boost::ignore_unused(length); }
@@ -150,6 +150,12 @@ namespace minecraft::nbt
                                 error_code &                    ec);
 
     using parse_context = basic_parse_context< parse_handler & >;
+
+    template<class Handler>
+    auto make_parse_context(Handler h) -> basic_parse_context<Handler>
+    {
+        return basic_parse_context<Handler>(std::move(h));
+    }
 }   // namespace minecraft::nbt
 
 #include "parse_context_impl.hpp"
