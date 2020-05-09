@@ -1,5 +1,6 @@
 #pragma once
 
+#include "error.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/types/buffer.hpp"
 #include "tag_type.hpp"
@@ -26,115 +27,72 @@ namespace minecraft::nbt
         virtual void on_integral_list(tag_type tag, const_byte_span extent) { boost::ignore_unused(tag, extent); }
     };
 
-
-
-    struct parse_context
+    template < class Handler >
+    struct handler_owner
     {
-        parse_context(const_buffer_iterator storage, parse_handler &handler)
-        : storage_(storage)
-        , handler_(handler)
+        handler_owner(Handler handler = Handler())
+        : handler_(std::move(handler))
         {
         }
 
-        error_code &error(error_code ec)
+        auto handler() -> Handler & { return handler_; }
+
+      protected:
+        Handler handler_;
+    };
+
+    template < class Handler >
+    struct handler_owner< Handler & >
+    {
+        handler_owner(Handler &handler)
+        : handler_(handler)
         {
-            if (not ec_)
-                ec_ = ec;
-            return ec_;
         }
+
+        auto handler() -> Handler & { return handler_; }
+
+      protected:
+        Handler &handler_;
+    };
+
+    template < class Handler >
+    struct basic_parse_context : handler_owner< Handler >
+    {
+        using handler_owner< Handler >::handler_owner;
+
+        error_code &error(error_code ec);
 
         error_code const &error() const { return ec_; }
         error_code &      error() { return ec_; }
 
-        std::int32_t to_index(const void *p) { return reinterpret_cast< const_buffer_iterator >(p) - storage_; }
+        auto on_compound_start() -> error_code const &;
 
-        const_buffer_iterator storage() const { return storage_; }
+        void on_key(std::string_view key);
 
-        auto on_compound_start() -> error_code const &
-        {
-            if (not ec_)
-            {
-                compound_depth += 1;
-                if (compound_depth > 255)
-                    ec_ = error::compound_too_deep;
-                else
-                    handler_.on_compound_start();
-            }
-            return ec_;
-        }
+        void on_string(std::string_view value);
 
-        void on_key(std::string_view key)
-        {
-            if (not ec_)
-                handler_.on_key(key);
-        }
+        void on_byte(std::int8_t value);
+        void on_short(std::int16_t value);
+        void on_int(std::int32_t value);
+        void on_long(std::int64_t value);
+        void on_float(float value);
+        void on_double(double value);
 
-        void on_string(std::string_view value)
-        {
-            if (not ec_)
-                handler_.on_string(value);
-        }
+        void on_list(tag_type tag, std::int32_t length);
 
-        void on_byte(std::int8_t value)
-        {
-            if (not ec_)
-                handler_.on_byte(value);
-        }
-        void on_short(std::int16_t value)
-        {
-            if (not ec_)
-                handler_.on_short(value);
-        }
-        void on_int(std::int32_t value)
-        {
-            if (not ec_)
-                handler_.on_int(value);
-        }
-        void on_long(std::int64_t value)
-        {
-            if (not ec_)
-                handler_.on_long(value);
-        }
-        void on_float(float value)
-        {
-            if (not ec_)
-                handler_.on_float(value);
-        }
-        void on_double(double value)
-        {
-            if (not ec_)
-                handler_.on_double(value);
-        }
+        void on_list_end(std::size_t length /*check*/);
 
-        void on_list(tag_type tag, std::int32_t length)
-        {
-            if (not ec_)
-                handler_.on_list(tag, length);
-        }
+        void on_end(std::size_t elements);
 
-        void on_list_end(std::size_t length /*check*/)
-        {
-            if (not ec_)
-                handler_.on_list_end(length);
-        }
+        void on_integral_list(tag_type tag, const_byte_span extent);
 
-        void on_end(std::size_t elements)
-        {
-            if (not ec_)
-                handler_.on_end(elements);
-        }
-
-        void on_integral_list(tag_type tag, const_byte_span extent)
-        {
-            if (not ec_)
-                handler_.on_integral_list(tag, extent);
-        }
-
-        int compound_depth = 0;
+        int depth = 0;
 
       private:
-        const_buffer_iterator storage_;
-        parse_handler &       handler_;
-        error_code            ec_;
+        error_code     ec_;
     };
+
+    using parse_context = basic_parse_context< parse_handler & >;
 }   // namespace minecraft::nbt
+
+#include "parse_context_impl.hpp"

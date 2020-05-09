@@ -139,7 +139,7 @@ TEST_CASE("minecraft::nbt::fundamental")
             auto first = data.data() + 1;
             auto last  = first + 1;
             auto tag   = tag_type();
-            auto ctx   = parse_context(data.data(), handler);
+            auto ctx   = parse_context(handler);
             auto next  = parse(first, last, tag, ctx);
             CHECK(tag == expected);
             CHECK(ctx.error().message() == "Success");
@@ -213,7 +213,7 @@ TEST_CASE("minecraft::nbt::fundamental")
         auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
         error_code ec;
-        auto       ctx  = parse_context(inbuf.data(), handler);
+        auto       ctx  = parse_context(handler);
         auto       next = nbt::parse_value(inbuf.data(), inbuf.data() + inbuf.size(), ctx);
 
         CHECK(ec.message() == "Success");
@@ -238,7 +238,7 @@ TEST_CASE("minecraft::nbt::fundamental")
         ::close(fd);
         auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
-        auto ctx  = nbt::parse_context(inbuf.data(), handler);
+        auto ctx  = nbt::parse_context(handler);
         auto next = nbt::parse_value(inbuf.data(), inbuf.data() + inbuf.size(), ctx);
 
         CHECK(ctx.error().message() == "Success");

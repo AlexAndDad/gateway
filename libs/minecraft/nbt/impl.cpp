@@ -204,7 +204,7 @@ namespace minecraft::nbt
             return first;
 
         auto parser  = impl_parse_handler(target);
-        auto context = parse_context(first, parser);
+        auto context = parse_context(parser);
         first        = parse_value(first, last, context);
 
         return first;
