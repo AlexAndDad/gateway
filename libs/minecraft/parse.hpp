@@ -191,8 +191,10 @@ namespace minecraft
     {
         if (not ec.failed())
         {
-            auto &vec = std::get< 0 >(result);
-            vec.resize(std::get< 1 >(result));
+            auto &vec  = std::get< 0 >(result);
+            auto &size = std::get< 1 >(result);
+
+            vec.resize(size);
 
             for (auto &item : vec)
             {

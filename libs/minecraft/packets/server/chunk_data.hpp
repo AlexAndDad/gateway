@@ -1,19 +1,34 @@
 #pragma once
 
+#include "minecraft/nbt/value.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/types.hpp"
-
 #include "play_id.hpp"
+
+#include "polyfill/printers/vector_printer.hpp"
 
 #include <span>
 
 namespace minecraft::packets::server
 {
+
     struct palette_type
     {
         var_int                palette_length;
         std::vector< var_int > palette_data;
+
+        template <class Stream>
+        friend Stream &operator<<(Stream & stream, const palette_type & self);
     };
+
+    template <class Stream>
+    Stream &operator<<(Stream & stream, const palette_type & self)
+    {
+        stream << "palette_length: " << self.palette_length << "\n";
+        stream << "palette_data: " << polyfill::printers::print(self.palette_data) << "\n";
+        return stream;
+    }
+
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, palette_type &target, error_code &ec);
 
@@ -24,21 +39,86 @@ namespace minecraft::packets::server
         std::optional< palette_type > palette;
         var_int                       data_length;
         std::vector< long >           data;
+
+        template <class Stream>
+        friend Stream &operator<<(Stream & stream, const chunk_section_type & self);
     };
+
+    template <class Stream>
+    Stream &operator<<(Stream & stream, const chunk_section_type & self)
+    {
+        stream << "block_count: " << self.block_count << "\n";
+        stream << "bits_per_block: " << self.bits_per_block << "\n";
+        if (self.palette)
+        {
+            stream << "using section palette?: true\n";
+            stream << "palette:\n" << *self.palette;
+        }
+        else{
+            stream << "using section palette?: false\n";
+        }
+
+        stream << "data_len:" << self.data_length.value() << "\n";
+        return stream;
+    }
+
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, chunk_section_type &target, error_code &ec);
 
+    struct chunk_column_type
+    {
+        std::vector<std::pair<std::size_t,chunk_section_type>> chunk_sections;
+
+        template <class Stream>
+        friend Stream & operator<<(Stream & stream, const chunk_column_type & self);
+    };
+    template <class Stream>
+    Stream & operator<<(Stream & stream, const chunk_column_type & self)
+    {
+        stream << "chunk_column:\n";
+        for (auto & pair : self.chunk_sections)
+        {
+            stream << "section_index: " << pair.first << "\n";
+            stream << "section: " << pair.second << "\n";
+        }
+        return stream;
+    }
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::tuple<chunk_column_type &,var_int> target, error_code &ec);
+
     struct chunk_data_type
     {
-        std::int32_t chunk_x;
-        std::int32_t chunk_z;
-        bool         full_chunk;
-        var_int      primary_bit_mask;
-        //nbt::value   heightmaps;
-        std::vector< std::int32_t > biomes;
-        var_int                           data_size = 0;
-        std::vector< chunk_section_type > data;
+        std::int32_t                      chunk_x;
+        std::int32_t                      chunk_z;
+        bool                              full_chunk;
+        var_int                           primary_bit_mask;
+        //nbt::value                        heightmaps;
+        std::vector< std::int32_t >       biomes;
+        var_int                           data_size;
+        chunk_column_type column;
+        var_int no_block_entities;
+        std::vector<minecraft::nbt::value> block_entities;
+
+        template <class Stream>
+        friend Stream &operator<<(Stream & stream, const chunk_data_type & self);
+
     };
+
+    template <class Stream>
+    Stream &operator<<(Stream & stream, const chunk_data_type & self)
+    {
+        stream << "chunk_data:\n";
+        stream << "chunk_x: " << self.chunk_x << "\n";
+        stream << "chunk_z: " << self.chunk_z << "\n";
+        stream << "full_chunk: " << self.full_chunk << "\n";
+        stream << "primary_bit_mask: " << std::bitset<16>(self.primary_bit_mask.value()).to_string() << "\n";
+        //stream << "heightmaps: " << self.heightmaps << "\n";
+        stream << "biomes: " << polyfill::printers::print(self.biomes) << "\n";
+        stream << "chunk_column: " << self.column << "\n";
+        //stream << "block_entities: " << self.block_entities << "\n";
+        return stream;
+    }
+
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, chunk_data_type &target, error_code &ec);
 
