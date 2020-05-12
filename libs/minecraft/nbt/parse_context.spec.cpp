@@ -175,13 +175,11 @@ TEST_CASE("minecraft::nbt::parse_context")
         ::close(fd);
         auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
-        auto       ctx  = parse_context(inbuf.data(), handler);
-        auto       next = nbt::parse_value(inbuf.data(), inbuf.data() + inbuf.size(), ctx);
         error_code ec;
         auto       ctx  = parse_context(handler);
-        auto       next = ctx.parse_value(inbuf.data(), inbuf.data() + inbuf.size());
+        auto       next = nbt::parse(inbuf.data(), inbuf.data() + inbuf.size(), ctx, ec);
 
-        CHECK(ctx.error().message() == "Success");
+        CHECK(ec.message() == "Success");
         CHECK(next == inbuf.data() + inbuf.size());
 
         const char expected[] = R"__text(Compound('hello world')

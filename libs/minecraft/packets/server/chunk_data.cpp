@@ -1,6 +1,7 @@
 #include "chunk_data.hpp"
-#include "parse.hpp"
+
 #include "nbt/pretty_print.hpp"
+#include "parse.hpp"
 
 #include <bit>
 
@@ -53,17 +54,18 @@ namespace minecraft::packets::server
     {
         if (not ec.failed())
         {
-            auto &column   = std::get< 0 >(target);
+            auto &column = std::get< 0 >(target);
 
-            std::bitset<16> bitmask = get< 1 >(target).value();
+            std::bitset< 16 > bitmask = get< 1 >(target).value();
 
-            for (auto column_id = 0;column_id != 16; column_id++)
+            for (auto column_id = 0; column_id != 16; column_id++)
             {
                 if (bitmask[column_id])
                 {
-                    column.chunk_sections.emplace_back(std::make_pair(column_id,chunk_section_type()));
-                    first = parse(first, last, column.chunk_sections.back().second,ec);
-                    if (ec.failed()) break;
+                    column.chunk_sections.emplace_back(std::make_pair(column_id, chunk_section_type()));
+                    first = parse(first, last, column.chunk_sections.back().second, ec);
+                    if (ec.failed())
+                        break;
                 }
             }
         }
@@ -83,14 +85,12 @@ namespace minecraft::packets::server
             {
                 // Parse heightmaps using a prettyprint handler
                 auto pretty_print_han = nbt::pretty_print_handler();
-                auto ctx = nbt::parse_context(first,pretty_print_han);
-                ctx.error() = ec;
-                first = nbt::parse_value(first,last,ctx);
+                auto ctx              = nbt::parse_context(pretty_print_han);
+                first                 = nbt::parse(first, last, ctx, ec);
                 spdlog::info(pretty_print_han.buffer);
-                ec = ctx.error();
             }
 
-            //first = nbt::parse(first, last, target.heightmaps, ec);
+            // first = nbt::parse(first, last, target.heightmaps, ec);
 
             if (target.full_chunk)
             {
@@ -105,20 +105,20 @@ namespace minecraft::packets::server
                 ec = error::incomplete_parse;
                 return first;
             }
-            first = parse(first, last, std::tie(target.column,target.primary_bit_mask), ec);
+            first = parse(first, last, std::tie(target.column, target.primary_bit_mask), ec);
 
-            first = parse(first,last,target.no_block_entities,ec);
-            std::size_t size = static_cast<std::size_t>(target.no_block_entities.value());
-            for (std::size_t x = 0;x<size;x++)
+            first            = parse(first, last, target.no_block_entities, ec);
+            std::size_t size = static_cast< std::size_t >(target.no_block_entities.value());
+            for (std::size_t x = 0; x < size; x++)
             {
                 auto pretty_print_han = nbt::pretty_print_handler();
-                auto ctx = nbt::parse_context(first,pretty_print_han);
-                ctx.error() = ec;
-                first = nbt::parse_value(first,last,ctx);
+                auto ctx              = nbt::parse_context(pretty_print_han);
+
+                first = nbt::parse(first, last, ctx, ec);
                 spdlog::info(pretty_print_han.buffer);
                 ec = ctx.error();
             }
-            //first = minecraft::parse(first,last,std::tie(target.block_entities,size),ec);
+            // first = minecraft::parse(first,last,std::tie(target.block_entities,size),ec);
         }
         return first;
     }
