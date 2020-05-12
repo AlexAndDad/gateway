@@ -12,6 +12,8 @@ namespace minecraft::nbt
             not_implemented   = 3,
             compound_too_deep = 4,
             invalid_length    = 5,
+            list_too_deep = 6,
+            other = 7,
         };
 
         enum logic_error
@@ -36,6 +38,8 @@ namespace minecraft::nbt
                 case error::not_implemented: return "Not implemented";
                 case error::compound_too_deep: return "Compund nested too deeply";
                 case error::invalid_length: return "Length is invalid (-ve?)";
+                case error::list_too_deep: return "List too deep";
+                case error::other: return "Other exception during parsing (consult exception)";
                 }
                 return "unknown error code: " + std::to_string(ev);
             }
@@ -157,6 +161,21 @@ namespace minecraft::nbt
             {
             }
         };
-
     }   // namespace encoding
+
+    namespace parsing
+    {
+        struct parse_failure : system_error
+        {
+            parse_failure(error_code code)
+            : system_error(code)
+            {
+            }
+
+            parse_failure(error_code code, std::string const &what_arg)
+            : system_error(code, what_arg)
+            {
+            }
+        };
+    }   // namespace parsing
 }   // namespace minecraft::nbt

@@ -4,173 +4,173 @@
 namespace minecraft::nbt
 {
     template < class Handler >
-    auto basic_parse_context< Handler >::error(error_code ec) -> error_code &
+    void basic_parse_context< Handler >::on_compound_start()
     {
-        if (not ec_)
-            ec_ = ec;
-        return ec_;
-    }
-
-    template < class Handler >
-    auto basic_parse_context< Handler >::on_compound_start() -> error_code const &
-    {
-        if (not ec_)
+        if (++depth > 255)
+            raise(parsing::compound_too_deep());
+        try
         {
-            if (++depth > 255)
-                ec_ = error::compound_too_deep;
-            else
-                this->handler_.on_compound_start();
+            this->handler_.on_compound_start();
         }
-        return ec_;
+        catch (parsing::parse_failure &f)
+        {
+            reraise(parsing::parse_failure(f.code(), "While handling Compound start"));
+        }
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_key(std::string_view key)
+    try
     {
-        if (not ec_)
-            this->handler_.on_key(key);
+        this->handler_.on_key(key);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling key '{}'", key)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_string(std::string_view value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_string(value);
+        this->handler_.on_string(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling string '{}'", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_byte(std::int8_t value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_byte(value);
+        this->handler_.on_byte(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Byte {}", int(value))));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_short(std::int16_t value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_short(value);
+        this->handler_.on_short(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Short {}", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_int(std::int32_t value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_int(value);
+        this->handler_.on_int(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Int {}", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_long(std::int64_t value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_long(value);
+        this->handler_.on_long(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Long {}", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_float(float value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_float(value);
+        this->handler_.on_float(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Float {}", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_double(double value)
+    try
     {
-        if (not ec_)
-            this->handler_.on_double(value);
+        this->handler_.on_double(value);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Double {}", value)));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_list(tag_type tag, std::int32_t length)
+    try
     {
-        if (not ec_)
-        {
-            if (++depth > 255)
-                ec_ = error::compound_too_deep;
-            else
-                this->handler_.on_list(tag, length);
-        }
+        if (++depth > 255)
+            raise(parsing::list_too_deep());
+        this->handler_.on_list(tag, length);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling List")));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_list_end(std::size_t length)
+    try
     {
-        if (not ec_)
-        {
-            --depth;
-            this->handler_.on_list_end(length);
-        }
+        --depth;
+        this->handler_.on_list_end(length);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling List end")));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_end(std::size_t elements)
+
+    try
     {
-        if (not ec_)
-            this->handler_.on_end(elements);
+        this->handler_.on_end(elements);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling End")));
     }
 
     template < class Handler >
     void basic_parse_context< Handler >::on_integral_list(tag_type tag, const_byte_span extent)
+    try
     {
-        if (not ec_)
-            this->handler_.on_integral_list(tag, extent);
+        this->handler_.on_integral_list(tag, extent);
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While handling Byte_Array")));
     }
 
     // public parsing functions
 
     template < class Handler >
-    auto basic_parse_context< Handler >::parse(const_buffer_iterator first,
-                                               const_buffer_iterator last,
-                                               std::uint8_t &        target) -> const_buffer_iterator
-    {
-        if (error())
-            return first;
-
-        if (first == last)
-        {
-            error(error::incomplete);
-            return first;
-        }
-
-        target = static_cast< std::uint8_t >(*first++);
-
-        return first;
-    }
-
-    template < class Handler >
-    auto basic_parse_context< Handler >::parse(const_buffer_iterator first,
-                                               const_buffer_iterator last,
-                                               std::int8_t &         target) -> const_buffer_iterator
-    {
-        if (error())
-            return first;
-
-        if (first == last)
-        {
-            error(error::incomplete);
-            return first;
-        }
-
-        target = static_cast< std::int8_t >(*first++);
-
-        return first;
-    }
-
-    template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, tag_type &tag)
         -> const_buffer_iterator
+    try
     {
         auto val  = std::uint8_t();
         auto next = parse(first, last, val);
-        if (error())
-            return first;
-        tag = static_cast< tag_type >(val);
+        tag       = static_cast< tag_type >(val);
         if (tag > tag_type::Long_Array)
-        {
-            error(error::invalid_tag);
-            return first;
-        }
+            raise(parsing::invalid_tag(val));
         return next;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Tag")));
     }
 
     template < class Handler >
@@ -180,150 +180,165 @@ namespace minecraft::nbt
         const_buffer_iterator                                                                last,
         boost::endian::endian_buffer< boost::endian::order::big, Fundamental, Bits, Align > &target)
         -> const_buffer_iterator
+    try
     {
-        if (not error())
-        {
-            constexpr auto size = sizeof(Fundamental);
-            if (std::distance(first, last) < static_cast< std::ptrdiff_t >(size))
-            {
-                error(error::incomplete);
-                return first;
-            }
-            std::memcpy(target.data(), first, size);
-            first += size;
-        }
+        constexpr auto size = sizeof(Fundamental);
+        if (std::distance(first, last) < static_cast< std::ptrdiff_t >(size))
+            raise(parsing::incomplete());
+        std::memcpy(target.data(), first, size);
+        first += size;
         return first;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing fundamental type")));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, int16_t &target)
-    -> const_buffer_iterator
+        -> const_buffer_iterator
+    try
     {
         boost::endian::big_int16_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Short")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first,
                                                const_buffer_iterator last,
                                                uint16_t &            target) -> const_buffer_iterator
+    try
     {
         boost::endian::big_uint16_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing size")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, int32_t &target)
-    -> const_buffer_iterator
+        -> const_buffer_iterator
+    try
     {
         boost::endian::big_int32_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Int")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, int64_t &target)
-    -> const_buffer_iterator
+        -> const_buffer_iterator
+    try
     {
         boost::endian::big_int64_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Long")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, float &target)
-    -> const_buffer_iterator
+        -> const_buffer_iterator
+    try
     {
         boost::endian::big_float32_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Float")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first, const_buffer_iterator last, double &target)
-    -> const_buffer_iterator
+        -> const_buffer_iterator
+    try
     {
         boost::endian::big_float64_buf_at conv;
         first  = parse(first, last, conv);
         target = conv.value();
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Double")));
+    }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse(const_buffer_iterator first,
                                                const_buffer_iterator last,
                                                std::string_view &    target) -> const_buffer_iterator
+    try
     {
-        auto          next = first;
         std::uint16_t length;
-        next = parse(next, last, length);
-        if (not error())
-        {
-            if (std::distance(next, last) < std::ptrdiff_t(length))
-                error(error::incomplete);
-            else
-            {
-                target = std::string_view(next, length);
-                next += length;
-                return next;
-            }
-        }
-        return first;
+        auto          next = parse(first, last, length);
+        if (std::distance(next, last) < std::ptrdiff_t(length))
+            raise(parsing::incomplete());
+        target = std::string_view(next, length);
+        next += length;
+        return next;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing String")));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_array(tag_type              tag,
                                                      const_buffer_iterator first,
                                                      const_buffer_iterator last) -> const_buffer_iterator
+    try
     {
-        if (error())
-            return first;
-
         auto length = std::int32_t();
         first       = parse(first, last, length);
         if (length < 0)
-            error(error::invalid_length);
-        if (error())
-            return first;
+            raise(parsing::invalid_length(length));
         auto extent = std::ptrdiff_t(length);
         switch (tag)
         {
-        default:
-            assert(!"logic error");
-        case tag_type::Byte_Array:
-            break;
-        case tag_type::Int_Array:
-            extent *= 4;
-            break;
-        case tag_type::Long_Array:
-            extent *= 8;
-            break;
+        default: assert(!"logic error");
+        case tag_type::Byte_Array: break;
+        case tag_type::Int_Array: extent *= 4; break;
+        case tag_type::Long_Array: extent *= 8; break;
         }
         if (std::distance(first, last) < extent)
-        {
-            error(error::incomplete);
-            return first;
-        }
+            raise(parsing::incomplete());
         on_integral_list(tag, const_byte_span(first, first + extent));
         first += extent;
         return first;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing {}", tag)));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_atom(tag_type              tag,
                                                     const_buffer_iterator first,
                                                     const_buffer_iterator last) -> const_buffer_iterator
+    try
     {
-        if (error())
-            return first;
-
         union
         {
             std::int8_t      byte_;
@@ -337,9 +352,8 @@ namespace minecraft::nbt
 
         switch (tag)
         {
-        case tag_type::End:
-            assert(!"logic error");
-            return first;
+        case tag_type::End: raise(parsing::invalid_tag(tag));
+
         case tag_type::Byte:
             first = parse(first, last, byte_);
             on_byte(byte_);
@@ -368,87 +382,108 @@ namespace minecraft::nbt
             first = parse(first, last, string_);
             on_string(string_);
             break;
-        case tag_type::Compound:
-            first = parse_compound(first, last);
-            break;
-        case tag_type::List:
-            first = parse_list(first, last);
-            break;
+        case tag_type::Compound: first = parse_compound(first, last); break;
+        case tag_type::List: first = parse_list(first, last); break;
         case tag_type::Byte_Array:
         case tag_type::Int_Array:
-        case tag_type::Long_Array:
-            first = parse_array(tag, first, last);
-            break;
-        default:
-            error(error::invalid_tag);
+        case tag_type::Long_Array: first = parse_array(tag, first, last); break;
+        default: raise(parsing::invalid_tag(tag));
         }
         return first;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing atom {}", tag)));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_compound(const_buffer_iterator first, const_buffer_iterator last)
         -> const_buffer_iterator
+    try
     {
-        if (error())
-            return first;
         on_compound_start();
         auto elements = std::int32_t(0);
-        while (not error() && first != last)
+        while (first != last)
         {
             auto tag = tag_type();
             first    = parse(first, last, tag);
             if (tag == tag_type::End)
+            {
                 break;
-            first = parse_nvp(tag, first, last);
-            ++elements;
+            }
+            else
+            {
+                first = parse_nvp(tag, first, last);
+                ++elements;
+            }
         }
         on_end(elements);
         return first;
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Compound")));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_list(const_buffer_iterator first, const_buffer_iterator last)
         -> const_buffer_iterator
+    try
     {
-        if (error())
-            return first;
-
         auto tag    = tag_type();
         auto length = std::int32_t();
 
         first = parse(first, last, tag);
-        first = parse(first, last, length);
-        if (error())
+        try
+        {
+            first  = parse(first, last, length);
+            length = (std::max)(0, length);
+            on_list(tag, length);
+            for (auto count = length; not error() && count; --count)
+                first = parse_atom(tag, first, last);
+            on_list_end(length);
+
             return first;
-
-        length = (std::max)(0, length);
-        on_list(tag, length);
-        for (auto count = length; not error() && count; --count)
-            first = parse_atom(tag, first, last);
-        on_list_end(length);
-
-        return first;
+        }
+        catch (parsing::parse_failure &f)
+        {
+            reraise(parsing::parse_failure(f.code(), fmt::format("While parsing List of {}", tag)));
+        }
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing List")));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_nvp(tag_type              tag,
                                                    const_buffer_iterator first,
                                                    const_buffer_iterator last) -> const_buffer_iterator
+    try
     {
         auto name = std::string_view();
         first     = parse(first, last, name);
         on_key(name);
-        first = parse_atom(tag, first, last);
-        return first;
+        try
+        {
+            first = parse_atom(tag, first, last);
+            return first;
+        }
+        catch (parsing::parse_failure &f)
+        {
+            reraise(parsing::parse_failure(f.code(), fmt::format("While parsing value for '{}'", name)));
+        }
+    }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Compound Element of type {}", tag)));
     }
 
     template < class Handler >
     auto basic_parse_context< Handler >::parse_value(const_buffer_iterator first, const_buffer_iterator last)
         -> const_buffer_iterator
+    try
     {
-        if (error())
-            return first;
-
         auto tag = tag_type();
         first    = parse(first, last, tag);
         if (not error())
@@ -460,6 +495,10 @@ namespace minecraft::nbt
         }
         return first;
     }
+    catch (parsing::parse_failure &f)
+    {
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing value")));
+    }
 
     // free functions
 
@@ -469,9 +508,48 @@ namespace minecraft::nbt
                                 basic_parse_context< Handler > &context,
                                 error_code &                    ec)
     {
-        auto next = context.parse_value(first, last);
-        ec        = context.error();
-        return next;
+        if (ec)
+        {
+            context.error(ec);
+            context.exception(system_error(ec));
+            return first;
+        }
+
+        try
+        {
+            auto next = context.parse_value(first, last);
+            return next;
+        }
+        catch (system_error &se)
+        {
+            context.error(se.code());
+            context.exception(std::current_exception());
+            ec = se.code();
+            return first;
+        }
+    }
+
+    template < class Handler >
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, basic_parse_context< Handler > &context)
+    {
+        try
+        {
+            auto next = context.parse_value(first, last);
+            return next;
+        }
+        catch (system_error &se)
+        {
+            context.error(se.code());
+            context.exception(std::current_exception());
+            throw;
+        }
+        catch (std::exception &)
+        {
+            context.error(error::other);
+            context.exception(std::current_exception());
+            throw;
+        }
     }
 
 }   // namespace minecraft::nbt

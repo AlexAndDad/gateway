@@ -75,8 +75,10 @@ namespace minecraft::nbt
 
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target, error_code &ec)
     {
+        if (ec) return first;
+
         auto context = make_parse_context(value_parse_handler());
-        auto next    = parse(first, last, context, ec);
+        auto next    = parse(first, last, context);
         if (not ec)
         {
             target = value(context.handler().to_compound());

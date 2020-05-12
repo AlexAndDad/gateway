@@ -1,6 +1,6 @@
 #include "minecraft/filesystem.hpp"
 #include "minecraft/nbt/testing/nbt_data.spec.ipp"
-#include "parse_context_impl.hpp"
+#include "parse_context.ipp.hpp"
 
 #include <boost/endian/buffers.hpp>
 #include <catch2/catch.hpp>
@@ -33,27 +33,27 @@ namespace
             buffer += fmt::format("{0}String('{1}'): '{2}'\n", indent(), current_key(), value);
         }
 
-        virtual void on_byte(std::int8_t const& value) override
+        virtual void on_byte(std::int8_t const &value) override
         {
             buffer += fmt::format("{0}Byte('{1}'): {2}\n", indent(), current_key(), std::int32_t(value));
         }
-        virtual void on_short(std::int16_t const& value) override
+        virtual void on_short(std::int16_t const &value) override
         {
             buffer += fmt::format("{0}Short('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_int(std::int32_t const& value) override
+        virtual void on_int(std::int32_t const &value) override
         {
             buffer += fmt::format("{0}Int('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_long(std::int64_t const& value) override
+        virtual void on_long(std::int64_t const &value) override
         {
             buffer += fmt::format("{0}Long('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_float(float const& value) override
+        virtual void on_float(float const &value) override
         {
             buffer += fmt::format("{0}Float('{1}'): {2}\n", indent(), current_key(), value);
         }
-        virtual void on_double(double const& value) override
+        virtual void on_double(double const &value) override
         {
             buffer += fmt::format("{0}Double('{1}'): {2}\n", indent(), current_key(), value);
         }
@@ -76,8 +76,7 @@ namespace
             const char *sep = "";
             switch (tag)
             {
-            default:
-                assert(!"logic error");
+            default: assert(!"logic error");
             case tag_type::Byte_Array:
                 for (auto &b : extent)
                 {
@@ -142,16 +141,13 @@ TEST_CASE("minecraft::nbt::parse_context")
 
             first = data.data();
             last  = first + 1;
-            next  = ctx.parse(first, last, tag);
-            CHECK(ctx.error().message() == "Invalid tag");
-            CHECK(next == first);
+            CHECK_THROWS_AS([&] { ctx.parse(first, last, tag); }(), parsing::parse_failure);
 
             ctx.error().clear();
             first = data.data();
             last  = first;
-            next  = ctx.parse(first, last, tag);
+            CHECK_THROWS_AS(next = ctx.parse(first, last, tag), parsing::parse_failure);
             CHECK(ctx.error().message() == "Incomplete parse");
-            CHECK(next == first);
         };
 
         check_tag(tag_type::End);
