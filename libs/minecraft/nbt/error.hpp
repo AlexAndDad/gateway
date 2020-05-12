@@ -12,8 +12,8 @@ namespace minecraft::nbt
             not_implemented   = 3,
             compound_too_deep = 4,
             invalid_length    = 5,
-            list_too_deep = 6,
-            other = 7,
+            list_too_deep     = 6,
+            other             = 7,
         };
 
         enum logic_error
@@ -21,6 +21,7 @@ namespace minecraft::nbt
             string_too_large  = 1,
             wrong_value_type  = 2,   // attempt to put wrong type of data into a list
             compound_required = 3,   // attempt to key into a non-compound
+            list_required     = 4,   // attempt to index into something that is not a list
         };
     };
 
@@ -41,7 +42,7 @@ namespace minecraft::nbt
                 case error::list_too_deep: return "List too deep";
                 case error::other: return "Other exception during parsing (consult exception)";
                 }
-                return "unknown error code: " + std::to_string(ev);
+                return "Unknown error code: " + std::to_string(ev);
             }
 
         } cat_;
@@ -58,10 +59,11 @@ namespace minecraft::nbt
                 switch (static_cast< error::logic_error >(ev))
                 {
                 case error::string_too_large: return "String too larg";
-                case error::wrong_value_type: return "wrong value type";
-                case error::compound_required: return "compound required";
+                case error::wrong_value_type: return "Wrong value type";
+                case error::compound_required: return "Compound required";
+                case error::list_required: return "List required";
                 }
-                return "unknown error code: " + std::to_string(ev);
+                return "Unknown error code: " + std::to_string(ev);
             }
 
         } cat_;

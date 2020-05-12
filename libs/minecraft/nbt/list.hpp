@@ -24,9 +24,35 @@ namespace minecraft::nbt
 
         friend auto operator==(list const& a, list const& b) -> bool;
 
+        struct setter
+        {
+            list* p;
+            std::int32_t i;
+
+            template<class T> auto operator=(T&& v)
+            {
+                p->set(i, std::forward<T>(v));
+            }
+        };
+
+        setter operator[](std::int32_t i)
+        {
+            return setter{this, i};
+        }
+
         list_variant& as_variant() & { return var_; }
         list_variant&& as_variant() && { return std::move(var_); }
         list_variant const& as_variant() const & { return var_; }
+
+        template<class T>
+        auto set(std::size_t n, T&& v) -> decltype(auto)
+        {
+            visit([&](auto& actual){
+                auto& z = actual.at(n);
+                z = std::forward<T>(v);
+                return z;
+            }, as_variant());
+        }
 
       private:
         list_variant var_;

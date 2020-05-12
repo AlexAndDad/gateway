@@ -17,8 +17,18 @@ namespace minecraft::nbt
         assert(holds_alternative< compound >(var_));
         return get< compound >(var_);
     }
+    compound const &value::get_compound() const
+    {
+        assert(holds_alternative< compound >(var_));
+        return get< compound >(var_);
+    }
 
     list &value::get_list()
+    {
+        assert(holds_alternative< list >(var_));
+        return get< list >(var_);
+    }
+    list const &value::get_list() const
     {
         assert(holds_alternative< list >(var_));
         return get< list >(var_);
@@ -69,6 +79,36 @@ namespace minecraft::nbt
         }
     }
 
+    auto value::operator[](std::int32_t const &n) -> list::setter
+    {
+        return visit(
+            [n]<class Actual>(Actual &a) -> list::setter {
+                if constexpr (std::is_same_v<Actual, list>)
+                    return a[n];
+                else
+                    throw system_error(error::logic_error::list_required);
+            },
+            as_variant());
+    }
+
+    compound::mapped_type &value::operator[](string const& k) {
+        if (is(Compound))
+        {
+            return get_compound()[k];
+        }
+        else
+            throw system_error(error::compound_required);
+    }
+
+    compound::mapped_type const &value::operator[](string const& k) const {
+        if (is(Compound))
+        {
+            return get_compound().at(k);
+        }
+        else
+            throw system_error(error::compound_required);
+    }
+
     tag_type value::type() const
     {
         return visit([]< class T >(T const &) { return to_tag_v< T >; }, var_);
@@ -76,7 +116,8 @@ namespace minecraft::nbt
 
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target, error_code &ec)
     {
-        if (ec) return first;
+        if (ec)
+            return first;
 
         auto context = make_parse_context(value_parse_handler());
         auto next    = parse(first, last, context, ec);
@@ -90,11 +131,10 @@ namespace minecraft::nbt
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target)
     {
         auto context = make_parse_context(value_parse_handler());
-        auto next = parse(first, last, context);
-        target = value(context.handler().to_compound());
+        auto next    = parse(first, last, context);
+        target       = value(context.handler().to_compound());
         return next;
     }
-
 
     void compose(value const &arg, compose_buffer &buf)
     {
@@ -121,7 +161,7 @@ namespace minecraft::nbt
     }
 
     auto pretty_print(value const &arg) -> pretty_printer { return pretty_printer { arg }; }
-    auto operator<<(std::ostream& os, value const& v) -> std::ostream&
+    auto operator<<(std::ostream &os, value const &v) -> std::ostream &
     {
         visit(print_visitor { os }, v);
         return os;
@@ -142,9 +182,6 @@ namespace minecraft::nbt
         return visit(visitor, l.as_variant(), r.as_variant());
     }
 
-    auto operator!=(value const &l, value const &r) -> bool
-    {
-        return not (l == r);
-    }
+    auto operator!=(value const &l, value const &r) -> bool { return not(l == r); }
 
 }   // namespace minecraft::nbt

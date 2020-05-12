@@ -27,15 +27,35 @@ namespace minecraft::nbt
         explicit value(float const& l) : var_(std::move(l)) {}
         // clang-format on
 
+        string& operator=(string s) {
+            return var_.emplace<string>(std::move(s));
+        }
+
         auto as_variant() const & -> value_variant const & { return var_; }
         auto as_variant() & -> value_variant & { return var_; }
         auto as_variant() && -> value_variant && { return std::move(var_); }
+
+        template<class T, class...Args>
+        auto emplace(Args&&...args) -> T&
+        {
+            return as_variant().emplace<T>(std::forward<Args>(args)...);
+        }
+
+        //
+        // operators
+        //
+
+        auto operator[](std::int32_t const& n) -> list::setter;
+        compound::mapped_type & operator[](string const& k);
+        compound::mapped_type const& operator[](string const& k) const;
 
         bool     is(tag_type tag) const;
         tag_type type() const;
 
         compound &  get_compound();
+        compound const &  get_compound() const;
         list &      get_list();
+        list const &      get_list() const;
         string &    get_string();
         int_array & get_int_array();
         byte_array &get_byte_array();

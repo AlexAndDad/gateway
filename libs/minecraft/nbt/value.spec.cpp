@@ -11,39 +11,20 @@ using namespace minecraft::nbt;
 
 TEST_CASE("[minecraft::nbt::value]")
 {
-    /*
-    SECTION("prints visitation and structure")
+    SECTION("manipulation")
     {
         auto v = value();
 
-        v.set("name", "bob");
+        // not yet any kind of object
+        CHECK_THROWS(v[0]);
+        CHECK_THROWS(v["foo"]);
 
-        std::ostringstream ss;
-        ss << pretty_print(v);
+        CHECK((fmt::format("{}", v)) == "[End]");
 
-        CHECK(ss.str() == "TAG_Compound(''): 1 entries\n"
-                          "{\n"
-                          " TAG_String('name'): 'bob'\n"
-                          "}");
+        v.emplace<compound>()["foo"] = "bar";
+        CHECK((fmt::format("{}", v)) == "[Compound [size 1] [[name 'foo'] [String 'bar']]]");
     }
 
-    SECTION("memory use")
-    {
-        auto sp             = boost::make_shared< impl >();
-        auto initial_report = sp->report();
-        {
-            auto v = unique_value(sp);
-            v.set("name", "bob");
-            v.set("name", "alice");
-            v.set("name", "vera");
-            v.set("name", "paul");
-            v.set("name", "jobbie");
-            CHECK(v.size() == 1);
-        }
-        auto final_report = sp->report();
-        CHECK(initial_report == final_report);
-    }
-*/
     SECTION("hello_world")
     {
         using namespace minecraft;
