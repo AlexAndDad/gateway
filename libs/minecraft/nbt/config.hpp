@@ -17,7 +17,9 @@ namespace minecraft::nbt
     using byte_array = boost::container::vector< std::int8_t >;
     using long_array = boost::container::vector< std::int64_t >;
 
-    using type_variant = variant< std::int8_t,
+    using value_variant = variant<
+        monostate,
+        std::int8_t,
         std::int16_t,
         std::int32_t,
         std::int64_t,
@@ -32,9 +34,9 @@ namespace minecraft::nbt
 
     template<class T> using list_impl = boost::container::vector<T>;
 
-    using list_variant = boost::mp11::mp_transform< list_impl, type_variant >;
+    using list_variant = boost::mp11::mp_transform< list_impl, value_variant >;
 
-    using value_variant = boost::mp11::mp_push_front< type_variant, monostate >;
+//    using value_variant = boost::mp11::mp_push_front< type_variant, monostate >;
 
     template < tag_type T >
     struct tag_t

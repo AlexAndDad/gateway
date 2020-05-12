@@ -7,38 +7,31 @@
 namespace minecraft::nbt
 {
     list::list(tag_type type)
-    : var_(visit_tag(overloaded { [](tag_t< tag_type::End >) -> list_variant { throw "invalid tag"; },
-                                  []< tag_type Type >(tag_t< Type >) -> list_variant {
-                                      using value_type = to_value_t< Type >;
-                                      using list_type  = list_impl< value_type >;
-                                      return list_type();
-                                  } },
-                     type))
+    : var_(visit_tag(
+          []< tag_type Type >(tag_t< Type >) -> list_variant {
+              using value_type = to_value_t< Type >;
+              using list_type  = list_impl< value_type >;
+              return list_type();
+          },
+          type))
     {
     }
 
-    auto list::type_name() const -> std::string_view
+    auto list::reset(tag_type new_type) -> void *
     {
-        return visit(
-            []< class T >(list_impl< T > const &) {
-                switch (to_tag_v< T >)
-                {
-                case End: return "end";
-                case Byte: return "byte";
-                case Short: return "short";
-                case Int: return "int";
-                case Long: return "long";
-                case Float: return "float";
-                case Double: return "double";
-                case String: return "string";
-                case List: return "list";
-                case Compound: return "compound";
-                case Int_Array: return "int array";
-                case Byte_Array: return "byte array";
-                case Long_Array: return "long array";
-                }
+        return visit_tag(
+            [&]< tag_type Type >(tag_t< Type >) -> void * {
+                using value_type = to_value_t< Type >;
+                using list_type  = list_impl< value_type >;
+                auto &nl         = var_.emplace< list_type >();
+                return &nl;
             },
-            var_);
+            new_type);
+    }
+
+    auto list::is(tag_type type) const -> bool
+    {
+        return visit([type]< class T >(list_impl< T > const &) { return to_tag_v< T > == type; }, var_);
     }
 
     void list::reserve(std::int32_t cap)
@@ -51,17 +44,15 @@ namespace minecraft::nbt
         return visit([]< class T >(list_impl< T > const &vec) { return vec.size(); }, var_);
     }
 
-    auto operator==(list const& a, list const& b) -> bool
+    auto operator==(list const &a, list const &b) -> bool
     {
-        auto visitor = []<class A, class B>(A const& a, B const& b)
-        {
-            if constexpr (std::is_same_v<A, B>)
+        auto visitor = []< class A, class B >(A const &a, B const &b) {
+            if constexpr (std::is_same_v< A, B >)
                 return a == b;
             else
                 return false;
         };
         return visit(visitor, a.var_, b.var_);
     }
-
 
 }   // namespace minecraft::nbt

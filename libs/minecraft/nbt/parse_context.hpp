@@ -48,8 +48,17 @@ namespace minecraft::nbt
         struct invalid_length : parse_failure
         {
             invalid_length(std::int32_t val)
-                : parse_failure(error::invalid_tag, fmt::format("Invalid Length {}", val))
+            : parse_failure(error::invalid_tag, fmt::format("Invalid Length {}", val))
             {
+            }
+        };
+
+        struct empty_list_with_nonzero_length : parse_failure
+        {
+            empty_list_with_nonzero_length()
+            :  parse_failure(error::empty_list_with_nonzero_length, "List of End with nonzero length")
+            {
+
             }
         };
 
@@ -108,6 +117,12 @@ namespace minecraft::nbt
         auto parse(const_buffer_iterator first, const_buffer_iterator last, std::int8_t &target)
             -> const_buffer_iterator;
 
+        template < class Fundamental, auto Align, std::size_t Bits = sizeof(Fundamental) * 8 >
+        auto parse(const_buffer_iterator                                                                first,
+                   const_buffer_iterator                                                                last,
+                   boost::endian::endian_buffer< boost::endian::order::big, Fundamental, Bits, Align > &target)
+            -> const_buffer_iterator;
+
         error_code &       error(error_code ec);
         std::exception_ptr exception(std::exception_ptr ep) { return (ep_ = ep); }
 
@@ -146,12 +161,6 @@ namespace minecraft::nbt
 
         using parse_context_base::parse;
 
-        template < class Fundamental, auto Align, std::size_t Bits = sizeof(Fundamental) * 8 >
-        auto parse(const_buffer_iterator                                                                first,
-                   const_buffer_iterator                                                                last,
-                   boost::endian::endian_buffer< boost::endian::order::big, Fundamental, Bits, Align > &target)
-            -> const_buffer_iterator;
-
         auto parse(const_buffer_iterator first, const_buffer_iterator last, std::int16_t &target)
             -> const_buffer_iterator;
 
@@ -188,7 +197,7 @@ namespace minecraft::nbt
         auto parse_value(const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
 
       private:
-        void on_compound_start() ;
+        void on_compound_start();
 
         void on_key(std::string_view key);
 
@@ -211,8 +220,10 @@ namespace minecraft::nbt
     };
 
     template < class Handler >
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, basic_parse_context< Handler > &context, error_code& ec);
+    const_buffer_iterator parse(const_buffer_iterator           first,
+                                const_buffer_iterator           last,
+                                basic_parse_context< Handler > &context,
+                                error_code &                    ec);
 
     template < class Handler >
     const_buffer_iterator

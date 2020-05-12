@@ -173,9 +173,8 @@ namespace minecraft::nbt
         reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Tag")));
     }
 
-    template < class Handler >
     template < class Fundamental, auto Align, std::size_t Bits >
-    auto basic_parse_context< Handler >::parse(
+    auto parse_context_base::parse(
         const_buffer_iterator                                                                first,
         const_buffer_iterator                                                                last,
         boost::endian::endian_buffer< boost::endian::order::big, Fundamental, Bits, Align > &target)
@@ -438,6 +437,8 @@ namespace minecraft::nbt
         {
             first  = parse(first, last, length);
             length = (std::max)(0, length);
+            if (tag == End and length > 0)
+                throw parsing::empty_list_with_nonzero_length();
             on_list(tag, length);
             for (auto count = length; not error() && count; --count)
                 first = parse_atom(tag, first, last);

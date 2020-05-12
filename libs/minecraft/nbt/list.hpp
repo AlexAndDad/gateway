@@ -5,16 +5,27 @@ namespace minecraft::nbt
 {
     struct list
     {
-        list(tag_type type = tag_type::Byte);
+        list(tag_type type = End);
+
+        /// Reset the list to the new type
+        ///
+        /// Clears the list, destroying all elements then re-creates the internal implementation as a zero-length list
+        /// of the new type
+        /// \param new_type The type to become
+        /// \return a pointer to the address of the new implementation
+        /// @post is(new_type)
+        /// @post size() == 0
+        auto reset(tag_type new_type) -> void*;
+
+        auto is(tag_type) const -> bool;
 
         template < class T >
         void push_back(T &&arg);
 
         void reserve(std::int32_t cap);
 
-        auto type_name() const -> std::string_view;
-
         auto size() const -> std::int32_t;
+
 
         template < class F >
         auto visit_all(F &&f) const -> decltype(auto);

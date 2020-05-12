@@ -7,13 +7,14 @@ namespace minecraft::nbt
     {
         enum parse_error
         {
-            invalid_tag       = 1,
-            incomplete        = 2,
-            not_implemented   = 3,
-            compound_too_deep = 4,
-            invalid_length    = 5,
-            list_too_deep     = 6,
-            other             = 7,
+            invalid_tag                    = 1,
+            incomplete                     = 2,
+            not_implemented                = 3,
+            compound_too_deep              = 4,
+            invalid_length                 = 5,
+            list_too_deep                  = 6,
+            other                          = 7,
+            empty_list_with_nonzero_length = 8,
         };
 
         enum logic_error
@@ -41,6 +42,7 @@ namespace minecraft::nbt
                 case error::invalid_length: return "Length is invalid (-ve?)";
                 case error::list_too_deep: return "List too deep";
                 case error::other: return "Other exception during parsing (consult exception)";
+                case error::empty_list_with_nonzero_length: return "List of End with nonzero length";
                 }
                 return "Unknown error code: " + std::to_string(ev);
             }
