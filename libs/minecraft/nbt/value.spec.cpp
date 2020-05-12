@@ -2,6 +2,7 @@
 #include "minecraft/nbt/testing/nbt_data.spec.ipp"
 #include "polyfill/hexdump.hpp"
 #include "value.hpp"
+#include "polyfill/explain.hpp"
 
 #include <catch2/catch.hpp>
 #include <sys/mman.h>
@@ -80,9 +81,9 @@ TEST_CASE("[minecraft::nbt::value]")
 
         auto size = fs::file_size(testing::bigtest_nbt_filename);
         auto fd   = ::open(testing::bigtest_nbt_filename, O_RDONLY);
-        auto addr = ::mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        compose_buffer inbuf(size);
+        ::read(fd, inbuf.data(), inbuf.size());
         ::close(fd);
-        auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
         error_code ec;
         auto       val  = value();
@@ -150,22 +151,49 @@ TEST_CASE("[minecraft::nbt::value]")
         //
 
         compose_buffer comp;
-        try
-        {
-            compose(val, comp);
-            SUCCEED();
-        }
-        catch(std::exception& e)
-        {
-            INFO("" << e.what());
-            FAIL();
-        }
+        CHECK_NOTHROW(compose(val, comp));
         CHECK(comp.size() == size);
         auto val2 = value();
         parse(comp.data(), comp.data() + comp.size(), val2, ec);
         CHECK(ec.message() == "Success");
         CHECK(val2 == val);
 
-        ::munmap(addr, size);
+        SECTION("poison")
+        {
+            auto inbuf_bad = inbuf;
+
+            // overflow the length og 'hampus'
+            inbuf_bad[0xA3] = 0xFF;
+            inbuf_bad[0xA4] = 0xFF;
+            try
+            {
+                auto v = value();
+                parse(inbuf_bad.data(), inbuf_bad.data() + inbuf_bad.size(), v);
+                FAIL();
+            }
+            catch(...)
+            {
+                auto s = fmt::format("{}", polyfill::explain().whats());
+                CHECK(s == "While parsing value: Incomplete parse\n"
+                           "While parsing Compound Element of type Compound: Incomplete parse\n"
+                           "While parsing value for 'Level': Incomplete parse\n"
+                           "While parsing atom Compound: Incomplete parse\n"
+                           "While parsing Compound: Incomplete parse\n"
+                           "While parsing Compound Element of type Compound: Incomplete parse\n"
+                           "While parsing value for 'nested compound test': Incomplete parse\n"
+                           "While parsing atom Compound: Incomplete parse\n"
+                           "While parsing Compound: Incomplete parse\n"
+                           "While parsing Compound Element of type Compound: Incomplete parse\n"
+                           "While parsing value for 'ham': Incomplete parse\n"
+                           "While parsing atom Compound: Incomplete parse\n"
+                           "While parsing Compound: Incomplete parse\n"
+                           "While parsing Compound Element of type String: Incomplete parse\n"
+                           "While parsing value for 'name': Incomplete parse\n"
+                           "While parsing atom String: Incomplete parse\n"
+                           "While parsing String: Incomplete parse\n"
+                           "Incomplete parse");
+            }
+
+        }
     }
 }

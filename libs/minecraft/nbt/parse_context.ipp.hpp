@@ -393,7 +393,7 @@ namespace minecraft::nbt
     }
     catch (parsing::parse_failure &f)
     {
-        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing atom {}", tag)));
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing atom {}", wise_enum::to_string(tag))));
     }
 
     template < class Handler >
@@ -476,7 +476,7 @@ namespace minecraft::nbt
     }
     catch (parsing::parse_failure &f)
     {
-        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Compound Element of type {}", tag)));
+        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Compound Element of type {}", wise_enum::to_string(tag))));
     }
 
     template < class Handler >
@@ -511,7 +511,7 @@ namespace minecraft::nbt
         if (ec)
         {
             context.error(ec);
-            context.exception(system_error(ec));
+            context.exception(std::make_exception_ptr(system_error(ec)));
             return first;
         }
 

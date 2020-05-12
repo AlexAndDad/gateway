@@ -28,4 +28,6 @@ namespace minecraft::nbt
         return first;
     }
 
+
+
 }   // namespace minecraft::nbt

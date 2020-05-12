@@ -51,6 +51,7 @@ namespace minecraft::nbt
     auto pretty_print(value const &arg) -> pretty_printer;
 
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target, error_code &ec);
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target);
 
     template < class Visitor >
     auto visit(Visitor &&v, value const &val) -> decltype(auto)

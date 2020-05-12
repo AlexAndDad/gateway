@@ -78,13 +78,22 @@ namespace minecraft::nbt
         if (ec) return first;
 
         auto context = make_parse_context(value_parse_handler());
-        auto next    = parse(first, last, context);
+        auto next    = parse(first, last, context, ec);
         if (not ec)
         {
             target = value(context.handler().to_compound());
         }
         return next;
     }
+
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target)
+    {
+        auto context = make_parse_context(value_parse_handler());
+        auto next = parse(first, last, context);
+        target = value(context.handler().to_compound());
+        return next;
+    }
+
 
     void compose(value const &arg, compose_buffer &buf)
     {
