@@ -2,6 +2,7 @@
 
 #include "parse_context.hpp"
 #include "pretty_printer.hpp"
+#include "printer.hpp"
 #include "value_parse_handler.hpp"
 
 namespace minecraft::nbt
@@ -120,6 +121,11 @@ namespace minecraft::nbt
     }
 
     auto pretty_print(value const &arg) -> pretty_printer { return pretty_printer { arg }; }
+    auto operator<<(std::ostream& os, value const& v) -> std::ostream&
+    {
+        visit(print_visitor { os }, v);
+        return os;
+    }
 
     auto operator==(value const &l, value const &r) -> bool
     {
@@ -134,6 +140,11 @@ namespace minecraft::nbt
             }
         };
         return visit(visitor, l.as_variant(), r.as_variant());
+    }
+
+    auto operator!=(value const &l, value const &r) -> bool
+    {
+        return not (l == r);
     }
 
 }   // namespace minecraft::nbt

@@ -42,7 +42,9 @@ namespace minecraft::nbt
         long_array &get_long_array();
 
         friend auto operator==(value const &l, value const &r) -> bool;
+        friend auto operator!=(value const &l, value const &r) -> bool;
         friend void compose(value const &arg, compose_buffer &buf);
+        friend auto operator<<(std::ostream& os, value const& v) -> std::ostream&;
 
       private:
         value_variant var_;

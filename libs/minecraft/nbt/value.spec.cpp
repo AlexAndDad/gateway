@@ -1,8 +1,8 @@
 #include "minecraft/filesystem.hpp"
 #include "minecraft/nbt/testing/nbt_data.spec.ipp"
+#include "polyfill/explain.hpp"
 #include "polyfill/hexdump.hpp"
 #include "value.hpp"
-#include "polyfill/explain.hpp"
 
 #include <catch2/catch.hpp>
 #include <sys/mman.h>
@@ -72,6 +72,11 @@ TEST_CASE("[minecraft::nbt::value]")
                                 " }\n"
                                 "}";
         CHECK(output.str() == expected);
+
+        output.str("");
+        output << val;
+        CHECK(output.str() ==
+              "[Compound [size 1] [[name 'hello world'] [Compound [size 1] [[name 'name'] [String 'Bananrama']]]]]");
         ::munmap(addr, size);
     }
 
@@ -79,8 +84,8 @@ TEST_CASE("[minecraft::nbt::value]")
     {
         using namespace minecraft;
 
-        auto size = fs::file_size(testing::bigtest_nbt_filename);
-        auto fd   = ::open(testing::bigtest_nbt_filename, O_RDONLY);
+        auto           size = fs::file_size(testing::bigtest_nbt_filename);
+        auto           fd   = ::open(testing::bigtest_nbt_filename, O_RDONLY);
         compose_buffer inbuf(size);
         ::read(fd, inbuf.data(), inbuf.size());
         ::close(fd);
@@ -147,6 +152,25 @@ TEST_CASE("[minecraft::nbt::value]")
         CHECK(output.str() == expected);
 
         //
+        // normal print
+        //
+
+        output.str("");
+        output << val;
+        CHECK(output.str() ==
+              "[Compound [size 1] [[name 'Level'] [Compound [size 11] [[name 'byteArrayTest (the first 1000 values of "
+              "(n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))'] [Byte_Array 1000]][[name 'byteTest'] "
+              "[Byte 127]][[name 'doubleTest'] [Double 0.4931287132182315]][[name 'listTest (compound)'] [List "
+              "[Compound [size 2] [[name 'created-on'] [Long 1264099775885]][[name 'name'] [String 'Compound tag "
+              "#0']]][Compound [size 2] [[name 'created-on'] [Long 1264099775885]][[name 'name'] [String 'Compound tag "
+              "#1']]]]][[name 'listTest (long)'] [List [Long 11][Long 12][Long 13][Long 14][Long 15]]][[name 'nested "
+              "compound test'] [Compound [size 2] [[name 'egg'] [Compound [size 2] [[name 'value'] [Float 0.5]][[name "
+              "'name'] [String 'Eggbert']]]][[name 'ham'] [Compound [size 2] [[name 'value'] [Float 0.75]][[name "
+              "'name'] [String 'Hampus']]]]]][[name 'intTest'] [Int 2147483647]][[name 'floatTest'] [Float "
+              "0.49823147]][[name 'stringTest'] [String 'HELLO WORLD THIS IS A TEST STRING ÅÄÖ!']][[name 'shortTest'] "
+              "[Short 32767]][[name 'longTest'] [Long 9223372036854775807]]]]]");
+
+        //
         // round trip
         //
 
@@ -171,7 +195,7 @@ TEST_CASE("[minecraft::nbt::value]")
                 parse(inbuf_bad.data(), inbuf_bad.data() + inbuf_bad.size(), v);
                 FAIL();
             }
-            catch(...)
+            catch (...)
             {
                 auto s = fmt::format("{}", polyfill::explain().whats());
                 CHECK(s == "While parsing value: Incomplete parse\n"
@@ -193,7 +217,6 @@ TEST_CASE("[minecraft::nbt::value]")
                            "While parsing String: Incomplete parse\n"
                            "Incomplete parse");
             }
-
         }
     }
 }
