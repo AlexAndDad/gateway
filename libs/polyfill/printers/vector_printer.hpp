@@ -27,6 +27,12 @@ namespace polyfill::printers
     template < class T >
     vector_printer< T > print(const std::vector< T > &vector)
     {
-        return vector_printer< T >(vector);
+        return vector_printer< T >(vector, [](auto && arg){return arg;});
+    }
+
+    template < class T , class F>
+    vector_printer< T > print(const std::vector< T > &vector, F transform_func)
+    {
+        return vector_printer< T >(vector,std::move(transform_func));
     }
 }   // namespace polyfill::printers
