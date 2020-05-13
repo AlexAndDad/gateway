@@ -10,7 +10,6 @@ message(STATUS "build_leaf=${build_leaf} from ${CMAKE_CURRENT_BINARY_DIR}")
 execute_process(COMMAND ${CMAKE_COMMAND} "-H${CMAKE_CURRENT_LIST_DIR}/dependencies" "-B${CMAKE_CURRENT_BINARY_DIR}/dependencies" "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
 
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
-
 find_package(Threads REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)#
 find_package(BZip2 REQUIRED)
