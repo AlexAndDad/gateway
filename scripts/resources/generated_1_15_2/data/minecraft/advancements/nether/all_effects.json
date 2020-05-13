@@ -1,0 +1,61 @@
+{
+  "parent": "minecraft:nether/all_potions",
+  "display": {
+    "icon": {
+      "item": "minecraft:bucket"
+    },
+    "title": {
+      "translate": "advancements.nether.all_effects.title"
+    },
+    "description": {
+      "translate": "advancements.nether.all_effects.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "rewards": {
+    "experience": 1000
+  },
+  "criteria": {
+    "all_effects": {
+      "trigger": "minecraft:effects_changed",
+      "conditions": {
+        "effects": {
+          "minecraft:conduit_power": {},
+          "minecraft:glowing": {},
+          "minecraft:absorption": {},
+          "minecraft:poison": {},
+          "minecraft:strength": {},
+          "minecraft:speed": {},
+          "minecraft:mining_fatigue": {},
+          "minecraft:resistance": {},
+          "minecraft:jump_boost": {},
+          "minecraft:slow_falling": {},
+          "minecraft:blindness": {},
+          "minecraft:haste": {},
+          "minecraft:invisibility": {},
+          "minecraft:hero_of_the_village": {},
+          "minecraft:regeneration": {},
+          "minecraft:levitation": {},
+          "minecraft:weakness": {},
+          "minecraft:fire_resistance": {},
+          "minecraft:nausea": {},
+          "minecraft:water_breathing": {},
+          "minecraft:bad_omen": {},
+          "minecraft:slowness": {},
+          "minecraft:dolphins_grace": {},
+          "minecraft:night_vision": {},
+          "minecraft:wither": {},
+          "minecraft:hunger": {}
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "all_effects"
+    ]
+  ]
+}
