@@ -66,6 +66,15 @@ namespace minecraft::nbt
         friend void compose(value const &arg, compose_buffer &buf);
         friend auto operator<<(std::ostream& os, value const& v) -> std::ostream&;
 
+        template <class Iter>
+        friend Iter encode(value const &arg, Iter first)
+        {
+            compose_buffer buf;
+            compose(arg, buf);
+
+            return std::copy(std::begin(buf), std::end(buf), first);
+        }
+
       private:
         value_variant var_;
     };
