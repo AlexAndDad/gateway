@@ -185,6 +185,16 @@ namespace minecraft
         return encode_bytes(inf, inl, first);
     }
 
+    template <class Iter, class T>
+    Iter encode(const std::vector<T> & in, Iter first)
+    {
+        for (auto & item : in)
+        {
+            first = encode(item, first);
+        }
+        return first;
+    }
+
     template < class Iter >
     Iter encode(std::vector< std::uint8_t > const &in, Iter first)
     {
