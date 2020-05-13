@@ -285,7 +285,8 @@ TEST_CASE("polyfill::net::shared_composed_op")
     async_mass_connect(s, "www.example.com", "http", 10s, [&](error_code ec) {
         std::cout << ec.message() << std::endl;
         auto ep = s.remote_endpoint(ec);
-        std::cout << ep << std::endl;
+        boost::ignore_unused(ep);
+        //std::cout << ep << std::endl;
     });
 
     boost::beast::test::run(ioc);
