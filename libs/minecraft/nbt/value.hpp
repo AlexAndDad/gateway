@@ -79,7 +79,7 @@ namespace minecraft::nbt
         value_variant var_;
     };
 
-    auto pretty_print(value const &arg) -> pretty_printer;
+    auto pretty_print(value const &arg) -> pretty_printer<value>;
 
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target, error_code &ec);
     const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, value &target);

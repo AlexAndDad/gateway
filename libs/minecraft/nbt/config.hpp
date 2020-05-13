@@ -12,7 +12,7 @@ namespace minecraft::nbt
     struct value;
     struct list;
     using string     = std::string;
-    using compound   = boost::unordered_map< std::string, value >;
+    struct compound;
     using int_array  = boost::container::vector< std::int32_t >;
     using byte_array = boost::container::vector< std::int8_t >;
     using long_array = boost::container::vector< std::int64_t >;

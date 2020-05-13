@@ -9,7 +9,7 @@
 
 TEST_CASE("chunk data packet")
 {
-    static char path[]    = "/home/ahodges/github/gateway/test_data/chunk_data.bin";
+    static char path[]    = "/home/rhodges/github/gateway/test_data/chunk_data.bin";
     auto        in_stream = std::ifstream(path, std::ofstream::ios_base::in | std::ofstream::ios_base::binary);
 
     auto size = minecraft::fs::file_size(path);

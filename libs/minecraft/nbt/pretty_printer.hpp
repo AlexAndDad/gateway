@@ -48,13 +48,14 @@ namespace minecraft::nbt
         void print_value(std::string_view name, std::string_view rep, T const &value);
     };
 
+    template < class T >
     struct pretty_printer
     {
-        value const &vref;
-
-        friend std::ostream &operator<<(std::ostream &os, pretty_printer const &p);
+        T const &            tref;
     };
 
+    template < class T >
+    pretty_printer(T const &) -> pretty_printer< T >;
 }   // namespace minecraft::nbt
 
 namespace minecraft::nbt
@@ -70,6 +71,15 @@ namespace minecraft::nbt
     {
         fmt::print(os, "{0}{1}{4}('{2}'): {3}", sep, indent(depth), name, value, rep);
         sep = "\n";
+    }
+
+
+    template<class T>
+    std::ostream &operator<<(std::ostream &os, pretty_printer<T> const &p)
+    {
+        visit(pretty_print_visitor { os }, p.tref);
+
+        return os;
     }
 
 }   // namespace minecraft::nbt

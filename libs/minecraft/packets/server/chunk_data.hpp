@@ -86,7 +86,6 @@ namespace minecraft::packets::server
         first = minecraft::encode(in.data_length, first);
         first = minecraft::encode(in.data, first);
 
-
         return first;
     }
 
@@ -129,7 +128,7 @@ namespace minecraft::packets::server
         std::int32_t                         chunk_z;
         bool                                 full_chunk;
         var_int                              primary_bit_mask;
-        nbt::value                           heightmaps;
+        nbt::compound                        heightmaps;
         std::vector< std::int32_t >          biomes;
         var_int                              data_size;
         chunk_column_type                    column;

@@ -160,7 +160,7 @@ namespace minecraft::nbt
         visit(visitor, arg.as_variant());
     }
 
-    auto pretty_print(value const &arg) -> pretty_printer { return pretty_printer { arg }; }
+    auto pretty_print(value const &arg) -> pretty_printer<value> { return pretty_printer { arg }; }
     auto operator<<(std::ostream &os, value const &v) -> std::ostream &
     {
         visit(print_visitor { os }, v);

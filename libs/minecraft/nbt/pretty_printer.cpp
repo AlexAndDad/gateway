@@ -98,11 +98,5 @@ namespace minecraft::nbt
         fmt::print(os, "{}{}TAG_End('{}')", sep, indent(depth), name);
     }
 
-    std::ostream &operator<<(std::ostream &os, pretty_printer const &p)
-    {
-        visit(pretty_print_visitor { os }, p.vref);
-
-        return os;
-    }
 
 }   // namespace minecraft::nbt
