@@ -1,6 +1,5 @@
 #include "chunk_data.hpp"
 
-#include "nbt/pretty_print.hpp"
 #include "parse.hpp"
 
 #include <bit>
@@ -82,15 +81,7 @@ namespace minecraft::packets::server
             first = minecraft::parse(first, last, target.full_chunk, ec);
             first = minecraft::parse(first, last, target.primary_bit_mask, ec);
 
-            {
-                // Parse heightmaps using a prettyprint handler
-                auto pretty_print_han = nbt::pretty_print_handler();
-                auto ctx              = nbt::parse_context(pretty_print_han);
-                first                 = nbt::parse(first, last, ctx, ec);
-                spdlog::info(pretty_print_han.buffer);
-            }
-
-            // first = nbt::parse(first, last, target.heightmaps, ec);
+            first = nbt::parse(first, last, target.heightmaps, ec);
 
             if (target.full_chunk)
             {
@@ -109,18 +100,12 @@ namespace minecraft::packets::server
 
             first            = parse(first, last, target.no_block_entities, ec);
             std::size_t size = static_cast< std::size_t >(target.no_block_entities.value());
-            for (std::size_t x = 0; x < size; x++)
-            {
-                auto pretty_print_han = nbt::pretty_print_handler();
-                auto ctx              = nbt::parse_context(pretty_print_han);
 
-                first = nbt::parse(first, last, ctx, ec);
-                spdlog::info(pretty_print_han.buffer);
-                ec = ctx.error();
-            }
-            // first = minecraft::parse(first,last,std::tie(target.block_entities,size),ec);
+            first = minecraft::parse(first, last, std::tie(target.block_entities, size), ec);
         }
         return first;
     }
+
+
 
 }   // namespace minecraft::packets::server

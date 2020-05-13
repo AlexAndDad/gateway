@@ -31,10 +31,37 @@ TEST_CASE("chunk data packet")
         first = minecraft::packets::parse(first, last, pack_variant, ec);
 
         visit(
-            [](auto &&packet) {
+            [&ec](auto &&packet) {
+                CHECK(not ec.failed());
                 if constexpr (std::is_same_v< std::decay_t<decltype(packet)>,minecraft::packets::server::chunk_data>)
                 {
-                    CHECK(true);
+                    std::cout << "Heightmaps:\n" << minecraft::nbt::pretty_print(packet.data.heightmaps) << std::endl;
+
+
+                    CHECK(packet.data.chunk_x == -8);
+                    CHECK(packet.data.chunk_z == -10);
+                    CHECK(packet.data.full_chunk == true);
+                    CHECK(packet.data.primary_bit_mask.value() == 15);
+                    //CHECK(packet.data.heighmaps ) TODO
+                    CHECK(packet.data.biomes.size() == 1024);
+                    /*
+                    for (auto & biome : packet.data.biomes)
+                    {
+                     // todo check biomes
+                    }
+                    */
+                    CHECK(packet.data.data_size.value() == 9323);
+
+                    // Check parts of the column
+                    CHECK(packet.data.column.chunk_sections.size() == 4);
+                    CHECK(packet.data.column.chunk_sections[0].first == 0);
+                    CHECK(packet.data.column.chunk_sections[0].second.block_count == 4199);
+                    CHECK(packet.data.column.chunk_sections[0].second.bits_per_block == 5);
+                    CHECK(packet.data.column.chunk_sections[0].second.palette);
+                    CHECK(packet.data.column.chunk_sections[0].second.data_length == 320);
+
+                    // Check block entities
+                    CHECK(packet.data.block_entities.size() == 0);
 
                 }
                 else
@@ -44,5 +71,10 @@ TEST_CASE("chunk data packet")
 
             },
             pack_variant.as_variant());
+    }
+
+    SECTION("compose")
+    {
+
     }
 }
