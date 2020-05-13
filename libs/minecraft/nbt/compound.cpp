@@ -12,6 +12,13 @@ namespace minecraft::nbt
         return next;
     }
 
+    void compose(compound const &arg, compose_buffer &buf)
+    {
+        auto e = encoder { buf };
+        e(arg, false, true);
+    }
+
+
     auto parse(const_buffer_iterator first, const_buffer_iterator last, compound &cmp, error_code &ec)
         -> const_buffer_iterator
     {

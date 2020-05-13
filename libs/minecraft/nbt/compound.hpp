@@ -11,6 +11,13 @@ namespace minecraft::nbt
         using boost::unordered_map< std::string, value >::unordered_map;
     };
 
+    void compose(compound const &arg, compose_buffer &buf);
+
+    template <class Iter>
+    Iter encode(compound const &arg, Iter first);
+
+
+
     auto parse(const_buffer_iterator first, const_buffer_iterator last, compound &cmp) -> const_buffer_iterator;
     auto parse(const_buffer_iterator first, const_buffer_iterator last, compound &cmp, error_code &ec)
         -> const_buffer_iterator;
@@ -27,3 +34,17 @@ namespace minecraft::nbt
 }   // namespace minecraft::nbt
 
 #include "value.hpp"
+
+namespace minecraft::nbt
+{
+
+    template <class Iter>
+    Iter encode(compound const &arg, Iter first)
+    {
+        compose_buffer buf;
+        compose(arg, buf);
+
+        return std::copy(std::begin(buf), std::end(buf), first);
+    }
+
+}
