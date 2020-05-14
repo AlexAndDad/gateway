@@ -1,6 +1,6 @@
 #pragma once
 
-#include "minecraft/nbt/value.hpp"
+#include "minecraft/nbt/nvp.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/types.hpp"
 #include "play_id.hpp"
@@ -128,7 +128,7 @@ namespace minecraft::packets::server
         std::int32_t                         chunk_z;
         bool                                 full_chunk;
         var_int                              primary_bit_mask;
-        nbt::compound                        heightmaps;
+        nbt::nvp< nbt::Compound >            heightmaps;
         std::vector< std::int32_t >          biomes;
         var_int                              data_size;
         chunk_column_type                    column;
@@ -147,7 +147,7 @@ namespace minecraft::packets::server
         stream << "chunk_z: " << self.chunk_z << "\n";
         stream << "full_chunk: " << self.full_chunk << "\n";
         stream << "primary_bit_mask: " << std::bitset< 16 >(self.primary_bit_mask.value()).to_string() << "\n";
-        stream << "heightmaps: " << self.heightmaps << "\n";
+        stream << "heightmaps: " << self.heightmaps.value << "\n";
         stream << "biomes: " << polyfill::printers::print(self.biomes) << "\n";
         stream << "chunk_column: " << self.column << "\n";
         stream << "block_entities: " << polyfill::printers::print(self.block_entities) << "\n";

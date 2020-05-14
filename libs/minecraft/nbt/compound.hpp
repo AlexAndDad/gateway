@@ -11,6 +11,7 @@ namespace minecraft::nbt
         using boost::unordered_map< std::string, value >::unordered_map;
     };
 
+
     void compose(compound const &arg, compose_buffer &buf);
 
     template <class Iter>

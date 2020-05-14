@@ -190,4 +190,9 @@ namespace minecraft::nbt
             kv.second.as_variant());
     }
 
+    void encoder::operator()(tag_type arg) const
+    {
+        buf.push_back(arg);
+    }
+
 }   // namespace minecraft::nbt

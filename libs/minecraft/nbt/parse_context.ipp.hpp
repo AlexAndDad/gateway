@@ -554,4 +554,18 @@ namespace minecraft::nbt
         }
     }
 
+    template < class Handler >
+
+    template < tag_type Type >
+    auto basic_parse_context< Handler >::expect_nvp(const_buffer_iterator first, const_buffer_iterator last)
+        -> const_buffer_iterator
+    {
+        tag_type tag;
+        first = parse(first, last, tag);
+        if (tag != Type)
+            throw parsing::invalid_tag(tag);
+        first = parse_nvp(Type, first, last);
+        return first;
+    }
+
 }   // namespace minecraft::nbt

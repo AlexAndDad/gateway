@@ -55,6 +55,7 @@ namespace minecraft::nbt
     {
         compose_buffer &buf;
 
+        void operator()(tag_type arg) const;
         void operator()(std::string_view arg, bool with_type = true) const;
         void operator()(compound const &value, bool with_type = true, bool with_terminator = true) const;
         void operator()(list const &value, bool with_type = true) const;

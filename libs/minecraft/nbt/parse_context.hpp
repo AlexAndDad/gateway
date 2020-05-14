@@ -196,6 +196,9 @@ namespace minecraft::nbt
         // parse a value, expecting it to be a compound
         auto parse_value(const_buffer_iterator first, const_buffer_iterator last) -> const_buffer_iterator;
 
+        template<tag_type Type>
+        auto expect_nvp(const_buffer_iterator first, const_buffer_iterator last)->const_buffer_iterator;
+
       private:
         void on_compound_start();
 
