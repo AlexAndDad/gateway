@@ -28,7 +28,24 @@ file(GLOB_RECURSE
         LIST_DIRECTORIES false
         CONFIGURE_DEPENDS
         "*.hpp")
-list(APPEND minecraft_hdr_files ${generated_hdr_files})
+
+#
+# build the blocks headers
+#
+
+add_custom_command(
+        OUTPUT blocks/block.hpp
+        COMMAND Python3::Interpreter
+            ${PROJECT_SOURCE_DIR}/scripts/block_code_gen_1_15_2.py
+            ${PROJECT_SOURCE_DIR}/scripts/resources/generated_1_15_2
+            ${CMAKE_CURRENT_BINARY_DIR}/
+        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/scripts/resources/generated_1_15_2/reports/blocks.json
+        DEPENDS ${PROJECT_SOURCE_DIR}/scripts/block_code_gen_1_15_2.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating v1.15.2 blocks"
+        )
+
+list(APPEND minecraft_hdr_files ${generated_hdr_files} blocks/block.hpp)
 set(minecraft_spec_files ${minecraft_src_files})
 list(FILTER minecraft_spec_files INCLUDE REGEX "^.*.\\.spec\\.[ch]pp$")
 list(FILTER minecraft_spec_files EXCLUDE REGEX "^.*.main\\.spec\\.cpp$")

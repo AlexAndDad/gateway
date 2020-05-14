@@ -264,7 +264,10 @@ class BlockWriter:
         self.fh.write("}\n")
 
     def write_from_id_func(self, block: minecraft_block):
-        self.fh.write("constexpr static {} from_id(block_id_type id)\n{{\n".format(block.struct_name()))
+        if block.has_properties():
+            self.fh.write("constexpr static {} from_id(block_id_type id)\n{{\n".format(block.struct_name()))
+        else:
+            self.fh.write("constexpr static {} from_id(block_id_type)\n{{\n".format(block.struct_name()))
 
         if not block.has_properties():
             self.fh.write("return {}();\n".format(block.struct_name()))

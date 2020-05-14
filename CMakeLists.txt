@@ -24,6 +24,7 @@ find_package(ZLIB REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(Python3 REQUIRED)
 
 if (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
 if (CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")

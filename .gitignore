@@ -1,7 +1,8 @@
 # Alex-defined ignores
 .idea/
 
-
+### python virtualenv
+venv/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### JetBrains template
