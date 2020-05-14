@@ -10,6 +10,23 @@
 
 namespace minecraft::nbt
 {
+    namespace parsing
+    {
+        struct unexpected_value : parse_failure
+        {
+            unexpected_value(tag_type expected, tag_type actual)
+            : parse_failure(error::unexpected_value,
+                            fmt::format("Expected tag {0}, is actually {1}", expected, actual)) {};
+        };
+
+        struct expected_one : parse_failure
+        {
+            expected_one(std::size_t actual)
+                : parse_failure(error::expected_one,
+                                fmt::format("Expected one tag. Actually have {0}", actual)) {};
+        };
+    }   // namespace parsing
+
     struct parser_element
     {
         template < class T >
@@ -43,7 +60,7 @@ namespace minecraft::nbt
             return &impl_.back();
         }
 
-         parser_element pop()
+        parser_element pop()
         {
             assert(not impl_.empty());
             auto ref = std::move(impl_.back());
@@ -87,6 +104,9 @@ namespace minecraft::nbt
             return result;
         }
 
+        /// Return the number of elements on the stack
+        /// \return
+        std::size_t size() const { return impl_.size(); }
 
       private:
         std::vector< parser_element > impl_;
@@ -125,6 +145,17 @@ namespace minecraft::nbt
         void handle_element(parser_element elem);
         void on_integral_list(tag_type type, const_byte_span bs) override;
 
+        //
+        // value extraction
+        //
+
+        /// remove the single un-named compound from top of stack
+        /// @pre size() == 1
+        /// @pre tos()->v.is(Compound)
+        /// @post size() == 0
+        /// \return the topmost compound
+        /// @exception thrown if preconditions not met
+        compound expect_single_compound();
     };   // namespace minecraft::nbt
 
 }   // namespace minecraft::nbt

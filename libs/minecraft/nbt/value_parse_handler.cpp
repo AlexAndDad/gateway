@@ -53,10 +53,10 @@ namespace minecraft::nbt
     }
 
     value_parse_handler::value_parse_handler()
-        : parse_handler()
-        , parse_stack()
-        , name_()
-        , compound_depth_(0)
+    : parse_handler()
+    , parse_stack()
+    , name_()
+    , compound_depth_(0)
     {
     }
     void value_parse_handler::on_compound_start()
@@ -83,9 +83,8 @@ namespace minecraft::nbt
         {
             --compound_depth_;
 
-            assert(tos()->v.is(Compound));
-            assert(tos()->v.get_compound().size() == elements);
-
+            assert(tos() ? tos()->v.is(Compound): true);
+            assert(tos() ? tos()->v.get_compound().size() == elements : true);
             handle_element(pop());
         }
     }
@@ -104,9 +103,8 @@ namespace minecraft::nbt
     void value_parse_handler::handle_element(parser_element elem)
     {
         auto stacktop = tos();
-        if(stacktop)
+        if (stacktop)
         {
-
             if (stacktop->v.is(tag_type::List))
                 stacktop->v.get_list().push_back(std::move(elem.v));
             else if (stacktop->v.is(tag_type::Compound))
@@ -118,6 +116,19 @@ namespace minecraft::nbt
         {
             push(std::move(elem));
         }
+    }
+
+    compound value_parse_handler::expect_single_compound()
+    {
+        if (size() != 1)
+            throw parsing::expected_one(size());
+
+        auto t = tos()->v.type();
+        if (t != Compound)
+            throw parsing::unexpected_value(Compound, t);
+
+        auto v = pop();
+        return std::move(v.v.get_compound());
     }
 
 }   // namespace minecraft::nbt

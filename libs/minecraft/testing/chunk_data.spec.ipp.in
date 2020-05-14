@@ -1,0 +1,7 @@
+namespace minecraft::testing
+{
+    namespace
+    {
+        const char chunk_data_bin_filename[] = "@PROJECT_SOURCE_DIR@/libs/minecraft/testing/chunk_data.bin";
+    }
+}

@@ -477,7 +477,8 @@ namespace minecraft::nbt
     }
     catch (parsing::parse_failure &f)
     {
-        reraise(parsing::parse_failure(f.code(), fmt::format("While parsing Compound Element of type {}", wise_enum::to_string(tag))));
+        reraise(parsing::parse_failure(
+            f.code(), fmt::format("While parsing Compound Element of type {}", wise_enum::to_string(tag))));
     }
 
     template < class Handler >

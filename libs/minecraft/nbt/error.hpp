@@ -15,6 +15,8 @@ namespace minecraft::nbt
             list_too_deep                  = 6,
             other                          = 7,
             empty_list_with_nonzero_length = 8,
+            unexpected_value               = 9,
+            expected_one                   = 10,
         };
 
         enum logic_error
@@ -43,6 +45,8 @@ namespace minecraft::nbt
                 case error::list_too_deep: return "List too deep";
                 case error::other: return "Other exception during parsing (consult exception)";
                 case error::empty_list_with_nonzero_length: return "List of End with nonzero length";
+                case error::unexpected_value: return "An unexpected value was parsed";
+                case error::expected_one: return "Expected only one tag. Got more.";
                 }
                 return "Unknown error code: " + std::to_string(ev);
             }

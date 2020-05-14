@@ -1,3 +1,5 @@
+#include "minecraft/testing/chunk_data.spec.ipp"
+
 #include "chunk_data.hpp"
 #include "minecraft/filesystem.hpp"
 #include "minecraft/packets/server_play_packet.hpp"
@@ -9,10 +11,10 @@
 
 TEST_CASE("chunk data packet")
 {
-    static char path[]    = "/home/rhodges/github/gateway/test_data/chunk_data.bin";
-    auto        in_stream = std::ifstream(path, std::ofstream::ios_base::in | std::ofstream::ios_base::binary);
+    auto in_stream = std::ifstream(minecraft::testing::chunk_data_bin_filename,
+                                   std::ofstream::ios_base::in | std::ofstream::ios_base::binary);
 
-    auto size = minecraft::fs::file_size(path);
+    auto size = minecraft::fs::file_size(minecraft::testing::chunk_data_bin_filename);
 
     auto buf = minecraft::compose_buffer();
     buf.resize(size);
@@ -33,16 +35,16 @@ TEST_CASE("chunk data packet")
         visit(
             [&ec](auto &&packet) {
                 CHECK(not ec.failed());
-                if constexpr (std::is_same_v< std::decay_t<decltype(packet)>,minecraft::packets::server::chunk_data>)
+                if constexpr (std::is_same_v< std::decay_t< decltype(packet) >,
+                                              minecraft::packets::server::chunk_data >)
                 {
                     std::cout << "Heightmaps:\n" << minecraft::nbt::pretty_print(packet.data.heightmaps) << std::endl;
-
 
                     CHECK(packet.data.chunk_x == -8);
                     CHECK(packet.data.chunk_z == -10);
                     CHECK(packet.data.full_chunk == true);
                     CHECK(packet.data.primary_bit_mask.value() == 15);
-                    //CHECK(packet.data.heighmaps ) TODO
+                    // CHECK(packet.data.heighmaps ) TODO
                     CHECK(packet.data.biomes.size() == 1024);
                     /*
                     for (auto & biome : packet.data.biomes)
@@ -62,19 +64,14 @@ TEST_CASE("chunk data packet")
 
                     // Check block entities
                     CHECK(packet.data.block_entities.size() == 0);
-
                 }
                 else
                 {
                     CHECK(false);
                 }
-
             },
             pack_variant.as_variant());
     }
 
-    SECTION("compose")
-    {
-
-    }
+    SECTION("compose") {}
 }

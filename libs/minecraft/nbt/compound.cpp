@@ -8,7 +8,7 @@ namespace minecraft::nbt
     {
         auto context = make_parse_context(value_parse_handler());
         auto next    = context.parse_compound(first, last);
-        cmp          = context.handler().to_compound();
+        cmp          = context.handler().expect_single_compound();
         return next;
     }
 
@@ -17,7 +17,6 @@ namespace minecraft::nbt
         auto e = encoder { buf };
         e(arg, false, true);
     }
-
 
     auto parse(const_buffer_iterator first, const_buffer_iterator last, compound &cmp, error_code &ec)
         -> const_buffer_iterator

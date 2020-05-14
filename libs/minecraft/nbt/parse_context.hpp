@@ -56,11 +56,11 @@ namespace minecraft::nbt
         struct empty_list_with_nonzero_length : parse_failure
         {
             empty_list_with_nonzero_length()
-            :  parse_failure(error::empty_list_with_nonzero_length, "List of End with nonzero length")
+            : parse_failure(error::empty_list_with_nonzero_length, "List of End with nonzero length")
             {
-
             }
         };
+
 
     }   // namespace parsing
 

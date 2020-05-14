@@ -1,42 +1,70 @@
 #include "compound.hpp"
 #include "minecraft/filesystem.hpp"
 #include "minecraft/nbt/testing/nbt_data.spec.ipp"
+#include "minecraft/testing/chunk_data.spec.ipp"
 #include "polyfill/explain.hpp"
 
 #include <catch2/catch.hpp>
+#include <span>
 #include <sys/mman.h>
 
-using namespace minecraft::nbt;
+using namespace minecraft;
 
 TEST_CASE("minecraft::nbt::compound", "[minecraft][minecraft::nbt][minecraft::nbt::compound]")
 {
     SECTION("manipulation")
     {
-        auto v = compound();
+        auto v = nbt::compound();
 
         // not yet any kind of object
         CHECK_NOTHROW(v["foo"]);
 
         CHECK((fmt::format("{}", v)) == "[Compound [size 1] [[name 'foo'] [End]]]");
 
-        v["foo"] = value("bar");
+        v["foo"] = nbt::value("bar");
         CHECK((fmt::format("{}", v)) == "[Compound [size 1] [[name 'foo'] [String 'bar']]]");
+    }
+
+    SECTION("height maps") {
+        auto size = fs::file_size(testing::chunk_data_bin_filename);
+        auto fd   = ::open(testing::chunk_data_bin_filename, O_RDONLY);
+        auto addr = ::mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        ::close(fd);
+
+        auto source = std::span<const char>(reinterpret_cast<const char*>(addr) + 11, size - 11);
+
+        auto o = nbt::compound();
+        auto next = parse(source.data(), source.data() + source.size(), o);
+        CHECK((next - source.data()) == 623);
+        auto s = fmt::format("{}", pretty_print(o));
+        CHECK(o.size() == 1);
+        REQUIRE_NOTHROW(o.at(""));
+        auto& v0 = o.at("");
+        REQUIRE(v0.is(nbt::Compound));
+        auto& c0 = v0.get_compound();
+        REQUIRE_NOTHROW(c0.at("WORLD_SURFACE"));
+        REQUIRE_NOTHROW(c0.at("MOTION_BLOCKING"));
+        REQUIRE(c0.at("WORLD_SURFACE").is(nbt::Int_Array));
+        REQUIRE(c0.at("MOTION_BLOCKING").is(nbt::Int_Array));
+        CHECK(c0.at("WORLD_SURFACE").get_int_array().size() == 36);
+        CHECK(c0.at("MOTION_BLOCKING").get_int_array().size() == 36);
+
+
+        ::munmap(addr, size);
     }
 
     SECTION("hello_world")
     {
-        using namespace minecraft;
-
-        auto size = fs::file_size(testing::hello_world_nbt_filename);
-        auto fd   = ::open(testing::hello_world_nbt_filename, O_RDONLY);
+        auto size = fs::file_size(nbt::testing::hello_world_nbt_filename);
+        auto fd   = ::open(nbt::testing::hello_world_nbt_filename, O_RDONLY);
         auto addr = ::mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
         ::close(fd);
         auto inbuf = std::string_view(reinterpret_cast< const char * >(addr), size);
 
         error_code ec;
-        auto       val  = value();
+        auto       val  = nbt::value();
         auto       next = parse(inbuf.data(), inbuf.data() + inbuf.size(), val, ec);
-        CHECK(val.is(Compound));
+        CHECK(val.is(nbt::Compound));
 
         CHECK(ec.message() == "Success");
         CHECK(next == inbuf.data() + inbuf.size());
@@ -63,17 +91,17 @@ TEST_CASE("minecraft::nbt::compound", "[minecraft][minecraft::nbt][minecraft::nb
     {
         using namespace minecraft;
 
-        auto           size = fs::file_size(testing::bigtest_nbt_filename);
-        auto           fd   = ::open(testing::bigtest_nbt_filename, O_RDONLY);
+        auto           size = fs::file_size(nbt::testing::bigtest_nbt_filename);
+        auto           fd   = ::open(nbt::testing::bigtest_nbt_filename, O_RDONLY);
         compose_buffer inbuf(size);
         ::read(fd, inbuf.data(), inbuf.size());
         ::close(fd);
 
         error_code ec;
-        auto       val  = value();
+        auto       val  = nbt::value();
         auto       next = parse(inbuf.data(), inbuf.data() + inbuf.size(), val, ec);
         CHECK(ec.message() == "Success");
-        CHECK(val.is(Compound));
+        CHECK(val.is(nbt::Compound));
         CHECK(next == inbuf.data() + inbuf.size());
 
         auto output = std::ostringstream();
@@ -156,7 +184,7 @@ TEST_CASE("minecraft::nbt::compound", "[minecraft][minecraft::nbt][minecraft::nb
         compose_buffer comp;
         CHECK_NOTHROW(compose(val, comp));
         CHECK(comp.size() == size);
-        auto val2 = value();
+        auto val2 = nbt::value();
         parse(comp.data(), comp.data() + comp.size(), val2, ec);
         CHECK(ec.message() == "Success");
         CHECK(val2 == val);
@@ -170,7 +198,7 @@ TEST_CASE("minecraft::nbt::compound", "[minecraft][minecraft::nbt][minecraft::nb
             inbuf_bad[0xA4] = 0xFF;
             try
             {
-                auto v = value();
+                auto v = nbt::value();
                 parse(inbuf_bad.data(), inbuf_bad.data() + inbuf_bad.size(), v);
                 FAIL();
             }

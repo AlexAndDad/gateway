@@ -58,12 +58,12 @@ namespace minecraft::nbt
 
     void pretty_print_visitor::operator()(std::string_view name, int_array const &value)
     {
-        fmt::print(os, "{0}{1}TAG_Int_Array('{2}'): [{3} bytes]", sep, indent(depth), name, value.size());
+        fmt::print(os, "{0}{1}TAG_Int_Array('{2}'): [{3} Ints]", sep, indent(depth), name, value.size());
     }
 
     void pretty_print_visitor::operator()(std::string_view name, long_array const &value)
     {
-        fmt::print(os, "{0}{1}TAG_Long_Array('{2}'): [{3} bytes]", sep, indent(depth), name, value.size());
+        fmt::print(os, "{0}{1}TAG_Long_Array('{2}'): [{3} Longs]", sep, indent(depth), name, value.size());
     }
 
     void pretty_print_visitor::operator()(std::string_view name, compound const &value)
