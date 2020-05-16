@@ -1,10 +1,9 @@
 #include "chunk.hpp"
 
-
 namespace minecraft::chunks
 {
     chunk_column::chunk_column()
-        : palette_()
+    : palette_()
     {
     }
     void chunk_column::next(vector3 &pos)
@@ -31,14 +30,16 @@ namespace minecraft::chunks
                 recalc_height(xz);
 
                 palette_.clear();
-                for(int y = 0 ; y < y_extent * columns ; ++y)
+                for (int y = 0; y < y_extent * columns; ++y)
                 {
                     palette_[slices_[y][xz]] += 1;
                 }
             }
     }
 
-    blocks::block_id_type chunk_column::change_block(vector3 pos, blocks::block_id_type b, bool update)
+    blocks::block_id_type chunk_column::change_block(vector3               pos,
+                                                     blocks::block_id_type b,
+                                                     bool update)
     {
         assert(in_bounds(pos));
         auto &slice    = slices_[pos.y];

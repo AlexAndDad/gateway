@@ -26,6 +26,15 @@ BuildCmakeContent(catch2 Catch2 CMAKE_ARGS
         "-DCATCH_INSTALL_HELPERS=OFF")
 
 #
+# function2
+#
+
+FetchContent_Declare(function2
+        GIT_REPOSITORY https://github.com/Naios/function2.git
+        GIT_TAG 4.1.0)
+BuildCmakeContent(function2 function2)
+
+#
 # zlib
 #
 FetchContent_Declare(zlib

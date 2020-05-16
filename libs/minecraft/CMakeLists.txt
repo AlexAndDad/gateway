@@ -55,6 +55,7 @@ add_library(minecraft_lib ${minecraft_src_files} ${minecraft_hdr_files})
 set(minecraft_dependencies
         config_lib
         polyfill_lib
+        function2::function2
         Boost::boost Boost::filesystem Boost::iostreams Boost::system
         Boost::json
         Boost::webclient
