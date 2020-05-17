@@ -69,6 +69,23 @@ TEST_CASE("minecraft::chunks::palette",
 
         REQUIRE(rp.size() == 18);
         CHECK(rp[0] == 0);
+        CHECK(rp[1] == 33);
+        CHECK(rp[2] == 1);
+        CHECK(rp[3] == 6);
+        CHECK(rp[4] == 3884);
+        CHECK(rp[5] == 68);
+        CHECK(rp[6] == 71);
+        CHECK(rp[7] == 70);
+        CHECK(rp[8] == 4);
+        CHECK(rp[9] == 2);
+        CHECK(rp[10] == 231);
+        CHECK(rp[11] == 69);
+        CHECK(rp[12] == 1433);
+        CHECK(rp[13] == 8717);
+        CHECK(rp[14] == 34);
+        CHECK(rp[15] == 9131);
+        CHECK(rp[16] == 1344);
+        CHECK(rp[17] == 10);
     }
 
 }   // namespace minecraft::chunks
