@@ -1,5 +1,7 @@
 #include "chunk.hpp"
 
+#include <boost/core/ignore_unused.hpp>
+
 namespace minecraft::chunks
 {
     chunk_column::chunk_column()
@@ -56,5 +58,10 @@ namespace minecraft::chunks
             }
         }
         return oldblock;
+    }
+
+    void compose(const chunk_column &cc, compose_buffer &buf)
+    {
+        boost::ignore_unused(cc, buf);
     }
 }   // namespace minecraft::chunks

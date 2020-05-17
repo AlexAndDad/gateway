@@ -1,5 +1,6 @@
 #pragma once
 #include "blocks/block_info.hpp"
+#include "minecraft/types/buffer.hpp"
 #include "types.hpp"
 
 #include <algorithm>
@@ -88,5 +89,7 @@ namespace minecraft::chunks
         // a count of each block state id used in this section
         palette_map palette_;
     };
+
+    void compose(chunk_column const &cc, vector2 coords, std::bitset<16> which, bool biomes, compose_buffer &buf);
 
 }   // namespace minecraft::chunks
