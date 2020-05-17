@@ -4,7 +4,7 @@
 
 namespace minecraft::chunks
 {
-    void provider_impl::notify_update(vector3 pos, blocks::block_id_type blk)
+    void provider_impl::notify_update(vector3 pos, blocks::block_type blk)
     {
         post(net::bind_executor(exec_, [self = shared_from_this(), pos, blk] {
             self->handle_notify_update(pos, blk);
@@ -111,7 +111,7 @@ namespace minecraft::chunks
     }
 
     void provider_impl::handle_notify_update(vector3               pos,
-                                             blocks::block_id_type blk)
+                                             blocks::block_type blk)
     {
         ++current_sequence_;
         assert(current_snapshot_);

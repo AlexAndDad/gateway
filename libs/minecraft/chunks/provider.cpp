@@ -40,7 +40,7 @@ namespace minecraft::chunks
         impl_->notify_chunk(std::move(cc));
     }
 
-    auto provider::notify(vector3 pos, blocks::block_id_type blk) -> void
+    auto provider::notify(vector3 pos, blocks::block_type blk) -> void
     {
         assert(impl_);
         impl_->notify_update(pos, blk);

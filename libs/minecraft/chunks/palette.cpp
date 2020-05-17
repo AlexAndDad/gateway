@@ -8,9 +8,9 @@
 
 namespace minecraft::chunks
 {
-    std::size_t palette::add(blocks::block_id_type blk)
+    std::size_t palette::add(blocks::block_type blk)
     {
-        auto [i, b] = map_.insert(map_type::value_type(blk, 0));
+        auto [i, b] = map_.insert(map_type::value_type(blk, blk, 0));
         auto &cnt   = i->get< frequency >();
         ++cnt;
         return cnt;
@@ -21,7 +21,7 @@ namespace minecraft::chunks
         map_.clear();
     }
 
-    std::size_t palette::count(blocks::block_id_type blk) const
+    std::size_t palette::count(blocks::block_type blk) const
     {
         std::size_t result = 0;
         auto        i      = map_.by< block >().find(blk);
@@ -32,12 +32,12 @@ namespace minecraft::chunks
 
     std::size_t palette::size() const { return map_.size(); }
 
-    auto palette::to_block(int idx) const -> blocks::block_id_type
+    auto palette::to_block(int idx) const -> blocks::block_type
     {
         return map_.by< index >().at(idx).get< block >();
     }
 
-    std::size_t palette::subtract(blocks::block_id_type blk)
+    std::size_t palette::subtract(blocks::block_type blk)
     {
         auto i = map_.by< block >().find(blk);
         if (i == map_.by< block >().end())
@@ -55,7 +55,7 @@ namespace minecraft::chunks
         }
     }
 
-    auto palette::to_index(blocks::block_id_type blk) const -> int
+    auto palette::to_index(blocks::block_type blk) const -> int
     {
         auto il = map_.by< block >().find(blk);
         if (il == map_.by< block >().end())

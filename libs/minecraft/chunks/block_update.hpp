@@ -6,8 +6,8 @@ namespace minecraft::chunks
 {
     struct block_update
     {
-        vector3               pos;
-        blocks::block_id_type new_state;
+        vector3            pos;
+        blocks::block_type new_state;
     };
 
-}
+}   // namespace minecraft::chunks

@@ -5,7 +5,6 @@
 namespace minecraft::chunks
 {
     slice::slice()
-    : zx {}
     {
     }
 
@@ -24,8 +23,8 @@ namespace minecraft::chunks
                     palette_.add(slices_[y][vector2(x, z)]);
     }
 
-    blocks::block_id_type chunk::change_block(vector3               pos,
-                                              blocks::block_id_type blk,
+    blocks::block_type chunk::change_block(vector3               pos,
+                                              blocks::block_type blk,
                                               bool update_palette)
     {
         auto old = std::exchange(
@@ -74,8 +73,8 @@ namespace minecraft::chunks
             chunks_[ch].recalc_palette();
     }
 
-    blocks::block_id_type chunk_column::change_block(vector3               pos,
-                                                     blocks::block_id_type b,
+    blocks::block_type chunk_column::change_block(vector3               pos,
+                                                     blocks::block_type b,
                                                      bool update)
     {
         assert(in_bounds(pos));

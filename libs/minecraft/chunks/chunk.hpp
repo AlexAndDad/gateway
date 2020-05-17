@@ -15,27 +15,28 @@ namespace minecraft::chunks
 
     struct slice
     {
+        using block_type = blocks::block_type;
+
         static constexpr int x_extent = 16;   // x is horizontal
         static constexpr int z_extent = 16;   // z is horzontal
 
         slice();
 
-        blocks::block_id_type &operator[](vector2 pos)
-        {
-            return zx[pos.z][pos.x];
-        }
+        block_type &operator[](vector2 pos) { return zx[pos.z][pos.x]; }
 
-        blocks::block_id_type const &operator[](vector2 pos) const
+        block_type const &operator[](vector2 pos) const
         {
             return zx[pos.z][pos.x];
         }
 
       private:
-        blocks::block_id_type zx[z_extent][x_extent];
+        block_type zx[z_extent][x_extent];
     };
 
     struct chunk
     {
+        using block_type = blocks::block_type;
+
         static constexpr int x_extent = slice::x_extent;   // x is horizontal
         static constexpr int z_extent = slice::z_extent;   // z is horzontal
         static constexpr int y_extent = 16;                // y is vertical
@@ -49,16 +50,15 @@ namespace minecraft::chunks
             return slices_[y];
         }
 
-        blocks::block_id_type change_block(vector3               pos,
-                                           blocks::block_id_type blk,
-                                           bool update_palette = true);
+        block_type
+        change_block(vector3 pos, block_type blk, bool update_palette = true);
 
         void recalc_palette();
 
         auto palette() const -> const struct palette & { return palette_; };
 
       private:
-        slice   slices_[y_extent];
+        slice          slices_[y_extent];
         struct palette palette_;
     };
 
@@ -106,8 +106,8 @@ namespace minecraft::chunks
                    pos.z < z_extent;
         }
 
-        blocks::block_id_type
-        change_block(vector3 pos, blocks::block_id_type b, bool update = true);
+        blocks::block_type
+        change_block(vector3 pos, blocks::block_type b, bool update = true);
 
         std::uint8_t height(vector2 xz) const { return height_map_[xz]; }
 

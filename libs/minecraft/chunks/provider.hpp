@@ -23,7 +23,7 @@ namespace minecraft::chunks
         /// \param the chunk_column to copy/move
         auto notify(chunk_column const& cc) -> void;
         auto notify(chunk_column && cc) -> void;
-        auto notify(vector3 pos, blocks::block_id_type blk) -> void;
+        auto notify(vector3 pos, blocks::block_type blk) -> void;
 
       private:
         std::shared_ptr<provider_impl> impl_;

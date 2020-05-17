@@ -37,7 +37,7 @@ namespace minecraft::chunks
         //
         // service interface
         //
-        void notify_update(vector3 pos, blocks::block_id_type blk);
+        void notify_update(vector3 pos, blocks::block_type blk);
 
         void cancel();
 
@@ -56,7 +56,7 @@ namespace minecraft::chunks
         void initial_update(connection_impl *handle);
         void handle_cancel();
         void handle_notify_waiting(connection_impl *handle);
-        void handle_notify_update(vector3 pos, blocks::block_id_type blk);
+        void handle_notify_update(vector3 pos, blocks::block_type blk);
         void handle_notify_chunk(chunk_column&& cc);
         std::shared_ptr< connection_impl > lookup(connection_impl *handle);
 
