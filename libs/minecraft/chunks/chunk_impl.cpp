@@ -4,9 +4,7 @@
 
 namespace minecraft::chunks
 {
-    slice_impl::slice_impl()
-    {
-    }
+    slice_impl::slice_impl() {}
 
     chunk_impl::chunk_impl()
     : slices_ {}
@@ -23,9 +21,9 @@ namespace minecraft::chunks
                     palette_.add(slices_[y][vector2(x, z)]);
     }
 
-    blocks::block_type chunk_impl::change_block(vector3               pos,
-                                              blocks::block_type blk,
-                                              bool update_palette)
+    blocks::block_type chunk_impl::change_block(vector3            pos,
+                                                blocks::block_type blk,
+                                                bool update_palette)
     {
         auto old = std::exchange(
             slices_[pos.y % y_extent][vector2(pos.x, pos.z)], blk);
@@ -56,7 +54,7 @@ namespace minecraft::chunks
         int y = 256;
         for (; y--;)
             if (!blocks::is_transparent(
-                    chunks_[y / columns][y % columns][horz]))
+                    chunks_[y / chunk_extent][y % chunk_extent][horz]))
                 break;
         height_map_[horz] = y;
     }
@@ -69,13 +67,13 @@ namespace minecraft::chunks
                 auto xz = vector2(x, z);
                 recalc_height(xz);
             }
-        for (auto ch = 0; ch < columns; ++ch)
+        for (auto ch = 0; ch < chunk_extent; ++ch)
             chunks_[ch].recalc_palette();
     }
 
-    blocks::block_type chunk_section_impl::change_block(vector3               pos,
-                                                     blocks::block_type b,
-                                                     bool update)
+    blocks::block_type chunk_section_impl::change_block(vector3            pos,
+                                                        blocks::block_type b,
+                                                        bool update)
     {
         assert(in_bounds(pos));
         auto chunk_idx   = pos.y / y_extent;

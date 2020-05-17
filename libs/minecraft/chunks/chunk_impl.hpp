@@ -40,8 +40,8 @@ namespace minecraft::chunks
         static constexpr int x_extent =
             slice_impl::x_extent;   // x is horizontal
         static constexpr int z_extent =
-            slice_impl::z_extent;   // z is horzontal
-        static constexpr int y_extent = 16;                // y is vertical
+            slice_impl::z_extent;             // z is horzontal
+        static constexpr int y_extent = 16;   // y is vertical
 
         chunk_impl();
 
@@ -66,13 +66,17 @@ namespace minecraft::chunks
 
     struct chunk_section_impl
     {
-        static constexpr int columns =
-            16;   // 16 columns * 16 blocks = 256 height max
-        static constexpr int x_extent =
-            chunk_impl::x_extent;   // x is horizontal
-        static constexpr int z_extent =
-            chunk_impl::z_extent;   // z is horzontal
-        static constexpr int y_extent = chunk_impl::y_extent;   // y is vertical
+        // 16 chunks * 16 blocks = 256 height max
+        static constexpr int chunk_extent = 16;
+
+        // x is horizontal
+        static constexpr int x_extent = chunk_impl::x_extent;
+
+        // z is horzontal
+        static constexpr int z_extent = chunk_impl::z_extent;
+
+        // y is vertical
+        static constexpr int y_extent = chunk_impl::y_extent;
 
         struct height_map
         {
@@ -93,7 +97,7 @@ namespace minecraft::chunks
 
         struct chunk_impl const &chunk(int n)
         {
-            assert(n < columns);
+            assert(n < chunk_extent);
             return chunks_[n];
         }
 
@@ -106,7 +110,7 @@ namespace minecraft::chunks
         static bool in_bounds(vector3 pos)
         {
             return pos.x >= 0 and pos.x < x_extent and pos.y >= 0 and
-                   pos.y < (y_extent * columns) and pos.z >= 0 and
+                   pos.y < (y_extent * chunk_extent) and pos.z >= 0 and
                    pos.z < z_extent;
         }
 
@@ -116,14 +120,14 @@ namespace minecraft::chunks
         std::uint8_t height(vector2 xz) const { return height_map_[xz]; }
 
       private:
-        struct chunk_impl chunks_[columns];
-        height_map   height_map_ {};
+        struct chunk_impl chunks_[chunk_extent];
+        height_map        height_map_ {};
     };
 
     void compose(chunk_section_impl const &cc,
-                 vector2             coords,
-                 std::bitset< 16 >   which,
-                 bool                biomes,
-                 compose_buffer &    buf);
+                 vector2                   coords,
+                 std::bitset< 16 >         which,
+                 bool                      biomes,
+                 compose_buffer &          buf);
 
 }   // namespace minecraft::chunks
