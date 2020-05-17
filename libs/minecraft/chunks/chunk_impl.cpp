@@ -4,8 +4,10 @@
 #include "chunk_data_impl.hpp"
 #include "minecraft/parse.hpp"
 #include "slice_impl.hpp"
+#include "minecraft/types/var.hpp"
 
 #include <boost/core/ignore_unused.hpp>
+
 
 namespace minecraft::chunks
 {
@@ -61,7 +63,7 @@ namespace minecraft::chunks
     {
         using minecraft::parse;
 
-        std::uint16_t blk_count;
+        std::int16_t blk_count;
         auto          next = parse(first, last, blk_count);
 
         std::uint8_t bits_per_block;
@@ -75,6 +77,9 @@ namespace minecraft::chunks
                 : static_cast< realised_palette_concept & >(rp);
         next = parse(next, last, pal);
 
+        var_int data_array_length;
+        next = parse(next,last,data_array_length);
+
         auto iter = compressed_bitfield_iterator(
             next, last, std::max(bits_per_block, std::uint8_t(4)));
 
@@ -82,7 +87,11 @@ namespace minecraft::chunks
         for (int y = 0; y < chunk_impl::y_extent; ++y)
             for (int z = 0; z < chunk_impl::z_extent; ++z)
                 for (int x = 0; x < chunk_impl::x_extent; ++x)
-                    chunk.change_block(vector3(x, y, z), pal[*iter], false);
+                {
+                    auto tmp = pal[*iter];
+                    chunk.change_block(vector3(x, y, z), tmp, false);
+                }
+
         chunk.recalc_palette();
 
         next = iter.next_iter();

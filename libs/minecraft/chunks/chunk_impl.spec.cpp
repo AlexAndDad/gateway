@@ -19,5 +19,6 @@ TEST_CASE("minecraft::chunks::chunk_data_impl")
 
     auto c    = chunks::chunk_impl();
     auto next = parse(first, last, c);
+
     CHECK(next < last);
 }

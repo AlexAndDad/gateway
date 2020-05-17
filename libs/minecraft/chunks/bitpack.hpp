@@ -1,6 +1,7 @@
 #pragma once
-#include "minecraft/types/buffer.hpp"
 #include "minecraft/parse_error.hpp"
+#include "minecraft/types/buffer.hpp"
+
 #include <boost/endian/buffers.hpp>
 #include <cstddef>
 #include <cstdint>
@@ -27,7 +28,7 @@ namespace minecraft
 
             if (got < field_size_)
             {
-                auto [a2, got2] = get_next(field_size_);
+                auto [a2, got2] = get_next(field_size_ - got);
                 accum |= (a2 << got);
             }
 
