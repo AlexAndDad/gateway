@@ -5,8 +5,8 @@
 #ifndef GATEWAY_SLICE_IMPL_HPP
 #define GATEWAY_SLICE_IMPL_HPP
 
-#include "types.hpp"
 #include "minecraft/blocks/block_info.hpp"
+#include "types.hpp"
 
 namespace minecraft::chunks
 {
@@ -19,10 +19,14 @@ namespace minecraft::chunks
 
         slice_impl();
 
-        block_type &operator[](vector2 pos)
+        void clear()
         {
-            return zx[pos.z][pos.x];
+            for (int z = 0; z < z_extent; ++z)
+                for (int x = 0; x < x_extent; ++x)
+                    zx[z][x] = blocks::air();
         }
+
+        block_type &operator[](vector2 pos) { return zx[pos.z][pos.x]; }
 
         block_type const &operator[](vector2 pos) const
         {

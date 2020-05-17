@@ -26,6 +26,8 @@ namespace minecraft::chunks
 
         chunk_impl();
 
+        void clear();
+
         slice_impl const &operator[](int y) const
         {
             assert(y >= 0);
@@ -48,5 +50,9 @@ namespace minecraft::chunks
         slice_impl     slices_[y_extent];
         struct palette palette_;
     };
+
+    auto parse(const_buffer_iterator first,
+               const_buffer_iterator last,
+               chunk_impl &          chunk) -> const_buffer_iterator;
 
 }   // namespace minecraft::chunks
