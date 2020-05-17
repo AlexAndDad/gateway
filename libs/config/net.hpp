@@ -8,5 +8,6 @@ namespace config
     using boost::system::error_category;
     using boost::system::error_code;
     using boost::system::system_error;
+    using boost::system::system_category;
 
 }   // namespace config

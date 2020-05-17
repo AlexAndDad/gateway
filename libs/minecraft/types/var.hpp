@@ -84,6 +84,13 @@ namespace minecraft
 
     template < class Underlying >
     const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator second, var< Underlying > &target)
+    {
+        return parse_var(first, second, static_cast< Underlying & >(target));
+    }
+
+    template < class Underlying >
+    const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator second, var< Underlying > &target, error_code &ec)
     {
         return parse_var(first, second, static_cast< Underlying & >(target), ec);
