@@ -18,6 +18,8 @@ namespace minecraft::chunks
 
         void compose(compose_buffer &buf) const;
 
+        void clear();
+
         std::size_t count(blocks::block_id_type blk) const;
 
         std::size_t size() const;

@@ -16,6 +16,11 @@ namespace minecraft::chunks
         return cnt;
     }
 
+    void palette::clear()
+    {
+        map_.clear();
+    }
+
     std::size_t palette::count(blocks::block_id_type blk) const
     {
         std::size_t result = 0;
