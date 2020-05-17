@@ -13,14 +13,14 @@ namespace minecraft::chunks
 {
     /// The state of a block on the map
 
-    struct slice
+    struct slice_impl
     {
         using block_type = blocks::block_type;
 
         static constexpr int x_extent = 16;   // x is horizontal
         static constexpr int z_extent = 16;   // z is horzontal
 
-        slice();
+        slice_impl();
 
         block_type &operator[](vector2 pos) { return zx[pos.z][pos.x]; }
 
@@ -33,17 +33,19 @@ namespace minecraft::chunks
         block_type zx[z_extent][x_extent];
     };
 
-    struct chunk
+    struct chunk_impl
     {
         using block_type = blocks::block_type;
 
-        static constexpr int x_extent = slice::x_extent;   // x is horizontal
-        static constexpr int z_extent = slice::z_extent;   // z is horzontal
+        static constexpr int x_extent =
+            slice_impl::x_extent;   // x is horizontal
+        static constexpr int z_extent =
+            slice_impl::z_extent;   // z is horzontal
         static constexpr int y_extent = 16;                // y is vertical
 
-        chunk();
+        chunk_impl();
 
-        slice const &operator[](int y) const
+        slice_impl const &operator[](int y) const
         {
             assert(y >= 0);
             assert(y < y_extent);
@@ -58,17 +60,19 @@ namespace minecraft::chunks
         auto palette() const -> const struct palette & { return palette_; };
 
       private:
-        slice          slices_[y_extent];
+        slice_impl     slices_[y_extent];
         struct palette palette_;
     };
 
-    struct chunk_column
+    struct chunk_section_impl
     {
         static constexpr int columns =
             16;   // 16 columns * 16 blocks = 256 height max
-        static constexpr int x_extent = chunk::x_extent;   // x is horizontal
-        static constexpr int z_extent = chunk::z_extent;   // z is horzontal
-        static constexpr int y_extent = chunk::y_extent;   // y is vertical
+        static constexpr int x_extent =
+            chunk_impl::x_extent;   // x is horizontal
+        static constexpr int z_extent =
+            chunk_impl::z_extent;   // z is horzontal
+        static constexpr int y_extent = chunk_impl::y_extent;   // y is vertical
 
         struct height_map
         {
@@ -85,9 +89,9 @@ namespace minecraft::chunks
             std::uint8_t heights_[z_extent][x_extent];
         };
 
-        chunk_column();
+        chunk_section_impl();
 
-        struct chunk const &chunk(int n)
+        struct chunk_impl const &chunk(int n)
         {
             assert(n < columns);
             return chunks_[n];
@@ -112,11 +116,11 @@ namespace minecraft::chunks
         std::uint8_t height(vector2 xz) const { return height_map_[xz]; }
 
       private:
-        struct chunk chunks_[columns];
+        struct chunk_impl chunks_[columns];
         height_map   height_map_ {};
     };
 
-    void compose(chunk_column const &cc,
+    void compose(chunk_section_impl const &cc,
                  vector2             coords,
                  std::bitset< 16 >   which,
                  bool                biomes,

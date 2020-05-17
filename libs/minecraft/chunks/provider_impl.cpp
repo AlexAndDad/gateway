@@ -94,7 +94,7 @@ namespace minecraft::chunks
             }
         }
     }
-    void provider_impl::notify_chunk(chunk_column const &cc)
+    void provider_impl::notify_chunk(chunk_section_impl const &cc)
     {
         post(net::bind_executor(exec_,
                                 [cc = cc, self = shared_from_this()]() mutable {
@@ -102,7 +102,7 @@ namespace minecraft::chunks
                                 }));
     }
 
-    void provider_impl::notify_chunk(chunk_column &&cc)
+    void provider_impl::notify_chunk(chunk_section_impl &&cc)
     {
         post(net::bind_executor(
             exec_, [cc = std::move(cc), self = shared_from_this()]() mutable {
@@ -134,7 +134,7 @@ namespace minecraft::chunks
         }
     }
 
-    void provider_impl::handle_notify_chunk(chunk_column &&cc)
+    void provider_impl::handle_notify_chunk(chunk_section_impl &&cc)
     {
         ++current_sequence_;
         current_snapshot_.emplace(std::move(cc));

@@ -21,8 +21,8 @@ namespace minecraft::chunks
         ///
         /// This will propagate down to consumers as a state of the world snapshot
         /// \param the chunk_column to copy/move
-        auto notify(chunk_column const& cc) -> void;
-        auto notify(chunk_column && cc) -> void;
+        auto notify(chunk_section_impl const& cc) -> void;
+        auto notify(chunk_section_impl && cc) -> void;
         auto notify(vector3 pos, blocks::block_type blk) -> void;
 
       private:

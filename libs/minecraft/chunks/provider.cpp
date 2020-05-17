@@ -28,13 +28,13 @@ namespace minecraft::chunks
         impl_.reset();
     }
 
-    auto provider::notify(chunk_column const& cc) -> void
+    auto provider::notify(chunk_section_impl const& cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(cc);
     }
 
-    auto provider::notify(chunk_column && cc) -> void
+    auto provider::notify(chunk_section_impl && cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(std::move(cc));

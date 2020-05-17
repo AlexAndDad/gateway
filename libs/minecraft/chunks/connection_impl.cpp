@@ -21,9 +21,9 @@ namespace minecraft::chunks
         provider_->notify_cancel(shared_from_this());
     }
 
-    void connection_impl::notify_update(chunk_column const &c)
+    void connection_impl::notify_update(chunk_section_impl const &c)
     {
-        this->current_snapshot_ = std::make_unique< chunk_column >(c);
+        this->current_snapshot_ = std::make_unique< chunk_section_impl >(c);
         this->updates_.clear();
         this->state_ = deliver_snapshot;
         try_invoke();
