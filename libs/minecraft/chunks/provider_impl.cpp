@@ -1,5 +1,6 @@
 #include "provider_impl.hpp"
 
+#include "chunk_data_impl.hpp"
 #include "connection_impl.hpp"
 
 namespace minecraft::chunks
@@ -94,7 +95,7 @@ namespace minecraft::chunks
             }
         }
     }
-    void provider_impl::notify_chunk(chunk_section_impl const &cc)
+    void provider_impl::notify_chunk(chunk_data_impl const &cc)
     {
         post(net::bind_executor(exec_,
                                 [cc = cc, self = shared_from_this()]() mutable {
@@ -102,7 +103,7 @@ namespace minecraft::chunks
                                 }));
     }
 
-    void provider_impl::notify_chunk(chunk_section_impl &&cc)
+    void provider_impl::notify_chunk(chunk_data_impl &&cc)
     {
         post(net::bind_executor(
             exec_, [cc = std::move(cc), self = shared_from_this()]() mutable {
@@ -134,7 +135,7 @@ namespace minecraft::chunks
         }
     }
 
-    void provider_impl::handle_notify_chunk(chunk_section_impl &&cc)
+    void provider_impl::handle_notify_chunk(chunk_data_impl &&cc)
     {
         ++current_sequence_;
         current_snapshot_.emplace(std::move(cc));

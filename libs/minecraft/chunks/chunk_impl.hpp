@@ -2,6 +2,7 @@
 #include "blocks/block_info.hpp"
 #include "minecraft/types/buffer.hpp"
 #include "palette.hpp"
+#include "slice_impl.hpp"
 #include "types.hpp"
 
 #include <algorithm>
@@ -12,26 +13,6 @@
 namespace minecraft::chunks
 {
     /// The state of a block on the map
-
-    struct slice_impl
-    {
-        using block_type = blocks::block_type;
-
-        static constexpr int x_extent = 16;   // x is horizontal
-        static constexpr int z_extent = 16;   // z is horzontal
-
-        slice_impl();
-
-        block_type &operator[](vector2 pos) { return zx[pos.z][pos.x]; }
-
-        block_type const &operator[](vector2 pos) const
-        {
-            return zx[pos.z][pos.x];
-        }
-
-      private:
-        block_type zx[z_extent][x_extent];
-    };
 
     struct chunk_impl
     {
@@ -59,75 +40,13 @@ namespace minecraft::chunks
 
         auto palette() const -> const struct palette & { return palette_; };
 
+        /// Return the number of non-air blocks in the chunk
+        /// \return number of non-air chunks
+        std::uint16_t count_non_air() const;
+
       private:
         slice_impl     slices_[y_extent];
         struct palette palette_;
     };
-
-    struct chunk_section_impl
-    {
-        // 16 chunks * 16 blocks = 256 height max
-        static constexpr int chunk_extent = 16;
-
-        // x is horizontal
-        static constexpr int x_extent = chunk_impl::x_extent;
-
-        // z is horzontal
-        static constexpr int z_extent = chunk_impl::z_extent;
-
-        // y is vertical
-        static constexpr int y_extent = chunk_impl::y_extent;
-
-        struct height_map
-        {
-            std::uint8_t &operator[](vector2 horz)
-            {
-                return heights_[horz.z][horz.x];
-            }
-
-            std::uint8_t const &operator[](vector2 horz) const
-            {
-                return heights_[horz.z][horz.x];
-            }
-
-            std::uint8_t heights_[z_extent][x_extent];
-        };
-
-        chunk_section_impl();
-
-        struct chunk_impl const &chunk(int n)
-        {
-            assert(n < chunk_extent);
-            return chunks_[n];
-        }
-
-        static void next(vector3 &pos);
-
-        void recalc_height(vector2 horz);
-
-        void recalc();
-
-        static bool in_bounds(vector3 pos)
-        {
-            return pos.x >= 0 and pos.x < x_extent and pos.y >= 0 and
-                   pos.y < (y_extent * chunk_extent) and pos.z >= 0 and
-                   pos.z < z_extent;
-        }
-
-        blocks::block_type
-        change_block(vector3 pos, blocks::block_type b, bool update = true);
-
-        std::uint8_t height(vector2 xz) const { return height_map_[xz]; }
-
-      private:
-        struct chunk_impl chunks_[chunk_extent];
-        height_map        height_map_ {};
-    };
-
-    void compose(chunk_section_impl const &cc,
-                 vector2                   coords,
-                 std::bitset< 16 >         which,
-                 bool                      biomes,
-                 compose_buffer &          buf);
 
 }   // namespace minecraft::chunks

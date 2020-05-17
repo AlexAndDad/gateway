@@ -1,3 +1,4 @@
+#include "chunk_data_impl.hpp"
 #include "chunk_impl.hpp"
 
 #include <catch2/catch.hpp>
@@ -6,12 +7,12 @@ using namespace minecraft::chunks;
 
 namespace
 {
-    chunk_section_impl make_test_chunk()
+    chunk_data_impl make_test_chunk()
     {
-        auto col        = chunk_section_impl();
+        auto col        = chunk_data_impl();
         auto fill_layer = [&col](int y, auto blk_id) {
-            for (int x = 0; x < chunk_section_impl::x_extent; ++x)
-                for (int z = 0; z < chunk_section_impl::z_extent; ++z)
+            for (int x = 0; x < chunk_data_impl::x_extent; ++x)
+                for (int z = 0; z < chunk_data_impl::z_extent; ++z)
                     col.change_block(vector3(x, y, z), minecraft::blocks::block_type(blk_id), false);
         };
 

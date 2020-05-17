@@ -1,5 +1,6 @@
 #pragma once
 #include "block_update.hpp"
+#include "chunk_data_impl.hpp"
 #include "chunk_impl.hpp"
 #include "minecraft/variant.hpp"
 
@@ -9,7 +10,7 @@ namespace minecraft::chunks
 {
     struct chunk_update : chunk_service_traits
     {
-        explicit chunk_update(std::unique_ptr< chunk_section_impl > p = nullptr)
+        explicit chunk_update(std::unique_ptr< chunk_data_impl > p = nullptr)
         : var_(std::move(p))
         {
         }
@@ -24,7 +25,7 @@ namespace minecraft::chunks
         {
         }
 
-        using value_type = variant< std::unique_ptr< chunk_section_impl >,
+        using value_type = variant< std::unique_ptr< chunk_data_impl >,
                                     block_update,
                                     update_sequence >;
 

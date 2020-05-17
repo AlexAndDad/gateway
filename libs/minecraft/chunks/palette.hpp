@@ -16,17 +16,20 @@ namespace minecraft::chunks
     {
         using block_type = blocks::block_type;
 
-        std::size_t add(block_type blk);
+        std::uint16_t add(block_type blk);
 
         void compose(compose_buffer &buf) const;
 
         void clear();
 
-        std::size_t count(block_type blk) const;
+        std::uint16_t count(block_type blk) const;
+
+        template < class Pred >
+        auto count_if(Pred &&pred) const -> std::uint16_t;
 
         std::size_t size() const;
 
-        std::size_t subtract(block_type blk);
+        std::uint16_t subtract(block_type blk);
 
         auto to_index(block_type blk) const -> int;
 
@@ -48,7 +51,7 @@ namespace minecraft::chunks
         <
             unordered_set_of< tagged<block_type, block> >,
             vector_of< tagged< block_type, index > >,
-            with_info< tagged< std::size_t, frequency > >
+            with_info< tagged< std::uint16_t, frequency > >
         >;
         // clang-format on
         map_type map_;
@@ -121,4 +124,19 @@ namespace minecraft::chunks
 
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, palette &p);
+}   // namespace minecraft::chunks
+
+namespace minecraft::chunks
+{
+    template < class Pred >
+    auto palette::count_if(Pred &&pred) const -> std::uint16_t
+    {
+        auto result = std::uint16_t(0);
+        for (auto &&e : map_)
+        {
+            if (pred(e.get< block >()))
+                result += e.get< frequency >();
+        }
+        return result;
+    }
 }   // namespace minecraft::chunks

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace minecraft::chunks
 {
     template < class X, class Z >

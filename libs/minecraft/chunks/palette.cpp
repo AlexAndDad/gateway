@@ -8,7 +8,7 @@
 
 namespace minecraft::chunks
 {
-    std::size_t palette::add(blocks::block_type blk)
+    std::uint16_t palette::add(blocks::block_type blk)
     {
         auto [i, b] = map_.insert(map_type::value_type(blk, blk, 0));
         auto &cnt   = i->get< frequency >();
@@ -21,9 +21,9 @@ namespace minecraft::chunks
         map_.clear();
     }
 
-    std::size_t palette::count(blocks::block_type blk) const
+    std::uint16_t palette::count(blocks::block_type blk) const
     {
-        std::size_t result = 0;
+        std::uint16_t result = 0;
         auto        i      = map_.by< block >().find(blk);
         if (i != map_.by< block >().end())
             result = i->get< frequency >();
@@ -37,7 +37,7 @@ namespace minecraft::chunks
         return map_.by< index >().at(idx).get< block >();
     }
 
-    std::size_t palette::subtract(blocks::block_type blk)
+    std::uint16_t palette::subtract(blocks::block_type blk)
     {
         auto i = map_.by< block >().find(blk);
         if (i == map_.by< block >().end())

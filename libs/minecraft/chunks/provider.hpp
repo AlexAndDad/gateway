@@ -1,7 +1,8 @@
 #pragma once
-#include "provider_impl.hpp"
-#include "connection_impl.hpp"
+#include "chunk_data_impl.hpp"
 #include "connection.hpp"
+#include "connection_impl.hpp"
+#include "provider_impl.hpp"
 
 namespace minecraft::chunks
 {
@@ -21,8 +22,8 @@ namespace minecraft::chunks
         ///
         /// This will propagate down to consumers as a state of the world snapshot
         /// \param the chunk_column to copy/move
-        auto notify(chunk_section_impl const& cc) -> void;
-        auto notify(chunk_section_impl && cc) -> void;
+        auto notify(chunk_data_impl const& cc) -> void;
+        auto notify(chunk_data_impl && cc) -> void;
         auto notify(vector3 pos, blocks::block_type blk) -> void;
 
       private:

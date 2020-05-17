@@ -41,7 +41,7 @@ namespace minecraft::chunks
         friend provider_impl;
 
         // notify of a new 'state of the world'
-        void notify_update(chunk_section_impl const &c);
+        void notify_update(chunk_data_impl const &c);
 
         // notify with an update
         void notify_update(block_update u);
@@ -61,7 +61,7 @@ namespace minecraft::chunks
         // provider writes here
         //
 
-        std::unique_ptr< chunk_section_impl > current_snapshot_;
+        std::unique_ptr< chunk_data_impl > current_snapshot_;
         update_sequence                 updates_;
         error_code                      ec_;
 
@@ -94,6 +94,7 @@ namespace minecraft::chunks
     };
 }   // namespace minecraft::chunks
 
+#include "chunk_data_impl.hpp"
 #include "connection_impl.ipp.hpp"
 
 #endif   // MINECRAFT_CHUNKS_CONNECTION_IMPL
