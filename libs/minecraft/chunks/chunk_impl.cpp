@@ -10,6 +10,8 @@
 #include <boost/core/ignore_unused.hpp>
 #include <fmt/ostream.h>
 
+using namespace std::literals;
+
 namespace minecraft::chunks
 {
     chunk_impl::chunk_impl()
@@ -20,11 +22,15 @@ namespace minecraft::chunks
 
     std::uint16_t chunk_impl::count_non_air() const
     {
-        return palette_.count_if(
-            overloaded { [](blocks::void_air) { return false; },
-                         [](blocks::cave_air) { return false; },
-                         [](blocks::air) { return false; },
-                         [](auto) { return true; } });
+        return palette_.count_if([](blocks::block_type type) {
+            if (type == blocks::air())
+                return false;
+            if (type == blocks::cave_air())
+                return false;
+            if (type == blocks::void_air())
+                return false;
+            return true;
+        });
     }
 
     void chunk_impl::recalc_palette()
@@ -134,9 +140,11 @@ namespace minecraft::chunks
 
     std::ostream &operator<<(std::ostream &os, chunk_impl const &c)
     {
+        auto sep = ""sv;
         for (int y = 0; y < chunk_impl::y_extent; ++y)
         {
-            fmt::print(os, "z = {}\n{}", y, c.slices_[y]);
+            fmt::print(os, "{}{}", sep, pretty_print(c.slices_[y], y));
+            sep = "\n"sv;
         }
         return os;
     }

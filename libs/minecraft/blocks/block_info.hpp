@@ -48,6 +48,18 @@ namespace minecraft::blocks
                               blk.value());
     }
 
+    inline std::string_view short_string(block_type const &blk)
+    {
+        return visit_block_id(
+            [](auto &&actual) {
+                std::string_view s = actual.to_string();
+
+                s = s.substr(10, s.find(':', 10) - 10);
+                return s;
+            },
+            blk.value());
+    }
+
     inline std::ostream &operator<<(std::ostream &os, block_type const &blk)
     {
         os << to_string(blk);

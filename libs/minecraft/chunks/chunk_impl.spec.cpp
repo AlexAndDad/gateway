@@ -4,12 +4,14 @@
 #include "polyfill/explain.hpp"
 
 #include <catch2/catch.hpp>
+#include <iostream>
 
 using namespace minecraft;
 namespace posix = minecraft::posix;
 namespace fs    = minecraft::fs;
 
-TEST_CASE("minecraft::chunks::chunk_data_impl")
+TEST_CASE("minecraft::chunks::chunk_impl",
+          "[minecraft::chunks::chunk_impl][minecraft::chunks][minecraft]")
 {
     auto m = mmap(
         posix::open(fs::path(minecraft::testing::chunk_data_bin_filename)));
@@ -36,6 +38,7 @@ TEST_CASE("minecraft::chunks::chunk_data_impl")
         try
         {
             parse(buf.data(), buf.data() + buf.size(), c2);
+            std::cout << c2 << std::endl;
             SUCCEED();
         }
         catch (...)

@@ -13,7 +13,9 @@ namespace
         auto fill_layer = [&col](int y, auto blk_id) {
             for (int x = 0; x < chunk_data_impl::x_extent; ++x)
                 for (int z = 0; z < chunk_data_impl::z_extent; ++z)
-                    col.change_block(vector3(x, y, z), minecraft::blocks::block_type(blk_id), false);
+                    col.change_block(vector3(x, y, z),
+                                     minecraft::blocks::block_type(blk_id),
+                                     false);
         };
 
         for (int y = 0; y < 256; ++y)
@@ -46,7 +48,6 @@ TEST_CASE("minecraft::chunks::chunk",
                                 minecraft::blocks::diamond_block());
     CHECK(old == minecraft::blocks::grass_block());
     CHECK(col.chunk(7).palette().size() == 4);
-    col.change_block(vector3(6, 128, 4),
-                     minecraft::blocks::diamond_block());
+    col.change_block(vector3(6, 128, 4), minecraft::blocks::diamond_block());
     CHECK(col.height(vector2(6, 4)) == 128);
 }

@@ -60,4 +60,6 @@ namespace minecraft::chunks
 
     void compose(chunk_impl const& c, compose_buffer& buf);
 
+
+
 }   // namespace minecraft::chunks

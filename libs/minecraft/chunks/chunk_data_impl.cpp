@@ -4,6 +4,9 @@
 
 #include "chunk_data_impl.hpp"
 
+#include "minecraft/parse.hpp"
+#include "minecraft/types/var.hpp"
+
 #include <boost/core/ignore_unused.hpp>
 
 namespace minecraft::chunks
@@ -31,21 +34,22 @@ namespace minecraft::chunks
         height_map_[horz] = y;
     }
 
+    void chunk_data_impl::recalc_height()
+    {
+        for (auto &horz : slice_impl::all())
+            recalc_height(horz);
+    }
+
     void chunk_data_impl::recalc()
     {
-        for (int z = 0; z < z_extent; ++z)
-            for (int x = 0; x < x_extent; ++x)
-            {
-                auto xz = vector2(x, z);
-                recalc_height(xz);
-            }
+        recalc_height();
         for (auto ch = 0; ch < chunk_extent; ++ch)
             chunks_[ch].recalc_palette();
     }
 
     blocks::block_type chunk_data_impl::change_block(vector3            pos,
-                                                        blocks::block_type b,
-                                                        bool update)
+                                                     blocks::block_type b,
+                                                     bool               update)
     {
         assert(in_bounds(pos));
         auto chunk_idx   = pos.y / y_extent;
@@ -66,4 +70,28 @@ namespace minecraft::chunks
         boost::ignore_unused(cc, buf);
     }
 
+    const_buffer_iterator parse(const_buffer_iterator first,
+                                const_buffer_iterator last,
+                                chunk_data_impl &     cd,
+                                std::int32_t          bitmask)
+    {
+        // starts at : Size	VarInt	Size of Data in bytes
+        // ends after: Data	Byte array	See data structure below
+
+        var_int extent;
+        first             = parse(first, last, extent);
+        auto expected_end = first + extent.value();
+        if (expected_end > last)
+            throw system_error(error::incomplete_parse, "chunk_data_impl");
+        last = expected_end;
+
+        for (int cy = 0; cy < chunk_data_impl::chunk_extent; ++cy)
+            if (bitmask & (1 << cy))
+                first = parse(first, last, cd.chunk(cy));
+        cd.recalc_height();
+
+        if (first != last)
+            throw system_error(error::invalid_payload, "chunk_data_impl");
+        return first;
+    }
 }   // namespace minecraft::chunks

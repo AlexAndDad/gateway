@@ -41,15 +41,29 @@ namespace minecraft::chunks
 
         chunk_data_impl();
 
-        struct chunk_impl const &chunk(int n)
+        chunk_impl const &chunk(int n) const
         {
             assert(n < chunk_extent);
             return chunks_[n];
         }
 
+        chunk_impl &chunk(int n)
+        {
+            assert(n < chunk_extent);
+            return chunks_[n];
+        }
+
+        chunk_impl &chunk(vector3 const &vec) { return chunks_[vec.y & 0xff]; }
+
+        chunk_impl const &chunk(vector3 const &vec) const
+        {
+            return chunks_[vec.y & 0xff];
+        }
+
         static void next(vector3 &pos);
 
         void recalc_height(vector2 horz);
+        void recalc_height();
 
         void recalc();
 
@@ -68,10 +82,15 @@ namespace minecraft::chunks
         struct chunk_impl chunks_[chunk_extent];
         height_map        height_map_ {};
     };
-    void compose(chunk_data_impl const & cc,
+    void compose(chunk_data_impl const &    cc,
                  vector2                    coords,
                  std::bitset< 16 >          which,
                  bool                       biomes,
                  minecraft::compose_buffer &buf);
+
+    const_buffer_iterator parse(const_buffer_iterator first,
+                                const_buffer_iterator last,
+                                chunk_data_impl &     cd,
+                                std::int32_t          bitmask);
 }   // namespace minecraft::chunks
 #endif   // GATEWAY_CHUNK_DATA_IMPL_HPP
