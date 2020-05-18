@@ -40,12 +40,12 @@ TEST_CASE("minecraft::chunks::chunk",
           "[minecraft][minecraft::chunks][minecraft::chunks::chunk]")
 {
     auto col = make_test_chunk();
-    CHECK(col.chunk(7).palette().size() == 2);
+    CHECK(col.chunk(7).palette().size() == 3);
     CHECK(col.height(vector2(6, 4)) == 127);
     auto old = col.change_block(vector3(6, 127, 4),
                                 minecraft::blocks::diamond_block());
     CHECK(old == minecraft::blocks::grass_block());
-    CHECK(col.chunk(7).palette().size() == 3);
+    CHECK(col.chunk(7).palette().size() == 4);
     col.change_block(vector3(6, 128, 4),
                      minecraft::blocks::diamond_block());
     CHECK(col.height(vector2(6, 4)) == 128);

@@ -46,6 +46,9 @@ namespace minecraft::chunks
         /// \return number of non-air chunks
         std::uint16_t count_non_air() const;
 
+        friend std::ostream& operator<<(std::ostream& os, chunk_impl const& c);
+        friend bool operator==(chunk_impl const& a, chunk_impl const& b);
+
       private:
         slice_impl     slices_[y_extent];
         struct palette palette_;
@@ -54,5 +57,7 @@ namespace minecraft::chunks
     auto parse(const_buffer_iterator first,
                const_buffer_iterator last,
                chunk_impl &          chunk) -> const_buffer_iterator;
+
+    void compose(chunk_impl const& c, compose_buffer& buf);
 
 }   // namespace minecraft::chunks

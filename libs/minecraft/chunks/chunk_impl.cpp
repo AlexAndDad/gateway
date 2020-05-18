@@ -2,12 +2,13 @@
 
 #include "bitpack.hpp"
 #include "chunk_data_impl.hpp"
+#include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
-#include "slice_impl.hpp"
 #include "minecraft/types/var.hpp"
+#include "slice_impl.hpp"
 
 #include <boost/core/ignore_unused.hpp>
-
+#include <fmt/ostream.h>
 
 namespace minecraft::chunks
 {
@@ -44,8 +45,8 @@ namespace minecraft::chunks
 
         if (update_palette and old != blk)
         {
-            palette_.subtract(old);
             palette_.add(blk);
+            palette_.subtract(old);
         }
         return old;
     }
@@ -64,24 +65,20 @@ namespace minecraft::chunks
         using minecraft::parse;
 
         std::int16_t blk_count;
-        auto          next = parse(first, last, blk_count);
+        auto         next = parse(first, last, blk_count);
 
         std::uint8_t bits_per_block;
         next = parse(next, last, bits_per_block);
 
-        realised_palette          rp;
-        null_palette              np;
-        realised_palette_concept &pal =
-            (bits_per_block >= 9)
-                ? static_cast< realised_palette_concept & >(np)
-                : static_cast< realised_palette_concept & >(rp);
-        next = parse(next, last, pal);
+        auto pal = realised_palette_concept(bits_per_block);
+        next     = parse(next, last, pal);
 
         var_int data_array_length;
-        next = parse(next,last,data_array_length);
+        next = parse(next, last, data_array_length);
 
         auto iter = compressed_bitfield_iterator(
             next, last, std::max(bits_per_block, std::uint8_t(4)));
+        next = next + data_array_length.value() * sizeof(std::uint64_t);
 
         chunk.clear();
         for (int y = 0; y < chunk_impl::y_extent; ++y)
@@ -94,9 +91,64 @@ namespace minecraft::chunks
 
         chunk.recalc_palette();
 
-        next = iter.next_iter();
-
         return next;
+    }
+
+    void compose(chunk_impl const &c, compose_buffer &buf)
+    {
+        encode(c.count_non_air(), back_inserter(buf));
+        auto bits_per_block = compose(c.palette(), buf);
+        if (bits_per_block >= 9)
+        {
+            bits_per_block = 14;
+            auto    comp   = bit_compressor(bits_per_block, buf);
+            var_int alen =
+                comp.size(chunk_impl::y_extent * chunk_impl::z_extent *
+                          chunk_impl::z_extent);
+            encode(alen, back_inserter(buf));
+
+            for (int y = 0; y < chunk_impl::y_extent; ++y)
+                for (int z = 0; z < chunk_impl::z_extent; ++z)
+                    for (int x = 0; x < chunk_impl::x_extent; ++x)
+                        comp(c[y][vector2(x, z)].value());
+            comp.flush();
+        }
+        else
+        {
+            if (bits_per_block < 4)
+                bits_per_block = 4;
+            auto    comp = bit_compressor(bits_per_block, buf);
+            var_int alen =
+                comp.size(chunk_impl::y_extent * chunk_impl::z_extent *
+                          chunk_impl::z_extent);
+            encode(alen, back_inserter(buf));
+
+            for (int y = 0; y < chunk_impl::y_extent; ++y)
+                for (int z = 0; z < chunk_impl::z_extent; ++z)
+                    for (int x = 0; x < chunk_impl::x_extent; ++x)
+                        comp(c.palette().to_index(c[y][vector2(x, z)]));
+            comp.flush();
+        }
+
+    }   // namespace minecraft::chunks
+
+    std::ostream &operator<<(std::ostream &os, chunk_impl const &c)
+    {
+        for (int y = 0; y < chunk_impl::y_extent; ++y)
+        {
+            fmt::print(os, "z = {}\n{}", y, c.slices_[y]);
+        }
+        return os;
+    }
+
+    bool operator==(chunk_impl const &a, chunk_impl const &b)
+    {
+        for (int y = 0; y < chunk_impl::y_extent; ++y)
+        {
+            if (a.slices_[y] != b.slices_[y])
+                return false;
+        }
+        return true;
     }
 
 }   // namespace minecraft::chunks

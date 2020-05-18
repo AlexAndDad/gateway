@@ -20,6 +20,9 @@ namespace minecraft
         , last_(last)
         , field_size_(field_size)
         {
+            if (field_size_ > 16)
+                throw system_error(minecraft::error::out_of_range,
+                                   "compressed_bitfield_iterator");
         }
 
         std::uint16_t operator*()
@@ -34,8 +37,6 @@ namespace minecraft
 
             return accum;
         }
-
-        auto next_iter() const -> const_buffer_iterator { return next_; }
 
       private:
         static auto ones(int bits) -> std::uint16_t
@@ -74,6 +75,65 @@ namespace minecraft
         int                   field_size_;
         int                   available_ = 0;
         std::uint64_t         accum_;
+    };
+
+    struct bit_compressor
+    {
+        static constexpr auto bits_per_word  = 64;
+        static constexpr auto bytes_per_word = bits_per_word / 8;
+
+        bit_compressor(int field_size, compose_buffer &target)
+        : target_(target)
+        , field_size_(field_size)
+        {
+        }
+
+        void operator()(std::uint64_t data)
+        {
+            for(auto n = field_size_ ; n ; )
+            {
+                accum_ |= (data << bits_accumulated_);
+                auto written =
+                    std::min(n, (bits_per_word - bits_accumulated_));
+                assert(written != 0);
+                data >>= written;
+                bits_accumulated_ += written;
+                if (bits_accumulated_ == bits_per_word)
+                    flush();
+                n -= written;
+            }
+        }
+
+        // return the number of longwords required to write n payloads
+        std::int32_t size(int n) const
+        {
+            auto bits  = field_size_ * n;
+            auto words = (bits + bits_per_word - 1) / bits_per_word;
+            return words;
+        }
+
+        std::size_t extent(int words_to_write) const
+        {
+            return size(words_to_write) * bytes_per_word;
+        }
+
+        void flush()
+        {
+            if (bits_accumulated_)
+            {
+                auto pos = target_.size();
+                target_.resize(pos + bytes_per_word);
+                auto conv = boost::endian::big_uint64_buf_at(std::exchange(accum_, 0));
+                std::memcpy(&target_[pos], conv.data(), bytes_per_word);
+                bits_accumulated_ = 0;
+            }
+        }
+
+
+        compose_buffer &target_;
+        std::uint64_t   accum_ = 0;
+        int             field_size_;
+        int             bits_accumulated_ = 0;
     };
 
 }   // namespace minecraft

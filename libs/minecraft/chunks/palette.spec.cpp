@@ -59,7 +59,7 @@ TEST_CASE("minecraft::chunks::palette",
         first += 0x127d;
         std::uint8_t bits_per_block = *first++;
         CHECK(bits_per_block == 5);
-        auto rp   = realised_palette();
+        auto rp   = realised_palette_concept(bits_per_block);
         auto next = first;
         REQUIRE_NOTHROW([&] {
             // clang-format off

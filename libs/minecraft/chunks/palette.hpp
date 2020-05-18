@@ -1,6 +1,8 @@
 #pragma once
+#include "blocks/block_info.hpp"
 #include "minecraft/blocks/block_info.hpp"
 #include "minecraft/types/buffer.hpp"
+#include "minecraft/variant.hpp"
 
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
@@ -18,8 +20,6 @@ namespace minecraft::chunks
 
         std::uint16_t add(block_type blk);
 
-        void compose(compose_buffer &buf) const;
-
         void clear();
 
         std::uint16_t count(block_type blk) const;
@@ -34,6 +34,13 @@ namespace minecraft::chunks
         auto to_index(block_type blk) const -> int;
 
         auto to_block(int idx) const -> block_type;
+
+        /// Compose the palette and return the number of bits per word for subsequent
+        /// encoding.
+        /// \param p
+        /// \param buf
+        /// \return the number of bits per word to used for encoding
+        friend std::uint8_t compose(palette const& p, compose_buffer& buf);
 
       private:
         // clang-format off
@@ -59,68 +66,93 @@ namespace minecraft::chunks
 
     /// For reacding block data from the wire
 
-    struct realised_palette_concept
+    struct realised_palette
     {
         using block_type = blocks::block_type;
 
-        std::size_t size() const { return handle_size(); }
-
-        block_type operator[](int idx) const { return to_block(idx); }
-
-      private:
-        virtual block_type to_block(int index) const = 0;
-
-        virtual const_buffer_iterator
-        handle_parse(const_buffer_iterator first,
-                     const_buffer_iterator last) = 0;
-
-        virtual std::size_t handle_size() const = 0;
-
-        friend auto parse(const_buffer_iterator     first,
-                          const_buffer_iterator     last,
-                          realised_palette_concept &p) -> const_buffer_iterator;
-    };
-
-    struct realised_palette final : realised_palette_concept
-    {
         realised_palette()
         : impl_()
         {
         }
 
-        virtual block_type to_block(int index) const override
+        block_type to_block(std::uint16_t index) const
         {
             return block_type(impl_.at(index));
         }
 
+        std::uint16_t size() const
+        {
+            return static_cast< std::uint16_t >(impl_.size());
+        }
+
+        friend auto parse(const_buffer_iterator first,
+                          const_buffer_iterator last,
+                          realised_palette &    p) -> const_buffer_iterator;
+
       private:
-        virtual const_buffer_iterator
-        handle_parse(const_buffer_iterator first,
-                     const_buffer_iterator last) override;
-
-        std::size_t handle_size() const override { return impl_.size(); }
-
-        boost::container::vector< std::int32_t > impl_;
+        boost::container::vector< blocks::block_id_type > impl_;
     };
 
-    struct null_palette final : realised_palette_concept
+    inline std::uint16_t size(realised_palette const &p) { return p.size(); }
+    void          compose(realised_palette const &p, compose_buffer &buf);
+
+    struct null_palette
     {
-      private:
-        block_type to_block(int index) const override
+        using block_type = blocks::block_type;
+
+        block_type to_block(std::uint16_t index) const
         {
-            return block_type(index);
+            return block_type(blocks::block_id_type(index));
         }
 
-        auto handle_parse(const_buffer_iterator first, const_buffer_iterator)
-            -> const_buffer_iterator override
-        {
-            return first;
-        }
-
-        auto handle_size() const -> std::size_t override { return 0; }
+        constexpr std::uint16_t size() const { return 0; }
     };
 
-    void compose(palette const &p, compose_buffer &buf);
+    inline auto parse(const_buffer_iterator first,
+               const_buffer_iterator,
+               null_palette &) -> const_buffer_iterator
+    {
+        return first;
+    }
+
+    inline std::uint16_t size(null_palette const &) { return 0; }
+    void          compose(null_palette const &p, compose_buffer &buf);
+
+    struct realised_palette_concept
+    {
+        using impl_type = variant< null_palette, realised_palette >;
+
+        explicit realised_palette_concept(std::uint8_t bits_per_block)
+        : var_(bits_per_block >= 9 ? impl_type(null_palette())
+                                   : impl_type(realised_palette()))
+        {
+        }
+
+        std::uint16_t size() const
+        {
+            return visit([](auto &actual) { return actual.size(); }, var_);
+        }
+
+        blocks::block_type operator[](std::uint16_t idx) const
+        {
+            return visit([idx](auto &actual) { return actual.to_block(idx); },
+                         var_);
+        }
+
+        impl_type &      as_variant() { return var_; }
+        impl_type const &as_variant() const { return var_; }
+
+      private:
+        impl_type var_;
+    };
+
+    auto parse(const_buffer_iterator     first,
+               const_buffer_iterator     last,
+               realised_palette_concept &p) -> const_buffer_iterator;
+
+    inline std::uint16_t size(realised_palette_concept const &p) { return p.size(); }
+    void compose(realised_palette_concept const &p, compose_buffer &buf);
+
 
     const_buffer_iterator
     parse(const_buffer_iterator first, const_buffer_iterator last, palette &p);

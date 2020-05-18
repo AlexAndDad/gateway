@@ -1,5 +1,6 @@
 #include "palette.hpp"
 
+#include "minecraft/encode.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/types/var.hpp"
@@ -19,12 +20,13 @@ namespace minecraft::chunks
     void palette::clear()
     {
         map_.clear();
+        map_.insert(map_type::value_type(blocks::air(), blocks::air(), 1));
     }
 
     std::uint16_t palette::count(blocks::block_type blk) const
     {
         std::uint16_t result = 0;
-        auto        i      = map_.by< block >().find(blk);
+        auto          i      = map_.by< block >().find(blk);
         if (i != map_.by< block >().end())
             result = i->get< frequency >();
         return result;
@@ -65,7 +67,7 @@ namespace minecraft::chunks
                              map_.project< index >(il));
     }
 
-    void palette::compose(compose_buffer &buf) const
+    std::uint8_t compose(palette const &p, compose_buffer &buf)
     {
         boost::ignore_unused(buf);
 
@@ -80,29 +82,36 @@ namespace minecraft::chunks
             return result;
         };
 
-        auto bits_per_block = uplog2(size());
+        const auto size           = p.size();
+        std::uint8_t       bits_per_block = static_cast<std::uint8_t>(uplog2(size));
+        encode(bits_per_block, back_inserter(buf));
+        if (bits_per_block < 9)
+        {
+            var_int x;
+            x          = size;
+            auto i     = encode(x, back_inserter(buf));
+            auto first = p.map_.by< palette::index >().begin();
+            auto last  = p.map_.by< palette::index >().end();
+            for (; first != last; ++first)
+            {
+                x = first->second.value();
+                i = encode(x, i);
+            }
+        }
 
-        if (bits_per_block <= 4)
-            bits_per_block = 4;
-        else if (bits_per_block <= 8)
-            bits_per_block = 8;
-        else
-            bits_per_block = 14;
+        return static_cast< std::uint8_t >(bits_per_block);
     }
 
-    void compose(palette const &p, compose_buffer &buf) { p.compose(buf); }
-
-    auto realised_palette::handle_parse(const_buffer_iterator first,
-                                        const_buffer_iterator last)
-        -> const_buffer_iterator
+    auto parse(const_buffer_iterator first,
+               const_buffer_iterator last,
+               realised_palette &    p) -> const_buffer_iterator
     {
         using minecraft::parse;
 
         var_int length;
         auto    next = parse(first, last, length);
-        impl_.clear();
-        impl_.resize(length.value(), boost::container::default_init);
-        std::generate_n(impl_.begin(), length.value(), [&] {
+        p.impl_.resize(length.value(), boost::container::default_init);
+        std::generate_n(p.impl_.begin(), length.value(), [&] {
             var_int v;
             next = parse(next, last, v);
             return v.value();
@@ -114,7 +123,9 @@ namespace minecraft::chunks
                const_buffer_iterator     last,
                realised_palette_concept &p) -> const_buffer_iterator
     {
-        return p.handle_parse(first, last);
+        return visit(
+            [first, last](auto &actual) { return parse(first, last, actual); },
+            p.as_variant());
     }
 
 }   // namespace minecraft::chunks

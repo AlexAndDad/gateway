@@ -26,7 +26,8 @@ namespace minecraft
             unexpected_packet,
             invalid_nbt_tag,
             invalid_shared_secret,
-            external_exception
+            external_exception,
+            out_of_range
         };
 
         // errors in the minecraft protocol login phase
@@ -88,6 +89,8 @@ namespace minecraft
                     return "invalid shared secret";
                 case error::external_exception:
                     return "external exception";
+                case error::out_of_range:
+                    return "out of range";
                 }
                 return "unknown code: " + std::to_string(value);
             }

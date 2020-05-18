@@ -33,6 +33,10 @@ namespace minecraft::chunks
             return zx[pos.z][pos.x];
         }
 
+        friend std::ostream& operator<<(std::ostream& os, slice_impl const& c);
+        friend bool operator==(slice_impl const& a, slice_impl const& b);
+        friend bool operator!=(slice_impl const& a, slice_impl const& b);
+
       private:
         block_type zx[z_extent][x_extent];
     };
