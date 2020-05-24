@@ -1,6 +1,6 @@
 #include "provider.hpp"
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 namespace minecraft::chunks
 {
     provider::provider(net::executor exec)
@@ -30,13 +30,13 @@ namespace minecraft::chunks
         impl_.reset();
     }
 
-    auto provider::notify(chunk_data_impl const& cc) -> void
+    auto provider::notify(chunk_column_impl const& cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(cc);
     }
 
-    auto provider::notify(chunk_data_impl && cc) -> void
+    auto provider::notify(chunk_column_impl && cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(std::move(cc));
