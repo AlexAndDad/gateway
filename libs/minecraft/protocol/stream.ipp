@@ -3,35 +3,45 @@
 namespace minecraft::protocol
 {
     template < class NextLayer >
-    template < class CompletionToken >
-    auto stream< NextLayer >::async_read_frame(CompletionToken &&token) ->
-        typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
+
+    template < BOOST_ASIO_COMPLETION_TOKEN_FOR(void(error_code, std::size_t))
+                   CompletionToken >
+    auto stream< NextLayer >::async_read_frame(CompletionToken &&token)
+        -> BOOST_ASIO_INITFN_RESULT_TYPE(CompletionToken,
+                                         void(error_code, std::size_t))
     {
         return impl_->async_read_frame(std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
-    template < class CompletionToken >
-    auto stream< NextLayer >::async_write_frame(net::const_buffer frame_data, CompletionToken &&token) ->
-        typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
+    template < BOOST_ASIO_COMPLETION_TOKEN_FOR(void(error_code, std::size_t))
+                   CompletionToken >
+    auto stream< NextLayer >::async_write_frame(net::const_buffer frame_data,
+                                                CompletionToken &&token)
+        -> BOOST_ASIO_INITFN_RESULT_TYPE(CompletionToken,
+                                         void(error_code, std::size_t))
     {
-        auto& area = impl_->compose_area_;
-        auto& input_buffer = area.prepare();
-        auto source = to_span(frame_data);
+        auto &area         = impl_->compose_area_;
+        auto &input_buffer = area.prepare();
+        auto  source       = to_span(frame_data);
         input_buffer.insert(input_buffer.end(), source.begin(), source.end());
         auto buf = area.commit(impl_->compression_threshold_);
-//        spdlog::info("{} writing a frame: {:n} - {:n}", *this, buf.size(), spdlog::to_hex(to_span(buf)));
-        return impl_->async_write(buf,std::forward< CompletionToken >(token));
+        //        spdlog::info("{} writing a frame: {:n} - {:n}", *this,
+        //        buf.size(), spdlog::to_hex(to_span(buf)));
+        return impl_->async_write(buf, std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
     template < class Packet, class CompletionToken >
-    auto stream< NextLayer >::async_write_packet(Packet const &p, CompletionToken &&token) ->
-        typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type
+    auto stream< NextLayer >::async_write_packet(Packet const &    p,
+                                                 CompletionToken &&token) ->
+        typename net::async_result< std::decay_t< CompletionToken >,
+                                    void(error_code, std::size_t) >::return_type
     {
         auto &area = impl_->compose_area_;
         compose(p, area.prepare());
-        return impl_->async_write(area.commit(impl_->compression_threshold_), std::forward< CompletionToken >(token));
+        return impl_->async_write(area.commit(impl_->compression_threshold_),
+                                  std::forward< CompletionToken >(token));
     }
 
     template < class NextLayer >
@@ -91,7 +101,8 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::protocol_version(protocol::version_type version) -> void
+    auto stream< NextLayer >::protocol_version(protocol::version_type version)
+        -> void
     {
         impl_->protocol_version_ = version;
     }
@@ -109,7 +120,8 @@ namespace minecraft::protocol
     }
 
     template < class NextLayer >
-    auto stream< NextLayer >::compression_threshold(std::int32_t threshold) -> void
+    auto stream< NextLayer >::compression_threshold(std::int32_t threshold)
+        -> void
     {
         impl_->compression_threshold_ = threshold;
     }

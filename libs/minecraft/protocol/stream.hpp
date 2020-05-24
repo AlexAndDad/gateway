@@ -4,13 +4,15 @@
 #include "stream_impl.hpp"
 namespace minecraft::protocol
 {
-    template < class NextLayer = net::basic_stream_socket< net::ip::tcp, net::io_context::executor_type > >
+    template < class NextLayer =
+                   net::basic_stream_socket< net::ip::tcp,
+                                             net::io_context::executor_type > >
     struct stream
     {
         using implementation_class = stream_impl< NextLayer >;
         using implementation_type  = implementation_class *;
-        using next_layer_type      = typename implementation_class::next_layer_type;
-        using executor_type        = typename implementation_class::executor_type;
+        using next_layer_type = typename implementation_class::next_layer_type;
+        using executor_type   = typename implementation_class::executor_type;
 
         stream(NextLayer &&next)
         : impl_(construct(std::move(next)))
@@ -36,43 +38,57 @@ namespace minecraft::protocol
         /// \tparam CompletionToken
         /// \param token
         /// \return DEDUCED
-        template < class CompletionToken >
-        auto async_read_frame(CompletionToken &&token) ->
-            typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
+        template < BOOST_ASIO_COMPLETION_TOKEN_FOR(
+            void(error_code, std::size_t)) CompletionToken
+                       BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type) >
+        auto
+        async_read_frame(CompletionToken &&token
+                             BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
+            -> BOOST_ASIO_INITFN_RESULT_TYPE(CompletionToken,
+                                             void(error_code, std::size_t));
 
         /// Asynchronously write a frame.
-        /// The frame data is assumed to have already been composed by the caller.
-        /// The frame data is copied by the implementation before the internal asynchronous operation starts.
-        /// This is in general not a pesssimisation as almost all minecraft communications are encrypted
+        /// The frame data is assumed to have already been composed by the
+        /// caller. The frame data is copied by the implementation before the
+        /// internal asynchronous operation starts. This is in general not a
+        /// pesssimisation as almost all minecraft communications are encrypted
         /// \tparam CompletionToken
         /// \param frame_data
         /// \param token
         /// \return DEDUCED
-        template < class CompletionToken >
-        auto async_write_frame(net::const_buffer frame_data, CompletionToken &&token) ->
-            typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
+        template < BOOST_ASIO_COMPLETION_TOKEN_FOR(
+            void(error_code, std::size_t)) CompletionToken
+                       BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type) >
+        auto async_write_frame(
+            net::const_buffer frame_data,
+            CompletionToken &&token
+                BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
+            -> BOOST_ASIO_INITFN_RESULT_TYPE(CompletionToken,
+                                             void(error_code, std::size_t));
 
         template < class Packet, class CompletionToken >
         auto async_write_packet(Packet const &p, CompletionToken &&token) ->
-            typename net::async_result< std::decay_t< CompletionToken >, void(error_code, std::size_t) >::return_type;
+            typename net::async_result< std::decay_t< CompletionToken >,
+                                        void(error_code,
+                                             std::size_t) >::return_type;
 
-        /// Return a mutable_buffer representing the data in last frame to be read.
-        /// The user may modify the data in this buffer.
-        /// The data in the buffer will be valid until the next async_read_frame call
+        /// Return a mutable_buffer representing the data in last frame to be
+        /// read. The user may modify the data in this buffer. The data in the
+        /// buffer will be valid until the next async_read_frame call
         auto current_frame() -> net::mutable_buffer;
 
         auto get_executor() const -> executor_type;
 
-        auto inet_session() -> boost::webclient::internet_session&
+        auto inet_session() -> boost::webclient::internet_session &
         {
             return impl_->inet_session();
         }
 
         /// Enable encryption and set the shared secret
-        /// \param secret is a net::const buffer containing the shared secret. secret.size() must be exactly 16
-        /// \pre stream is not already encrypted
-        /// \pre no async operations are in progress
-        /// \post all subsequent reads and writes will be encrypted
+        /// \param secret is a net::const buffer containing the shared secret.
+        /// secret.size() must be exactly 16 \pre stream is not already
+        /// encrypted \pre no async operations are in progress \post all
+        /// subsequent reads and writes will be encrypted
         auto set_encryption(shared_secret secret) -> void
         {
             assert(secret.has_value());
@@ -100,22 +116,21 @@ namespace minecraft::protocol
 
         auto log_id() const -> std::string const &;
 
-        implementation_class & full_info() const
-        {
-            return *impl_;
-        }
+        implementation_class &full_info() const { return *impl_; }
 
       private:
         implementation_type release() { return std::exchange(impl_, nullptr); }
 
-        static implementation_type construct(NextLayer &&next) { return new stream_impl< NextLayer >(std::move(next)); }
+        static implementation_type construct(NextLayer &&next)
+        {
+            return new stream_impl< NextLayer >(std::move(next));
+        }
 
         static void destroy(implementation_type impl)
         {
             impl->close();
             delete impl;
         }
-
 
         implementation_type impl_;
     };
