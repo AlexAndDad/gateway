@@ -15,7 +15,7 @@ namespace minecraft::chunks
         using block_type = minecraft::blocks::block_type;
 
         static constexpr int x_extent = 16;   // x is horizontal
-        static constexpr int z_extent = 16;   // z is horzontal
+        static constexpr int z_extent = 16;   // z is horizontal
 
         struct coordinates_range
         {
