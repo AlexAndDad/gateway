@@ -47,7 +47,7 @@ BuildCmakeContent(zlib ZLIB
 # Boost
 #
 
-RequireBoost(VERSION 1.73.0 COMPONENTS filesystem iostreams program_options system PREFIX ${deps_prefix})
+RequireBoost(VERSION 1.73.0 COMPONENTS coroutine filesystem iostreams program_options system PREFIX ${deps_prefix})
 
 #
 # boost_json
