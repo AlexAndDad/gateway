@@ -33,7 +33,7 @@ namespace gateway
                 "start()");
         }
 
-        net::awaitable< void > wait_connection()
+        net::awaitable< void > await_authed_connection()
         {
             co_await polyfill::async::async_task(
                 get_executor(),
@@ -46,7 +46,6 @@ namespace gateway
 
 
         executor_type get_executor() { return listener_.get_executor(); }
-
         void cancel()
         {
             dispatch(bind_executor(get_executor(),
@@ -54,8 +53,9 @@ namespace gateway
         }
 
       private:
+        net::awaitable< void > handle_await_authed_connection() {
 
-        net::awaitable<void> handle_wait_connection
+        }
 
         void handle_cancel()
         {
@@ -72,6 +72,9 @@ namespace gateway
         std::size_t connection_queue_limit_;
 
         // state
+        std::deque< listener::socket_type > waiting_sockets_;
+        bool                                listening_ = false;
+
         bool cancelled_ = false;
     };
 }   // namespace gateway
