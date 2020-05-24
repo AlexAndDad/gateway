@@ -2,7 +2,7 @@
 // Created by rhodges on 17/05/2020.
 //
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 
 #include "minecraft/parse.hpp"
 #include "minecraft/types/var.hpp"
@@ -11,20 +11,20 @@
 
 namespace minecraft::chunks
 {
-    chunk_data_impl::chunk_data_impl()
+    chunk_column_impl::chunk_column_impl()
     : chunks_ {}
     , height_map_ {}
     {
     }
 
-    void chunk_data_impl::next(vector3 &pos)
+    void chunk_column_impl::next(vector3 &pos)
     {
         if (++pos.x > x_extent)
             if (pos.x = 0; ++pos.z > z_extent)
                 pos.z = 0, ++pos.y;
     }
 
-    void chunk_data_impl::recalc_height(vector2 horz)
+    void chunk_column_impl::recalc_height(vector2 horz)
     {
         int y = 256;
         for (; y--;)
@@ -34,20 +34,20 @@ namespace minecraft::chunks
         height_map_[horz] = y;
     }
 
-    void chunk_data_impl::recalc_height()
+    void chunk_column_impl::recalc_height()
     {
         for (auto &horz : slice_impl::all())
             recalc_height(horz);
     }
 
-    void chunk_data_impl::recalc()
+    void chunk_column_impl::recalc()
     {
         recalc_height();
         for (auto ch = 0; ch < chunk_extent; ++ch)
             chunks_[ch].recalc_palette();
     }
 
-    blocks::block_type chunk_data_impl::change_block(vector3            pos,
+    blocks::block_type chunk_column_impl::change_block(vector3            pos,
                                                      blocks::block_type b,
                                                      bool               update)
     {
@@ -65,14 +65,18 @@ namespace minecraft::chunks
         return oldblock;
     }
 
-    void compose(const chunk_data_impl &cc, compose_buffer &buf)
+    void compose(chunk_column_impl const &    cc,
+                 vector2                    coords,
+                 std::bitset< 16 >          which,
+                 bool                       biomes,
+                 minecraft::compose_buffer &buf)
     {
-        boost::ignore_unused(cc, buf);
+        boost::ignore_unused(cc,coords,which,biomes,buf);
     }
 
     const_buffer_iterator parse(const_buffer_iterator first,
                                 const_buffer_iterator last,
-                                chunk_data_impl &     cd,
+                                chunk_column_impl &     cd,
                                 std::int32_t          bitmask)
     {
         // starts at : Size	VarInt	Size of Data in bytes
@@ -85,7 +89,7 @@ namespace minecraft::chunks
             throw system_error(error::incomplete_parse, "chunk_data_impl");
         last = expected_end;
 
-        for (int cy = 0; cy < chunk_data_impl::chunk_extent; ++cy)
+        for (int cy = 0; cy < chunk_column_impl::chunk_extent; ++cy)
             if (bitmask & (1 << cy))
                 first = parse(first, last, cd.chunk(cy));
         cd.recalc_height();

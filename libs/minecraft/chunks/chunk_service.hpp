@@ -1,5 +1,5 @@
 #pragma once
-#include "chunk_impl.hpp"
+#include "chunk_section_impl.hpp"
 #include "connection.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/variant.hpp"

@@ -1,4 +1,4 @@
-#include "chunk_impl.hpp"
+#include "chunk_section_impl.hpp"
 #include "minecraft/posix/mmap.hpp"
 #include "minecraft/testing/chunk_data.spec.ipp"
 #include "polyfill/explain.hpp"
@@ -21,7 +21,7 @@ TEST_CASE("minecraft::chunks::chunk_impl",
 
     first += 0x127b;
 
-    auto c    = chunks::chunk_impl();
+    auto c    = chunks::chunk_section_impl();
     auto next = parse(first, last, c);
 
     CHECK(next < last);
@@ -34,7 +34,7 @@ TEST_CASE("minecraft::chunks::chunk_impl",
         compose(c, buf);
         CHECK(buf.size() == 2590);
 
-        auto c2 = chunks::chunk_impl();
+        auto c2 = chunks::chunk_section_impl();
         try
         {
             parse(buf.data(), buf.data() + buf.size(), c2);

@@ -1,5 +1,5 @@
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "minecraft/posix/mmap.hpp"
 #include "minecraft/testing/chunk_data.spec.ipp"
 #include "polyfill/explain.hpp"
@@ -21,7 +21,7 @@ TEST_CASE("minecraft::chunks::chunk_data_impl",
 
     first += 0x1279;
 
-    auto cd   = chunks::chunk_data_impl();
+    auto cd   = chunks::chunk_column_impl();
     auto next = first;
 
     try

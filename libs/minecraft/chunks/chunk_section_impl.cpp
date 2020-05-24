@@ -1,7 +1,7 @@
-#include "chunk_impl.hpp"
+#include "chunk_section_impl.hpp"
 
 #include "bitpack.hpp"
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/types/var.hpp"
@@ -14,13 +14,13 @@ using namespace std::literals;
 
 namespace minecraft::chunks
 {
-    chunk_impl::chunk_impl()
+    chunk_section_impl::chunk_section_impl()
     : slices_ {}
     , palette_()
     {
     }
 
-    std::uint16_t chunk_impl::count_non_air() const
+    std::uint16_t chunk_section_impl::count_non_air() const
     {
         return palette_.count_if([](blocks::block_type type) {
             if (type == blocks::air())
@@ -33,7 +33,7 @@ namespace minecraft::chunks
         });
     }
 
-    void chunk_impl::recalc_palette()
+    void chunk_section_impl::recalc_palette()
     {
         palette_.clear();
         for (int y = 0; y < y_extent; ++y)
@@ -42,7 +42,7 @@ namespace minecraft::chunks
                     palette_.add(slices_[y][vector2(x, z)]);
     }
 
-    blocks::block_type chunk_impl::change_block(vector3            pos,
+    blocks::block_type chunk_section_impl::change_block(vector3            pos,
                                                 blocks::block_type blk,
                                                 bool update_palette)
     {
@@ -57,7 +57,7 @@ namespace minecraft::chunks
         return old;
     }
 
-    void chunk_impl::clear()
+    void chunk_section_impl::clear()
     {
         palette_.clear();
         for (int y = 0; y < y_extent; ++y)
@@ -66,7 +66,7 @@ namespace minecraft::chunks
 
     auto parse(const_buffer_iterator first,
                const_buffer_iterator last,
-               chunk_impl &          chunk) -> const_buffer_iterator
+               chunk_section_impl &          chunk) -> const_buffer_iterator
     {
         using minecraft::parse;
 
@@ -87,9 +87,9 @@ namespace minecraft::chunks
         next = next + data_array_length.value() * sizeof(std::uint64_t);
 
         chunk.clear();
-        for (int y = 0; y < chunk_impl::y_extent; ++y)
-            for (int z = 0; z < chunk_impl::z_extent; ++z)
-                for (int x = 0; x < chunk_impl::x_extent; ++x)
+        for (int y = 0; y < chunk_section_impl::y_extent; ++y)
+            for (int z = 0; z < chunk_section_impl::z_extent; ++z)
+                for (int x = 0; x < chunk_section_impl::x_extent; ++x)
                 {
                     auto tmp = pal[*iter];
                     chunk.change_block(vector3(x, y, z), tmp, false);
@@ -100,7 +100,7 @@ namespace minecraft::chunks
         return next;
     }
 
-    void compose(chunk_impl const &c, compose_buffer &buf)
+    void compose(chunk_section_impl const &c, compose_buffer &buf)
     {
         encode(c.count_non_air(), back_inserter(buf));
         auto bits_per_block = compose(c.palette(), buf);
@@ -109,13 +109,14 @@ namespace minecraft::chunks
             bits_per_block = 14;
             auto    comp   = bit_compressor(bits_per_block, buf);
             var_int alen =
-                comp.size(chunk_impl::y_extent * chunk_impl::z_extent *
-                          chunk_impl::z_extent);
+                comp.size(chunk_section_impl::y_extent *
+                                     chunk_section_impl::z_extent *
+                                     chunk_section_impl::z_extent);
             encode(alen, back_inserter(buf));
 
-            for (int y = 0; y < chunk_impl::y_extent; ++y)
-                for (int z = 0; z < chunk_impl::z_extent; ++z)
-                    for (int x = 0; x < chunk_impl::x_extent; ++x)
+            for (int y = 0; y < chunk_section_impl::y_extent; ++y)
+                for (int z = 0; z < chunk_section_impl::z_extent; ++z)
+                    for (int x = 0; x < chunk_section_impl::x_extent; ++x)
                         comp(c[y][vector2(x, z)].value());
             comp.flush();
         }
@@ -125,23 +126,24 @@ namespace minecraft::chunks
                 bits_per_block = 4;
             auto    comp = bit_compressor(bits_per_block, buf);
             var_int alen =
-                comp.size(chunk_impl::y_extent * chunk_impl::z_extent *
-                          chunk_impl::z_extent);
+                comp.size(chunk_section_impl::y_extent *
+                                     chunk_section_impl::z_extent *
+                                     chunk_section_impl::z_extent);
             encode(alen, back_inserter(buf));
 
-            for (int y = 0; y < chunk_impl::y_extent; ++y)
-                for (int z = 0; z < chunk_impl::z_extent; ++z)
-                    for (int x = 0; x < chunk_impl::x_extent; ++x)
+            for (int y = 0; y < chunk_section_impl::y_extent; ++y)
+                for (int z = 0; z < chunk_section_impl::z_extent; ++z)
+                    for (int x = 0; x < chunk_section_impl::x_extent; ++x)
                         comp(c.palette().to_index(c[y][vector2(x, z)]));
             comp.flush();
         }
 
     }   // namespace minecraft::chunks
 
-    std::ostream &operator<<(std::ostream &os, chunk_impl const &c)
+    std::ostream &operator<<(std::ostream &os, chunk_section_impl const &c)
     {
         auto sep = ""sv;
-        for (int y = 0; y < chunk_impl::y_extent; ++y)
+        for (int y = 0; y < chunk_section_impl::y_extent; ++y)
         {
             fmt::print(os, "{}{}", sep, pretty_print(c.slices_[y], y));
             sep = "\n"sv;
@@ -149,9 +151,9 @@ namespace minecraft::chunks
         return os;
     }
 
-    bool operator==(chunk_impl const &a, chunk_impl const &b)
+    bool operator==(chunk_section_impl const &a, chunk_section_impl const &b)
     {
-        for (int y = 0; y < chunk_impl::y_extent; ++y)
+        for (int y = 0; y < chunk_section_impl::y_extent; ++y)
         {
             if (a.slices_[y] != b.slices_[y])
                 return false;

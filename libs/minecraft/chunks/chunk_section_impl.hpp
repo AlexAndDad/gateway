@@ -14,7 +14,7 @@ namespace minecraft::chunks
 {
     /// The state of a block on the map
 
-    struct chunk_impl
+    struct chunk_section_impl
     {
         using block_type = blocks::block_type;
 
@@ -24,7 +24,7 @@ namespace minecraft::chunks
             slice_impl::z_extent;             // z is horzontal
         static constexpr int y_extent = 16;   // y is vertical
 
-        chunk_impl();
+        chunk_section_impl();
 
         void clear();
 
@@ -46,8 +46,10 @@ namespace minecraft::chunks
         /// \return number of non-air chunks
         std::uint16_t count_non_air() const;
 
-        friend std::ostream& operator<<(std::ostream& os, chunk_impl const& c);
-        friend bool operator==(chunk_impl const& a, chunk_impl const& b);
+        friend std::ostream& operator<<(std::ostream& os,
+                                        chunk_section_impl const& c);
+        friend bool operator==(chunk_section_impl const& a,
+                               chunk_section_impl const& b);
 
       private:
         slice_impl     slices_[y_extent];
@@ -56,9 +58,9 @@ namespace minecraft::chunks
 
     auto parse(const_buffer_iterator first,
                const_buffer_iterator last,
-               chunk_impl &          chunk) -> const_buffer_iterator;
+               chunk_section_impl &          chunk) -> const_buffer_iterator;
 
-    void compose(chunk_impl const& c, compose_buffer& buf);
+    void compose(chunk_section_impl const& c, compose_buffer& buf);
 
 
 

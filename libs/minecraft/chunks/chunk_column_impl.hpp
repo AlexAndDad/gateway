@@ -2,13 +2,13 @@
 // Created by rhodges on 17/05/2020.
 //
 
-#ifndef GATEWAY_CHUNK_DATA_IMPL_HPP
-#define GATEWAY_CHUNK_DATA_IMPL_HPP
-#include "chunk_impl.hpp"
+#ifndef GATEWAY_CHUNK_COLUMN_IMPL_HPP
+#define GATEWAY_CHUNK_COLUMN_IMPL_HPP
+#include "chunk_section_impl.hpp"
 
 namespace minecraft::chunks
 {
-    struct chunk_data_impl
+    struct chunk_column_impl
     {
         using block_type = minecraft::blocks::block_type;
 
@@ -16,13 +16,13 @@ namespace minecraft::chunks
         static constexpr int chunk_extent = 16;
 
         // x is horizontal
-        static constexpr int x_extent = chunk_impl::x_extent;
+        static constexpr int x_extent = chunk_section_impl::x_extent;
 
         // z is horzontal
-        static constexpr int z_extent = chunk_impl::z_extent;
+        static constexpr int z_extent = chunk_section_impl::z_extent;
 
         // y is vertical
-        static constexpr int y_extent = chunk_impl::y_extent;
+        static constexpr int y_extent = chunk_section_impl::y_extent;
 
         struct height_map
         {
@@ -39,23 +39,23 @@ namespace minecraft::chunks
             uint8_t heights_[z_extent][x_extent];
         };
 
-        chunk_data_impl();
+        chunk_column_impl();
 
-        chunk_impl const &chunk(int n) const
+        chunk_section_impl const &chunk(int n) const
         {
             assert(n < chunk_extent);
             return chunks_[n];
         }
 
-        chunk_impl &chunk(int n)
+        chunk_section_impl &chunk(int n)
         {
             assert(n < chunk_extent);
             return chunks_[n];
         }
 
-        chunk_impl &chunk(vector3 const &vec) { return chunks_[vec.y & 0xff]; }
+        chunk_section_impl &chunk(vector3 const &vec) { return chunks_[vec.y & 0xff]; }
 
-        chunk_impl const &chunk(vector3 const &vec) const
+        chunk_section_impl const &chunk(vector3 const &vec) const
         {
             return chunks_[vec.y & 0xff];
         }
@@ -79,10 +79,10 @@ namespace minecraft::chunks
         std::uint8_t height(vector2 xz) const { return height_map_[xz]; }
 
       private:
-        struct chunk_impl chunks_[chunk_extent];
+        struct chunk_section_impl chunks_[chunk_extent];
         height_map        height_map_ {};
     };
-    void compose(chunk_data_impl const &    cc,
+    void compose(chunk_column_impl const &    cc,
                  vector2                    coords,
                  std::bitset< 16 >          which,
                  bool                       biomes,
@@ -90,7 +90,7 @@ namespace minecraft::chunks
 
     const_buffer_iterator parse(const_buffer_iterator first,
                                 const_buffer_iterator last,
-                                chunk_data_impl &     cd,
+                                chunk_column_impl &     cd,
                                 std::int32_t          bitmask);
 }   // namespace minecraft::chunks
-#endif   // GATEWAY_CHUNK_DATA_IMPL_HPP
+#endif   // GATEWAY_CHUNK_COLUMN_IMPL_HPP
