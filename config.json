@@ -1,0 +1,10 @@
+{
+  "application": {},
+  "connection_manager": {
+    "connection_queue_limit": 10
+  },
+  "listener": {
+    "port": 25565
+  }
+
+}
