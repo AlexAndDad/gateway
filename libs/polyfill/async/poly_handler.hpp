@@ -22,19 +22,19 @@ namespace polyfill::async
         struct poly_handler_vtable
         {
             // move-construct from value - may throw
-            virtual void move_construct(sbo_storage &storage,
-                                        void *       source) const = 0;
+            void (*const move_construct_from_actual)(sbo_storage &storage,
+                                                     void *actual) noexcept;
 
             // move construct from other SBO. May not throw
-            virtual void move_construct(sbo_storage &storage,
-                                        sbo_storage &source) const noexcept = 0;
+            void (*const move_construct)(sbo_storage &storage,
+                                         sbo_storage &source) noexcept;
 
-            virtual Ret invoke(sbo_storage &storage, Args... args) const = 0;
+            Ret (*const invoke)(sbo_storage &storage, Args... args);
 
-            virtual void destroy(sbo_storage &storage) const noexcept = 0;
+            void (*const destroy)(sbo_storage &storage) noexcept;
 
-            virtual net::executor
-            get_executor(sbo_storage const &storage) const noexcept = 0;
+            net::executor (*const get_executor)(
+                sbo_storage const &storage) noexcept;
         };
 
         template < class Actual, class Ret, class... Args >
@@ -42,49 +42,56 @@ namespace polyfill::async
         {
             static_assert(sizeof(Actual) <= sizeof(sbo_storage));
 
-            static const struct : poly_handler_vtable< Ret, Args... >
+            static const struct mine : poly_handler_vtable< Ret, Args... >
             {
                 static Actual &realise(sbo_storage &storage) noexcept
                 {
                     return *reinterpret_cast< Actual * >(&storage.short_[0]);
                 }
 
-                static Actual const &realise(sbo_storage const &storage) noexcept
+                static Actual const &
+                realise(sbo_storage const &storage) noexcept
                 {
-                    return *reinterpret_cast< Actual const * >(&storage.short_[0]);
+                    return *reinterpret_cast< Actual const * >(
+                        &storage.short_[0]);
                 }
 
-                void move_construct(sbo_storage &storage,
-                                    void *       source) const override
+                static void move_construct_from_actual_(sbo_storage &storage,
+                                                        void *source) noexcept
                 {
                     new (&realise(storage)) Actual(
                         std::move(*reinterpret_cast< Actual * >(source)));
                 }
 
-                void move_construct(sbo_storage &storage,
-                                    sbo_storage &source) const noexcept override
+                static void move_construct_(sbo_storage &storage,
+                                            sbo_storage &source) noexcept
                 {
                     new (&realise(storage)) Actual(std::move(realise(source)));
                 }
 
-                Ret invoke(sbo_storage &storage, Args... args) const override
+                static Ret invoke_(sbo_storage &storage, Args... args)
                 {
                     auto act = std::move(realise(storage));
-                    destroy(storage);
+                    destroy_(storage);
                     return act(std::move(args)...);
                 }
 
-                void destroy(sbo_storage &storage) const noexcept override
+                static void destroy_(sbo_storage &storage) noexcept
                 {
                     realise(storage).~Actual();
                 }
 
-                net::executor
-                get_executor(sbo_storage const &storage) const noexcept override
+                static net::executor
+                get_executor_(sbo_storage const &storage) noexcept
                 {
                     return net::get_associated_executor(realise(storage));
                 }
-            } x;
+            } x { { .move_construct_from_actual =
+                        &mine::move_construct_from_actual_,
+                    .move_construct = &mine::move_construct_,
+                    .invoke         = &mine::invoke_,
+                    .destroy        = &mine::destroy_,
+                    .get_executor   = &mine::get_executor_ } };
             return &x;
         }
 
@@ -93,10 +100,10 @@ namespace polyfill::async
         {
             static_assert(sizeof(Actual) > sizeof(sbo_storage));
 
-            static const struct : poly_handler_vtable< Ret, Args... >
+            static const struct mine : poly_handler_vtable< Ret, Args... >
             {
-                void move_construct(sbo_storage &storage,
-                                    void *       source) const override
+                static void move_construct_from_actual(sbo_storage &storage,
+                                                       void *source) noexcept
                 {
                     constexpr auto size = sizeof(Actual);
                     new (&storage.long_) std::unique_ptr< unsigned char[] >();
@@ -105,14 +112,14 @@ namespace polyfill::async
                         std::move(*reinterpret_cast< Actual * >(source)));
                 }
 
-                void move_construct(sbo_storage &storage,
-                                    sbo_storage &source) const noexcept override
+                static void move_construct(sbo_storage &storage,
+                                           sbo_storage &source) noexcept
                 {
                     new (&storage.long_) std::unique_ptr< unsigned char[] >(
                         std::move(source.long_));
                 }
 
-                Ret invoke(sbo_storage &storage, Args... args) const override
+                static Ret invoke(sbo_storage &storage, Args... args)
                 {
                     auto act = std::move(
                         *reinterpret_cast< Actual * >(storage.long_.get()));
@@ -121,7 +128,7 @@ namespace polyfill::async
                     return act(std::move(args)...);
                 }
 
-                void destroy(sbo_storage &storage) const noexcept override
+                static void destroy(sbo_storage &storage) noexcept
                 {
                     if (storage.long_)
                         reinterpret_cast< Actual * >(storage.long_.get())
@@ -129,13 +136,19 @@ namespace polyfill::async
                     storage.long_.~unique_ptr< unsigned char[] >();
                 }
 
-                net::executor
-                get_executor(sbo_storage const &storage) const noexcept override
+                static net::executor
+                get_executor(sbo_storage const &storage) noexcept
                 {
-                    auto& actual = *reinterpret_cast< Actual * >(storage.long_.get());
+                    auto &actual =
+                        *reinterpret_cast< Actual * >(storage.long_.get());
                     return net::get_associated_executor(actual);
                 }
-            } x;
+            } x { { .move_construct_from_actual =
+                        &mine::move_construct_from_actual,
+                    .move_construct = &mine::move_construct,
+                    .invoke         = &mine::invoke,
+                    .destroy        = &mine::destroy,
+                    .get_executor   = &mine::get_executor } };
             return &x;
         }
 
@@ -154,7 +167,7 @@ namespace polyfill::async
     template < class F, class Ret, class... Args >
     concept TypedCompletionHandler = requires(F f)
     {
-        { static_cast<const F&>(f).get_executor() };
+        { static_cast< const F & >(f).get_executor() };
         {
             f(Args {}...)
         }
@@ -183,13 +196,14 @@ namespace polyfill::async
                 * = nullptr >
         poly_handler(Actual actual)
         {
-            constexpr auto size = sizeof(Actual);
-            if constexpr (size > sizeof(storage_))
+            constexpr auto size  = sizeof(Actual);
+            constexpr auto limit = sizeof(storage_.short_);
+            if constexpr (size > limit)
             {
                 // non-sbo
                 auto kind = detail::
                     make_big_poly_handler_vtable< Actual, Ret, Args... >();
-                kind->move_construct(storage_, std::addressof(actual));
+                kind->move_construct_from_actual(storage_, std::addressof(actual));
                 kind_ = kind;
             }
             else
@@ -197,7 +211,7 @@ namespace polyfill::async
                 // sbo
                 auto kind = detail::
                     make_small_poly_handler_vtable< Actual, Ret, Args... >();
-                kind->move_construct(storage_, std::addressof(actual));
+                kind->move_construct_from_actual(storage_, std::addressof(actual));
                 kind_ = kind;
             }
         }
