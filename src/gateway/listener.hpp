@@ -103,10 +103,7 @@ namespace gateway
                     else if (ec != net::error::operation_aborted)
                         std::rethrow_exception(std::current_exception());
                 }
-                catch (...)
-                {
-                    std::rethrow_exception(std::current_exception());
-                }
+
             }
         }
 

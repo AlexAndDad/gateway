@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <memory>
+#include "polyfill/configuration.hpp"
 
 namespace gateway
 {
@@ -14,7 +15,12 @@ namespace gateway
     {
         using socket_type = connection_impl::socket_type;
 
-        explicit connection(connection_config config, socket_type &&sock, minecraft::region::player_update_queue & queue);
+        explicit connection(polyfill::configuration & config, socket_type &&sock);
+
+        connection(std::shared_ptr<connection_impl> impl)
+        : impl_(std::move(impl))
+        {
+        }
 
         void cancel();
 
