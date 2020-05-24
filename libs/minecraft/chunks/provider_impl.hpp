@@ -3,7 +3,7 @@
 #ifndef MINECRAFT_CHUNKS_PROVIDER_IMPL
 #define MINECRAFT_CHUNKS_PROVIDER_IMPL
 
-#include "chunk_impl.hpp"
+#include "chunk_section_impl.hpp"
 #include "chunk_service_traits.hpp"
 #include "minecraft/net.hpp"
 #include "wait_op_base.hpp"
@@ -41,8 +41,8 @@ namespace minecraft::chunks
 
         void cancel();
 
-        void notify_chunk(chunk_data_impl && cc);
-        void notify_chunk(chunk_data_impl const& cc);
+        void notify_chunk(chunk_column_impl && cc);
+        void notify_chunk(chunk_column_impl const& cc);
 
 
         //
@@ -57,7 +57,7 @@ namespace minecraft::chunks
         void handle_cancel();
         void handle_notify_waiting(connection_impl *handle);
         void handle_notify_update(vector3 pos, blocks::block_type blk);
-        void handle_notify_chunk(chunk_data_impl && cc);
+        void handle_notify_chunk(chunk_column_impl && cc);
         std::shared_ptr< connection_impl > lookup(connection_impl *handle);
 
         executor_type exec_;
@@ -65,7 +65,7 @@ namespace minecraft::chunks
                             std::weak_ptr< connection_impl > >
                                       connections_;
         // if not has_value() then the provider has not yet been initialised
-        std::optional< chunk_data_impl > current_snapshot_;
+        std::optional< chunk_column_impl > current_snapshot_;
 
         // provider's global error
         error_code ec_;
@@ -75,7 +75,7 @@ namespace minecraft::chunks
 
 }   // namespace minecraft::chunks
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "provider_impl.ipp.hpp"
 
 #endif   // MINECRAFT_CHUNKS_PROVIDER_IMPL

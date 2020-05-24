@@ -1,4 +1,4 @@
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "provider.hpp"
 
 #include <catch2/catch.hpp>
@@ -8,12 +8,12 @@ using namespace minecraft;
 
 namespace
 {
-    chunks::chunk_data_impl make_test_chunk()
+    chunks::chunk_column_impl make_test_chunk()
     {
-        auto col        = chunks::chunk_data_impl();
+        auto col        = chunks::chunk_column_impl();
         auto fill_layer = [&col](int y, auto blk_id) {
-            for (int x = 0; x < chunks::chunk_data_impl::x_extent; ++x)
-                for (int z = 0; z < chunks::chunk_data_impl::z_extent; ++z)
+            for (int x = 0; x < chunks::chunk_column_impl::x_extent; ++x)
+                for (int z = 0; z < chunks::chunk_column_impl::z_extent; ++z)
                     col.change_block(chunks::vector3(x, y, z), blk_id, false);
         };
 
@@ -88,7 +88,7 @@ TEST_CASE("minecraft::chunks::provider",
             CHECK(f.valid());
             auto update = chunks::chunk_update();
             CHECK_NOTHROW(update = f.get());
-            CHECK(holds_alternative< std::unique_ptr< chunks::chunk_data_impl > >(
+            CHECK(holds_alternative< std::unique_ptr< chunks::chunk_column_impl > >(
                 update.as_variant()));
         }
     }
@@ -108,7 +108,7 @@ TEST_CASE("minecraft::chunks::provider",
         CHECK(f.valid());
         auto update = chunks::chunk_update();
         CHECK_NOTHROW(update = f.get());
-        CHECK(holds_alternative< std::unique_ptr< chunks::chunk_data_impl > >(
+        CHECK(holds_alternative< std::unique_ptr< chunks::chunk_column_impl > >(
             update.as_variant()));
 
         f = consumer.async_wait(net::use_future);   // 1 post
