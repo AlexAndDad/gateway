@@ -79,8 +79,10 @@ namespace polyfill::async::detail
         polyfill::async::poly_handler< void(error_code, value_type) > handler_;
 
         using queue_impl = std::queue< T, std::deque< T > >;
-        queue_impl    values_;
-        error_code    ec_;   // error state of the queue
+        queue_impl values_;
+        error_code ec_;   // error state of the queue
+
+        // accessed by both internal and external threads
         executor_type default_executor_;
     };
 }   // namespace polyfill::async::detail
@@ -101,10 +103,10 @@ namespace polyfill::async::detail
 
             this->state_ = waiting;
 
-            net::dispatch(net::bind_executor(
-                this->default_executor_, [self = boost::intrusive_ptr(this)]() {
-                    self->maybe_complete();
-                }));
+            net::post(net::bind_executor(this->default_executor_,
+                                         [self = boost::intrusive_ptr(this)]() {
+                                             self->maybe_complete();
+                                         }));
         };
 
         return net::async_initiate< WaitHandler, void(error_code, value_type) >(
@@ -120,7 +122,7 @@ namespace polyfill::async::detail
     template < class T, class Executor >
     void async_queue_impl< T, Executor >::push(value_type v)
     {
-        net::dispatch(net::bind_executor(
+        net::post(net::bind_executor(
             this->default_executor_,
             [self = boost::intrusive_ptr(this), v = std::move(v)]() mutable {
                 self->values_.push(std::move(v));
@@ -137,32 +139,44 @@ namespace polyfill::async::detail
         if (state_.exchange(not_waiting) != waiting)
             return;
 
-        auto e = net::get_associated_executor(handler_);
+        auto e = this->handler_.get_executor();
 
         if (ec_)
         {
-            net::post(net::bind_executor(
-                e, [h = std::move(this->handler_), ec = ec_]() mutable {
-                    h(ec, value_type());
-                }));
-            ec_.clear();
+            auto op = [ec   = std::exchange(ec_, {}),
+                       self = boost::intrusive_ptr(this)] {
+                self->handler_(ec, value_type());
+            };
+            if (e == this->default_executor_)
+            {
+                op();
+            }
+            else
+            {
+                net::post(net::bind_executor(e, op));
+            }
         }
         else
         {
-            net::post(
-                net::bind_executor(e,
-                                   [v = std::move(this->values_.front()),
-                                    h = std::move(this->handler_)]() mutable {
-                                       h(error_code(), std::move(v));
-                                   }));
+            auto v = std::move(values_.front());
             values_.pop();
+
+            auto op = [self = boost::intrusive_ptr(this),
+                       v    = std::move(v)]() mutable {
+                self->handler_(error_code(), std::move(v));
+            };
+
+            if (e == default_executor_)
+                op();
+            else
+                net::post(net::bind_executor(e, op));
         }
     }
 
     template < class T, class Executor >
     void async_queue_impl< T, Executor >::stop()
     {
-        net::dispatch(
+        net::post(
             net::bind_executor(this->default_executor_,
                                [self = boost::intrusive_ptr(this)]() mutable {
                                    self->ec_ = net::error::operation_aborted;

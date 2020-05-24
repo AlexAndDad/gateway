@@ -11,12 +11,6 @@ TEST_CASE("async_queue")
     auto e = ioc.get_executor();
     auto q = async_queue<std::string>(e);
 
-    auto ioc2 = net::io_context(1);
-    auto e2 = ioc2.get_executor();
-
-    error_code error;
-    std::string value;
-
     auto run = [](net::io_context& ioc)
     {
         auto s = ioc.run();
@@ -31,54 +25,109 @@ TEST_CASE("async_queue")
         return s;
     };
 
-    auto make_handler = [&]()
+    SECTION("different executors")
     {
-        return bind_executor(e2, [&](error_code ec, std::string s) {
-            error = ec;
-            value = s;
-        });
-    };
+        auto ioc2 = net::io_context(1);
+        auto e2   = ioc2.get_executor();
 
-    SECTION("stop")
-    {
-        q.async_pop(make_handler());
-        q.stop();
+        error_code  error;
+        std::string value;
 
-        CHECK(poll(ioc) == 2);
-        CHECK(run(ioc2) == 1);
-        CHECK(run(ioc) == 0);
+        auto make_handler = [&]() {
+            return bind_executor(e2, [&](error_code ec, std::string s) {
+                error = ec;
+                value = s;
+            });
+        };
 
-        CHECK(error.message() == "Operation canceled");
+        SECTION("stop")
+        {
+            q.async_pop(make_handler());
+            q.stop();
+
+            CHECK(poll(ioc) == 2);
+            CHECK(run(ioc2) == 1);
+            CHECK(run(ioc) == 0);
+
+            CHECK(error.message() == "Operation canceled");
+        }
+
+        SECTION("3 values")
+        {
+            q.push("a");
+            q.push("b");
+            q.push("c");
+            CHECK(poll(ioc) == 3);
+
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(run(ioc2) == 1);
+            CHECK(error.message() == "Success");
+            CHECK(value == "a");
+
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(run(ioc2) == 1);
+            CHECK(error.message() == "Success");
+            CHECK(value == "b");
+
+            q.stop();
+            CHECK(poll(ioc) == 1);
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(run(ioc2) == 1);
+            CHECK(error.message() == "Operation canceled");
+            CHECK(value == "");
+        }
     }
 
-    SECTION("3 values")
+    SECTION("same executor")
     {
-        q.push("a");
-        q.push("b");
-        q.push("c");
-        CHECK(poll(ioc) == 3);
+        error_code  error;
+        std::string value;
 
-        q.async_pop(make_handler());
-        CHECK(poll(ioc) == 1);
-        CHECK(run(ioc2) == 1);
-        CHECK(error.message() == "Success");
-        CHECK(value == "a");
+        auto make_handler = [&]() {
+            return bind_executor(e, [&](error_code ec, std::string s) {
+                error = ec;
+                value = s;
+            });
+        };
 
-        q.async_pop(make_handler());
-        CHECK(poll(ioc) == 1);
-        CHECK(run(ioc2) == 1);
-        CHECK(error.message() == "Success");
-        CHECK(value == "b");
+        SECTION("stop")
+        {
+            q.async_pop(make_handler());
+            q.stop();
 
-        q.stop();
-        CHECK(poll(ioc) == 1);
-        q.async_pop(make_handler());
-        CHECK(poll(ioc) == 1);
-        CHECK(run(ioc2) == 1);
-        CHECK(error.message() == "Operation canceled");
-        CHECK(value == "");
+            CHECK(poll(ioc) == 2);
+            CHECK(run(ioc) == 0);
 
+            CHECK(error.message() == "Operation canceled");
+        }
 
+        SECTION("3 values")
+        {
+            q.push("a");
+            q.push("b");
+            q.push("c");
+            CHECK(poll(ioc) == 3);
+
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(error.message() == "Success");
+            CHECK(value == "a");
+
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(error.message() == "Success");
+            CHECK(value == "b");
+
+            q.stop();
+            CHECK(poll(ioc) == 1);
+            q.async_pop(make_handler());
+            CHECK(poll(ioc) == 1);
+            CHECK(error.message() == "Operation canceled");
+            CHECK(value == "");
+        }
     }
 
 }
