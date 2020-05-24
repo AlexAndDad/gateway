@@ -2,7 +2,7 @@
 #ifndef MINECRAFT_CHUNKS_CONNECTION_IMPL
 #define MINECRAFT_CHUNKS_CONNECTION_IMPL
 
-#include "chunk_impl.hpp"
+#include "chunk_section_impl.hpp"
 #include "chunk_service_traits.hpp"
 #include "chunk_update.hpp"
 #include "function2/function2.hpp"
@@ -41,7 +41,7 @@ namespace minecraft::chunks
         friend provider_impl;
 
         // notify of a new 'state of the world'
-        void notify_update(chunk_data_impl const &c);
+        void notify_update(chunk_column_impl const &c);
 
         // notify with an update
         void notify_update(block_update u);
@@ -61,7 +61,7 @@ namespace minecraft::chunks
         // provider writes here
         //
 
-        std::unique_ptr< chunk_data_impl > current_snapshot_;
+        std::unique_ptr< chunk_column_impl > current_snapshot_;
         update_sequence                 updates_;
         error_code                      ec_;
 
@@ -94,7 +94,7 @@ namespace minecraft::chunks
     };
 }   // namespace minecraft::chunks
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "connection_impl.ipp.hpp"
 
 #endif   // MINECRAFT_CHUNKS_CONNECTION_IMPL

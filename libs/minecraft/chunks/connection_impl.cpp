@@ -1,6 +1,6 @@
 #include "connection_impl.hpp"
 
-#include "chunk_data_impl.hpp"
+#include "chunk_column_impl.hpp"
 #include "provider_impl.hpp"
 
 namespace minecraft::chunks
@@ -22,9 +22,9 @@ namespace minecraft::chunks
         provider_->notify_cancel(shared_from_this());
     }
 
-    void connection_impl::notify_update(chunk_data_impl const &c)
+    void connection_impl::notify_update(chunk_column_impl const &c)
     {
-        this->current_snapshot_ = std::make_unique< chunk_data_impl >(c);
+        this->current_snapshot_ = std::make_unique< chunk_column_impl >(c);
         this->updates_.clear();
         this->state_ = deliver_snapshot;
         try_invoke();
