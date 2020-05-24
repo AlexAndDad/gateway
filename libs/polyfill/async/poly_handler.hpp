@@ -183,7 +183,7 @@ namespace polyfill::async
       public:
         using executor_type = net::executor;
 
-        poly_handler()
+        explicit poly_handler(nullptr_t = nullptr)
         : storage_ {}
         , kind_(nullptr)
         {
@@ -196,24 +196,7 @@ namespace polyfill::async
                 * = nullptr >
         poly_handler(Actual actual)
         {
-            constexpr auto size  = sizeof(Actual);
-            constexpr auto limit = sizeof(storage_.short_);
-            if constexpr (size > limit)
-            {
-                // non-sbo
-                auto kind = detail::
-                    make_big_poly_handler_vtable< Actual, Ret, Args... >();
-                kind->move_construct_from_actual(storage_, std::addressof(actual));
-                kind_ = kind;
-            }
-            else
-            {
-                // sbo
-                auto kind = detail::
-                    make_small_poly_handler_vtable< Actual, Ret, Args... >();
-                kind->move_construct_from_actual(storage_, std::addressof(actual));
-                kind_ = kind;
-            }
+            construct(std::move(actual));
         }
 
         poly_handler(poly_handler &&other) noexcept
@@ -221,26 +204,49 @@ namespace polyfill::async
         , kind_(std::exchange(other.kind_, nullptr))
         {
             if (kind_)
+            {
                 kind_->move_construct(storage_, other.storage_);
+                kind_->destroy(other.storage_);
+            }
+        }
+
+        template <
+            TypedCompletionHandler< Ret, Args... > Actual,
+            std::enable_if_t< !std::is_same_v< Actual, poly_handler > &&
+                              std::is_invocable_r_v< Ret, Actual, Args... > >
+            * = nullptr >
+        poly_handler& operator=(Actual a) noexcept
+        {
+            destroy();
+            construct(std::move(a));
+
+            return *this;
+        }
+
+        poly_handler& operator=(nullptr_t) noexcept
+        {
+            destroy();
         }
 
         poly_handler &operator=(poly_handler &&other) noexcept
         {
-            this->~poly_handler();
-            new (this) poly_handler(std::move(other));
+            destroy();
+            kind_ = std::exchange(other.kind_, nullptr);
+            kind_->move_construct(storage_, other.storage_);
+            kind_->destroy(other.storage_);
             return *this;
         }
 
         ~poly_handler()
         {
-            if (kind_)
-                kind_->destroy(storage_);
+            destroy();
         }
 
         Ret operator()(Args... args)
         {
             auto k = std::exchange(kind_, nullptr);
             if (k)
+                // invoke implies destroy
                 return k->invoke(storage_, std::move(args)...);
             else
                 throw std::bad_function_call();
@@ -253,6 +259,37 @@ namespace polyfill::async
         {
             assert(kind_);
             return kind_->get_executor(storage_);
+        }
+
+      private:
+
+        template<class Actual>
+        void construct(Actual&& actual)
+        {
+            constexpr auto size  = sizeof(Actual);
+            constexpr auto limit = sizeof(storage_.short_);
+            if constexpr (size > limit)
+            {
+                // non-sbo
+                auto kind = detail::
+                make_big_poly_handler_vtable< Actual, Ret, Args... >();
+                kind->move_construct_from_actual(storage_, std::addressof(actual));
+                kind_ = kind;
+            }
+            else
+            {
+                // sbo
+                auto kind = detail::
+                make_small_poly_handler_vtable< Actual, Ret, Args... >();
+                kind->move_construct_from_actual(storage_, std::addressof(actual));
+                kind_ = kind;
+            }
+        }
+
+        void destroy() noexcept
+        {
+            if(auto kind = std::exchange(kind_, nullptr))
+                kind->destroy(storage_);
         }
     };
 }   // namespace polyfill::async
