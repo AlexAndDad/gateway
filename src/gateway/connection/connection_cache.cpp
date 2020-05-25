@@ -4,7 +4,6 @@ namespace gateway
 {
     connection connection_cache::create(polyfill::configuration & config, socket_type &&sock)
     {
-
         auto ep    = sock.remote_endpoint();
         auto conn  = connection(config, std::move(sock));
         cache_[ep] = conn.get_weak_impl();

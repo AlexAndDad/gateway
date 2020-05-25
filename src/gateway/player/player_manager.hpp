@@ -21,9 +21,22 @@ namespace gateway
 
         }
 
-        executor_type get_executor()
+        void cancel()
+        {
+
+        }
+
+        executor_type get_executor() {return executor_;}
+
+
+        void create_player(connection con)
+        {
+
+        }
 
       private:
+
+
 
         executor_type executor_;
         polyfill::configuration & config_;

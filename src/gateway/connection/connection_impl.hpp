@@ -4,47 +4,46 @@
 #include "minecraft/protocol/server_accept.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "net.hpp"
+#include "polyfill/configuration.hpp"
 
 #include <minecraft/protocol/stream.hpp>
 #include <minecraft/region/player_updates_queue.hpp>
 
-#include "polyfill/configuration.hpp"
-
 namespace gateway
 {
-    struct connection_config
+    enum class client_state
     {
-        connection_config();
-
-        std::optional< minecraft::security::private_key > server_key;
-        std::string                                       server_id;
-        int                                               compression_threshold;
-        friend auto operator<<(std::ostream &os, connection_config const &cfg)
-            -> std::ostream &;
+        CONNECTED,
+        STATUS_PING,
+        HANDSHAKE,
+        LOGIN,
+        PLAY,
+        ERROR
     };
 
     struct connection_impl : std::enable_shared_from_this< connection_impl >
     {
-        using executor_type      = net::io_context::executor_type;
+        using executor_type      = net::executor;
         using transport_protocol = net::ip::tcp;
         using socket_type =
             net::basic_stream_socket< transport_protocol, executor_type >;
         using stream_type = minecraft::protocol::stream< socket_type >;
 
         explicit connection_impl(polyfill::configuration &config,
-                                 socket_type &&           sock)
-        : config_(config)
-        , stream_(std::move(sock))
-        , login_params_(config_.server_id, config_.server_key)
-        , keep_alive_impl_(get_executor())
-        {
-        }
+                                 socket_type &&           sock);
 
         auto start() -> void;
+        auto attempt_handshake() -> net::awaitable< bool >;
 
         auto cancel() -> void;
 
         auto get_executor() -> executor_type;
+
+        client_state               get_state() { return client_state_; }
+        socket_type::endpoint_type get_endpoint()
+        {
+            return stream_.next_layer().remote_endpoint();
+        }
 
       private:
         template < class Stream >
@@ -64,6 +63,7 @@ namespace gateway
         }
 
       private:
+        net::awaitable< bool > handle_attempt_handshake();
         net::awaitable< void > run();
         auto                   handle_cancel() -> void;
 
@@ -138,6 +138,13 @@ namespace gateway
         }
 
         polyfill::configuration &config_;
+
+        // config
+        std::optional< minecraft::security::private_key > server_key_;
+        std::string                                       server_id_;
+        int compression_threshold_;
+
+        client_state client_state_ = client_state::CONNECTED;
 
         stream_type         stream_;
         std::vector< char > compose_buffer_;

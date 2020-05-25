@@ -9,7 +9,7 @@ namespace gateway {
     struct connection_cache
     {
         using protocol = net::ip::tcp;
-        using executor_type = net::io_context::executor_type;
+        using executor_type = net::executor;
         using socket_type = net::basic_stream_socket<protocol, executor_type>;
 
         connection
@@ -28,6 +28,7 @@ namespace gateway {
 
                 return connection(std::move(shared_impl));
             }
+            return std::nullopt;
         }
 
         using by_endpoint_map = std::unordered_map<protocol::endpoint,
