@@ -16,7 +16,7 @@ namespace polyfill::async::detail
 
         guarded_handler(H &&h)
         : handler_(std::move(h))
-        , guard_(net::get_associated_executor(handler_))
+        , guard_(handler_.get_executor())
         {
         }
 
@@ -89,6 +89,21 @@ namespace polyfill::async::detail
 
 namespace polyfill::async::detail
 {
+    template < class T, class = void >
+    struct has_get_executor : std::false_type
+    {
+    };
+    template < class T >
+    struct has_get_executor<
+        T,
+        std::void_t< decltype(std::declval< const T & >().get_executor()) > >
+    : std::true_type
+    {
+    };
+    template < class T >
+    constexpr inline bool has_get_executor_v =
+        has_get_executor< std::decay_t< T > >::value;
+
     template < class T, class Executor >
     template < BOOST_ASIO_COMPLETION_TOKEN_FOR(void(error_code, value_type))
                    WaitHandler >
@@ -99,7 +114,14 @@ namespace polyfill::async::detail
         assert(this->state_ == not_waiting);
 
         auto initiate = [this](auto &&deduced_handler) {
-            this->handler_ = guarded_handler(std::move(deduced_handler));
+            using DeducedHandler = decltype(deduced_handler);
+            if constexpr (has_get_executor_v< DeducedHandler >)
+                this->handler_ = guarded_handler(
+                    std::forward< DeducedHandler >(deduced_handler));
+            else
+                this->handler_ = guarded_handler(net::bind_executor(
+                    this->default_executor_,
+                    std::forward< DeducedHandler >(deduced_handler)));
 
             this->state_ = waiting;
 

@@ -87,10 +87,10 @@ TEST_CASE("async_queue")
         std::string value;
 
         auto make_handler = [&]() {
-            return bind_executor(e, [&](error_code ec, std::string s) {
+            return [&](error_code ec, std::string s) {
                 error = ec;
                 value = s;
-            });
+            };
         };
 
         SECTION("stop")
