@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include "async_queue.hpp"
+
+#include <catch2/catch.hpp>
 
 using namespace polyfill;
 using namespace polyfill::async;
@@ -8,20 +8,20 @@ using namespace polyfill::async;
 TEST_CASE("async_queue")
 {
     auto ioc = net::io_context(1);
-    auto e = ioc.get_executor();
-    auto q = async_queue<std::string>(e);
+    auto e   = ioc.get_executor();
+    auto q   = basic_async_queue< std::string, decltype(e) >(e);
 
-    auto run = [](net::io_context& ioc)
-    {
+    auto run = [](net::io_context &ioc) {
+        if (ioc.stopped())
+            ioc.restart();
         auto s = ioc.run();
-        ioc.restart();
         return s;
     };
 
-    auto poll = [](net::io_context& ioc)
-    {
+    auto poll = [](net::io_context &ioc) {
+        if (ioc.stopped())
+            ioc.restart();
         auto s = ioc.poll();
-        ioc.restart();
         return s;
     };
 
@@ -129,5 +129,4 @@ TEST_CASE("async_queue")
             CHECK(value == "");
         }
     }
-
 }

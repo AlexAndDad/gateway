@@ -1,7 +1,9 @@
 #pragma once
 #include "async/poly_handler.hpp"
+#include "polyfill/async/cheap_work_guard.hpp"
 #include "polyfill/net.hpp"
 
+#include <boost/mp11/tuple.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ref_counter.hpp>
 #include <deque>
@@ -9,21 +11,21 @@
 
 namespace polyfill::async::detail
 {
-    template < class H >
+    template < class H, class... OtherExecutors >
     struct guarded_handler
     {
         using executor_type = net::associated_executor_t< H >;
 
-        guarded_handler(H &&h)
+        explicit guarded_handler(H &&h, OtherExecutors... others)
         : handler_(std::move(h))
-        , guard_(handler_.get_executor())
+        , guards_(handler_.get_executor(), others...)
         {
         }
 
         template < class... Args >
         void operator()(Args &&... args)
         {
-            guard_.reset();
+            boost::mp11::tuple_for_each(guards_, [](auto &&g) { g.reset(); });
             handler_(std::forward< Args >(args)...);
         }
 
@@ -33,8 +35,10 @@ namespace polyfill::async::detail
         }
 
       private:
-        H                                         handler_;
-        net::executor_work_guard< executor_type > guard_;
+        H handler_;
+        std::tuple< cheapest_work_guard_t< typename H::executor_type >,
+            cheapest_work_guard_t< OtherExecutors >... >
+            guards_;
     };
 
     template < class T, class Executor >
@@ -115,9 +119,16 @@ namespace polyfill::async::detail
 
         auto initiate = [this](auto &&deduced_handler) {
             using DeducedHandler = decltype(deduced_handler);
+
             if constexpr (has_get_executor_v< DeducedHandler >)
-                this->handler_ = guarded_handler(
-                    std::forward< DeducedHandler >(deduced_handler));
+                if (deduced_handler.get_executor() == this->default_executor_)
+                    this->handler_ = guarded_handler(
+                        std::forward< DeducedHandler >(deduced_handler));
+                else
+                    this->handler_ = guarded_handler(
+                        std::forward< DeducedHandler >(deduced_handler),
+                        this->default_executor_);
+
             else
                 this->handler_ = guarded_handler(net::bind_executor(
                     this->default_executor_,
