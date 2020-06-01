@@ -16,6 +16,7 @@
 
 namespace minecraft
 {
+
     template < std::size_t Limit >
     struct varchar : std::string
     {
@@ -38,8 +39,7 @@ namespace minecraft
     }
 
     template < std::size_t Limit >
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, varchar< Limit > &result, error_code &ec)
     {
         auto ret = first;
 
@@ -64,7 +64,21 @@ namespace minecraft
         return ret;
     }
 
+    inline void compose(const std::string &source, compose_buffer &dest);
+
 }   // namespace minecraft
+
+#include "encode.hpp"
+
+namespace minecraft
+{
+    void compose(const std::string &source, compose_buffer &dest)
+    {
+        auto len = source.size();
+        minecraft::encode(variable_length(static_cast< std::int32_t >(len)), std::back_inserter(dest));
+        dest.insert(dest.end(), source.begin(), source.end());
+    }
+}
 
 namespace boost::json
 {

@@ -102,7 +102,7 @@ namespace minecraft::chunks
 
     void compose(chunk_section_impl const &c, compose_buffer &buf)
     {
-        encode(c.count_non_air(), back_inserter(buf));
+        minecraft::encode(c.count_non_air(), back_inserter(buf));
         auto bits_per_block = compose(c.palette(), buf);
         if (bits_per_block >= 9)
         {
@@ -112,7 +112,7 @@ namespace minecraft::chunks
                 comp.size(chunk_section_impl::y_extent *
                                      chunk_section_impl::z_extent *
                                      chunk_section_impl::z_extent);
-            encode(alen, back_inserter(buf));
+            minecraft::encode(alen, back_inserter(buf));
 
             for (int y = 0; y < chunk_section_impl::y_extent; ++y)
                 for (int z = 0; z < chunk_section_impl::z_extent; ++z)
@@ -129,7 +129,7 @@ namespace minecraft::chunks
                 comp.size(chunk_section_impl::y_extent *
                                      chunk_section_impl::z_extent *
                                      chunk_section_impl::z_extent);
-            encode(alen, back_inserter(buf));
+            minecraft::encode(alen, back_inserter(buf));
 
             for (int y = 0; y < chunk_section_impl::y_extent; ++y)
                 for (int z = 0; z < chunk_section_impl::z_extent; ++z)

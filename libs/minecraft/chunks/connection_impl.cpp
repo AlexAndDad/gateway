@@ -24,7 +24,7 @@ namespace minecraft::chunks
 
     void connection_impl::notify_update(chunk_column_impl const &c)
     {
-        this->current_snapshot_ = std::make_unique< chunk_column_impl >(c);
+        this->current_snapshot_ = c;
         this->updates_.clear();
         this->state_ = deliver_snapshot;
         try_invoke();

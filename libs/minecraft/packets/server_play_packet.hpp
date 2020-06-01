@@ -10,6 +10,7 @@
 #include "server/player_position_and_look.hpp"
 #include "server/spawn_position.hpp"
 #include "server/chunk_data.hpp"
+#include "server/plugin_message.hpp"
 
 namespace minecraft::packets::server
 {
@@ -19,7 +20,8 @@ namespace minecraft::packets::server
                                          server::keep_alive,
                                          server::join_game,
                                          server::player_position_and_look,
-                                         server::chunk_data>;
+                                         server::chunk_data,
+                                         server::plugin_message>;
 
     struct server_play_packet : play_packet< server::play_id, play_packet_variant >
     {

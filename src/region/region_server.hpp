@@ -1,8 +1,8 @@
 #pragma once
 
 #include "config/net.hpp"
-#include "minecraft/player.hpp"
 #include "minecraft/region/player_updates_queue.hpp"
+#include "player/player.hpp"
 #include "player/player_manager.hpp"
 
 #include <iostream>

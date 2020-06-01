@@ -69,8 +69,6 @@ namespace minecraft::chunks
 
     std::uint8_t compose(palette const &p, compose_buffer &buf)
     {
-        boost::ignore_unused(buf);
-
         auto uplog2 = [](std::size_t n) {
             auto result = 0;
             while (n)

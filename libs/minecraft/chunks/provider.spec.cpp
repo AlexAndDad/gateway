@@ -1,5 +1,6 @@
 #include "chunk_column_impl.hpp"
 #include "provider.hpp"
+#include "minecraft/variant.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -88,7 +89,7 @@ TEST_CASE("minecraft::chunks::provider",
             CHECK(f.valid());
             auto update = chunks::chunk_update();
             CHECK_NOTHROW(update = f.get());
-            CHECK(holds_alternative< std::unique_ptr< chunks::chunk_column_impl > >(
+            CHECK(holds_alternative< chunks::copyable_chunk_column_impl >(
                 update.as_variant()));
         }
     }
@@ -108,7 +109,7 @@ TEST_CASE("minecraft::chunks::provider",
         CHECK(f.valid());
         auto update = chunks::chunk_update();
         CHECK_NOTHROW(update = f.get());
-        CHECK(holds_alternative< std::unique_ptr< chunks::chunk_column_impl > >(
+        CHECK(holds_alternative< chunks::copyable_chunk_column_impl >(
             update.as_variant()));
 
         f = consumer.async_wait(net::use_future);   // 1 post
@@ -136,10 +137,10 @@ TEST_CASE("minecraft::chunks::provider",
         REQUIRE(state == std::future_status::ready);
         CHECK(f.valid());
         CHECK_NOTHROW(update = f.get());
-        REQUIRE(holds_alternative< std::vector< chunks::block_update > >(
+        REQUIRE(holds_alternative< std::deque< chunks::block_update > >(
             update.as_variant()));
         auto &v =
-            get< std::vector< chunks::block_update > >(update.as_variant());
+            get< std::deque< chunks::block_update > >(update.as_variant());
         CHECK(v.size() == 256);
     }
 

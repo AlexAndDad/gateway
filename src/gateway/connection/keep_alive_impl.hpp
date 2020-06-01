@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config/net.hpp"
+#include "net.hpp"
 
 #include <boost/asio/high_resolution_timer.hpp>
 #include <boost/optional.hpp>
@@ -9,13 +9,13 @@
 
 namespace gateway
 {
-    struct keep_alive_impl
+    struct keep_alive_impl : std::enable_shared_from_this<keep_alive_impl>
     {
-        using executor_type = config::net::executor;
+        using executor_type = net::executor;
 
-        keep_alive_impl(executor_type strand)
-        : expiry_timer_(strand)
-        , update_timer_(strand)
+        keep_alive_impl(executor_type exec)
+        : expiry_timer_(exec)
+        , update_timer_(exec)
         {
         }
 
@@ -49,7 +49,7 @@ namespace gateway
             {
                 update_timer_.cancel();
                 update_timer_.expires_after(std::chrono::seconds(10));
-                update_timer_.async_wait([this](auto ec) mutable { this->update_callback_handler(ec); });
+                update_timer_.async_wait([self=shared_from_this()](auto ec) mutable { self->update_callback_handler(ec); });
             }
         }
         void start_expiry_timer()
@@ -58,7 +58,7 @@ namespace gateway
             {
                 expiry_timer_.cancel();
                 expiry_timer_.expires_after(std::chrono::seconds(30));
-                expiry_timer_.async_wait([this](auto ec) mutable { this->expiry_callback_handler(ec); });
+                expiry_timer_.async_wait([self=shared_from_this()](auto ec) mutable { self->expiry_callback_handler(ec); });
             }
         }
 

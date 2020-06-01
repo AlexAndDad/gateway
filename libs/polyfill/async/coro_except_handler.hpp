@@ -1,7 +1,7 @@
 #pragma once
 
 #include "explain.hpp"
-
+#include <spdlog/spdlog.h>
 #include <exception>
 #include <string_view>
 

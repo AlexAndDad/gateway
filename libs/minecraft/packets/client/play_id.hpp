@@ -6,6 +6,7 @@ namespace minecraft::packets::client
 {
     WISE_ENUM_CLASS((play_id, std::int32_t),
                     (teleport_confirm, 0),
+                    (client_status, 0x04),
                     (client_settings, 0x05),
                     (plugin_message, 0x0b),
                     (invalid, 0x7f),

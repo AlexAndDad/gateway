@@ -4,6 +4,7 @@
 #include "minecraft/testing/chunk_data.spec.ipp"
 #include "polyfill/explain.hpp"
 #include "polyfill/ignore_ws.hpp"
+#include "minecraft/chunks/bitpack.hpp"
 
 #include <catch2/catch.hpp>
 #include <iostream>
@@ -19,14 +20,66 @@ TEST_CASE("minecraft::chunks::chunk_data_impl",
     auto first = m.begin();
     auto last  = m.end();
 
-    first += 0x1279;
+    //first += 0x1279;
 
     auto cd   = chunks::chunk_column_impl();
-    auto next = first;
 
-    try
+
+
+    SECTION("parse heightmaps")
     {
-        next = parse(first, last, cd, 0x0f);
+
+
+        minecraft::var_int id;
+        first = minecraft::parse(first, last, id);
+        CHECK(id.value() == 0x22);
+
+        minecraft::chunks::vector2 coords;
+        first = minecraft::parse(first, last, coords.x);
+        first = minecraft::parse(first, last, coords.z);
+
+        // Read the full chunk
+        std::uint8_t tmp_bool;
+        first      = minecraft::parse(first, last, tmp_bool);
+
+        // read the primary bitmask
+        var_int tmp;
+        first = minecraft::parse(first, last, tmp);
+        cd.set_primary_bit_mask(tmp.value());
+
+        // Read heightmap
+        nbt::compound parsed_nbt_val;
+        first = nbt::parse(first, last, parsed_nbt_val);
+        std::cout << pretty_print(parsed_nbt_val) << std::endl;
+
+        // uncompress the data inside the heightmap
+        auto & array = parsed_nbt_val.find("")->second.get_compound().find("MOTION_BLOCKING")->second.get_long_array();
+        auto uncompressor = minecraft::compressed_bitfield_iterator(reinterpret_cast<char *>(array.data()),reinterpret_cast<char *>(array.data() + array.size()),9);
+
+        auto val = *uncompressor;
+        boost::ignore_unused(val);
+
+        // Generate a hightmap
+        cd.recalc();
+
+        auto generated_nbt_val = cd.get_height_map().compose_to_nbt();
+        std::cout << pretty_print(generated_nbt_val) << std::endl;
+        auto x = 10;
+        boost::ignore_unused(x);
+
+
+
+
+        CHECK(parsed_nbt_val.find("")->second.get_compound().find("MOTION_BLOCKING")->second.get_long_array() == generated_nbt_val.find("")->second.get_compound().find("MOTION_BLOCKING")->second.get_long_array());
+    }
+
+
+    /*try
+    {
+        minecraft::chunks::vector2 coords;
+        bool full_chunk;
+        cd.set_primary_bit_mask(0x0f);
+        next = parse(first, last,coords, full_chunk, cd);
         SUCCEED();
     }
     catch (...)
@@ -591,26 +644,7 @@ z = 14 :   stone    stone    stone    stone    stone    stone    stone    stone 
 z = 15 :   stone    stone    stone    stone    stone  iron_ore iron_ore   stone    stone    stone    stone    stone    stone    dirt     stone    dirt)__chunk"));
 //    CHECK(fmt::format("{}", cd.chunk(2)) == R"__chunk()__chunk");
 //    CHECK(fmt::format("{}", cd.chunk(3)) == R"__chunk()__chunk");
+*/
 
-    /*
-    SECTION("round trip")
-    {
-        compose_buffer buf;
-        compose(c, buf);
-        CHECK(buf.size() == 2590);
 
-        auto c2 = chunks::chunk_impl();
-        try
-        {
-            parse(buf.data(), buf.data() + buf.size(), c2);
-            std::cout << c2 << std::endl;
-            SUCCEED();
-        }
-        catch (...)
-        {
-            FAIL("" << polyfill::explain());
-        }
-        CHECK(c2 == c);
-    }
-     */
 }

@@ -9,8 +9,8 @@ TEST_CASE("minecraft::packets::server::join_game")
 {
     auto packet                  = minecraft::packets::server::join_game();
     packet.entity_id             = 1;
-    packet.game_mode             = minecraft::packets::server::join_game::survival;
-    packet.dimension             = minecraft::packets::server::join_game::overworld;
+    packet.game_mode             = minecraft::gamemode::survival;
+    packet.dimension             = minecraft::dimension::overworld;
     packet.hashed_seed           = 123412341234;
     packet.max_players           = 20;
     packet.level_type            = "default";

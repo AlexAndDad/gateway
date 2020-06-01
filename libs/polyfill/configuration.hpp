@@ -3,7 +3,6 @@
 //
 #pragma once
 
-#include ""
 #include "filesystem.hpp"
 
 #include <boost/json.hpp>
@@ -11,6 +10,7 @@
 #include <fmt/format.h>
 #include <istream>
 #include <string_view>
+#include <iostream>
 
 namespace polyfill
 {
@@ -36,10 +36,10 @@ namespace polyfill
 
 
 
-    using json = boost::json;
+    namespace json = boost::json;
     struct configuration
     {
-        configuration(std::string_view config_path)
+        configuration(const std::string & config_path)
         {
             auto path = fs::path(config_path);
             if (fs::status(path).type() != fs::file_type::regular_file)
@@ -49,21 +49,21 @@ namespace polyfill
             // Path is ok, parse the json file
             auto size        = fs::file_size(path);
             auto file_stream = std::ifstream(config_path);
-            std::sting data;
-            data.reserve(size);
+            std::string data;
+            data.resize(size);
             file_stream.read(data.data(), size);
             auto ec   = json::error_code();
-            json_doc_ = json::parse(data_, ec);
+            json_doc_ = json::parse(data, ec);
             if (ec.failed())
                 throw configuration_parse_error(fmt::format("Error parsing configuration file at [{}] with ec [{}].",config_path,ec));
 
             if (not json_doc_.is_object())
-                throw configuration_structure_error(fmt::format("Invalid configuration file structure. Path [{}]",config_path))
+                throw configuration_structure_error(fmt::format("Invalid configuration file structure. Path [{}]",config_path));
         }
 
         json::value & operator[](std::string_view key)
         {
-            return json_doc_.as_object()[key];
+            return json_doc_.as_object()[key.data()];
         }
 
       private:

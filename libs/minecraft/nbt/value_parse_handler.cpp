@@ -35,7 +35,7 @@ namespace minecraft::nbt
             auto n     = bs.size() / sizeof(std::int64_t);
             auto first = bs.data();
             auto last  = first + bs.size();
-            auto a     = int_array();
+            auto a     = long_array();
             a.reserve(n);
             while (first < last)
             {

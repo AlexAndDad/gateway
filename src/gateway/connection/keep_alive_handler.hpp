@@ -8,18 +8,20 @@ namespace gateway
     {
         using impl_type = keep_alive_impl;
 
-        keep_alive_handler(impl_type &impl)
-        : impl_(impl)
+        keep_alive_handler(std::shared_ptr< impl_type > impl)
+        : impl_(std::move(impl))
         {
-            impl_.start();
+            impl_->start();
         }
 
-        ~keep_alive_handler() { impl_.reset(); }
+        impl_type &get() { return *(impl_.get()); }
+
+        ~keep_alive_handler() { impl_->reset(); }
 
         keep_alive_handler(const keep_alive_handler &) = delete;
         keep_alive_handler &operator=(const keep_alive_handler &) = delete;
 
       private:
-        impl_type &impl_;
+        std::shared_ptr< impl_type > impl_;
     };
 }   // namespace gateway

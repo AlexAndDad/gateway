@@ -20,14 +20,11 @@ namespace minecraft::chunks
         using executor_type = net::executor;
         using value_type    = chunk_update;
 
-        connection_impl(executor_type                    exec,
-                        std::shared_ptr< provider_impl > provider);
+        connection_impl(executor_type exec, std::shared_ptr< provider_impl > provider);
 
         template < class CompletionToken >
         auto async_wait(CompletionToken &&token) ->
-            typename net::async_result< std::decay_t< CompletionToken >,
-                                        void(error_code,
-                                             value_type) >::return_type;
+            typename net::async_result< std::decay_t< CompletionToken >, void(error_code, value_type) >::return_type;
 
         void cancel();
 
@@ -61,9 +58,9 @@ namespace minecraft::chunks
         // provider writes here
         //
 
-        std::unique_ptr< chunk_column_impl > current_snapshot_;
-        update_sequence                 updates_;
-        error_code                      ec_;
+        copyable_chunk_column_impl current_snapshot_;
+        update_sequence            updates_;
+        error_code                 ec_;
 
         enum : std::uint8_t
         {
@@ -82,14 +79,12 @@ namespace minecraft::chunks
         // this function is writable by the client, invocable and writable by
         // the server
         //
-        fu2::function_base<
-            true,
-            false,
-            fu2::capacity_fixed< sizeof(std::shared_ptr< void >) +
-                                 sizeof(void *) >,
-            false,
-            false,
-            void(error_code, chunk_update) >
+        fu2::function_base< true,
+                            false,
+                            fu2::capacity_fixed< sizeof(std::shared_ptr< void >) + sizeof(void *) >,
+                            false,
+                            false,
+                            void(error_code, chunk_update) >
             current_op_handler_;
     };
 }   // namespace minecraft::chunks

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config/net.hpp"
-#include "connection_cache.hpp"
+#include "gateway/connection/connection_cache.hpp"
 #include "minecraft/security/private_key.hpp"
 #include "polyfill/async/async_task.hpp"
 #include "polyfill/configuration.hpp"
@@ -14,7 +14,7 @@ namespace gateway
 {
     struct listener
     {
-        using executor_type = net::io_context::executor_type;
+        using executor_type = net::executor;
 
         using protocol    = net::ip::tcp;
         using socket_type = net::basic_stream_socket< protocol, executor_type >;
@@ -24,7 +24,7 @@ namespace gateway
         listener(executor_type exec, polyfill::configuration &config)
         : config_(config)
         , acceptor_(exec)
-        , port_(config_["listener"].as_object()["port"].as_uint64())
+        , port_(config_["listener"].as_object()["port"].as_int64())
         {
         }
 
@@ -64,6 +64,7 @@ namespace gateway
       private:
         net::awaitable< void > handle_start()
         {
+            spdlog::debug("Listener started.");
             acceptor_.open(protocol::v4());
             acceptor_.set_option(socket_type::reuse_address(true));
             auto ec = error_code();
@@ -92,6 +93,7 @@ namespace gateway
             {
                 try
                 {
+                    spdlog::debug("started listening for new socket....");
                     co_return co_await acceptor_.async_accept(
                         net::use_awaitable);
                 }
@@ -109,6 +111,7 @@ namespace gateway
 
         void handle_cancel()
         {
+            spdlog::debug("listener cancelled.");
             acceptor_.cancel();
             connections_.cancel();
         }

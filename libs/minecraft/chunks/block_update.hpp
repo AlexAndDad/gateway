@@ -1,5 +1,5 @@
 #pragma once
-#include "blocks/block.hpp"
+#include "blocks/block_info.hpp"
 #include "types.hpp"
 
 namespace minecraft::chunks

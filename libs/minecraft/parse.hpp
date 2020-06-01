@@ -18,57 +18,35 @@ namespace minecraft
     // fundamental types
     //
 
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               double &              target,
-               error_code &          ec) -> const_buffer_iterator;
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, double &target, error_code &ec) -> const_buffer_iterator;
 
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               float &               target,
-               error_code &          ec) -> const_buffer_iterator;
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, float &target, error_code &ec) -> const_buffer_iterator;
 
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               bool &                target,
-               error_code &          ec) -> const_buffer_iterator;
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, bool &target, error_code &ec) -> const_buffer_iterator;
 
-    template < typename Integral,
-               typename ValueType = std::decay_t< Integral > >
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               Integral &            target)
-        -> std::enable_if_t< std::is_integral_v< ValueType > and
-                                 not std::is_same_v< Integral, bool >,
-                             const_buffer_iterator >
+    template < typename Integral, typename ValueType = std::decay_t< Integral > >
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, Integral &target)
+        -> std::enable_if_t< std::is_integral_v< ValueType > and not std::is_same_v< Integral, bool >, const_buffer_iterator >
     {
         using namespace boost::endian;
 
         using unsigned_type       = std::make_unsigned_t< ValueType >;
         constexpr auto byte_count = sizeof(unsigned_type);
 
-        if (std::distance(first, last) <
-            static_cast< std::ptrdiff_t >(byte_count))
+        if (std::distance(first, last) < static_cast< std::ptrdiff_t >(byte_count))
             throw system_error(error::incomplete_parse, "parse integral");
 
         using namespace boost::endian;
-        endian_buffer< order::big, unsigned_type, 8 * byte_count, align::yes >
-            buffer;
+        endian_buffer< order::big, unsigned_type, 8 * byte_count, align::yes > buffer;
         std::copy(first, first + byte_count, buffer.data());
         target = static_cast< Integral >(buffer.value());
         first += byte_count;
         return first;
     }
 
-    template < typename Integral,
-               typename ValueType = std::decay_t< Integral > >
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               Integral &            target,
-               error_code &          ec)
-        -> std::enable_if_t< std::is_integral_v< ValueType > and
-                                 not std::is_same_v< Integral, bool >,
-                             const_buffer_iterator >
+    template < typename Integral, typename ValueType = std::decay_t< Integral > >
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, Integral &target, error_code &ec)
+        -> std::enable_if_t< std::is_integral_v< ValueType > and not std::is_same_v< Integral, bool >, const_buffer_iterator >
     {
         using namespace boost::endian;
 
@@ -77,17 +55,12 @@ namespace minecraft
 
         if (not ec.failed())
         {
-            if (std::distance(first, last) <
-                static_cast< std::ptrdiff_t >(byte_count))
+            if (std::distance(first, last) < static_cast< std::ptrdiff_t >(byte_count))
                 ec = error::incomplete_parse;
             else
             {
                 using namespace boost::endian;
-                endian_buffer< order::big,
-                               unsigned_type,
-                               8 * byte_count,
-                               align::yes >
-                    buffer;
+                endian_buffer< order::big, unsigned_type, 8 * byte_count, align::yes > buffer;
                 std::copy(first, first + byte_count, buffer.data());
                 target = static_cast< Integral >(buffer.value());
                 first += byte_count;
@@ -127,8 +100,7 @@ namespace minecraft
 
         while (i != last)
         {
-            auto x =
-                static_cast< unsigned_type >(static_cast< std::uint8_t >(*i++));
+            auto x = static_cast< unsigned_type >(static_cast< std::uint8_t >(*i++));
             accumulator |= (x & 0x7fu) << (7 * count);
             ++count;
             if (not(x & 0x80u))
@@ -145,8 +117,7 @@ namespace minecraft
     }
 
     template < class Iter, class SignedType >
-    auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec)
-        -> Iter
+    auto parse_var(Iter first, Iter last, SignedType &result, error_code &ec) -> Iter
     {
         if (!ec)
             try
@@ -183,10 +154,7 @@ namespace minecraft
     }
 */
     template < class Enum >
-    auto parse(const_buffer_iterator first,
-               const_buffer_iterator last,
-               Enum &                target,
-               error_code &          ec)
+    auto parse(const_buffer_iterator first, const_buffer_iterator last, Enum &target, error_code &ec)
         -> std::enable_if_t< std::is_enum_v< Enum >, const_buffer_iterator >
     {
         if (not ec.failed())
@@ -203,13 +171,10 @@ namespace minecraft
                const_buffer_iterator        last,
                std::vector< std::uint8_t > &target,
                error_code &                 ec,
-               std::int32_t byte_limit = 65536) -> const_buffer_iterator;
+               std::int32_t                 byte_limit = 65536) -> const_buffer_iterator;
 
     template < class T >
-    const_buffer_iterator parse(const_buffer_iterator first,
-                                const_buffer_iterator last,
-                                std::optional< T > &  opt,
-                                error_code &          ec)
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::optional< T > &opt, error_code &ec)
     {
         auto present = std::uint8_t();
         auto current = parse(first, last, present, ec);
@@ -233,32 +198,21 @@ namespace minecraft
     }
 
     template < class... Args >
-    const_buffer_iterator parse(const_buffer_iterator   first,
-                                const_buffer_iterator   last,
-                                std::tuple< Args &... > args,
-                                error_code &            ec)
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::tuple< Args &... > args, error_code &ec)
     {
         auto ret = first;
-        boost::mp11::tuple_for_each(args, [&](auto &target) {
-            first = parse(first, last, target, ec);
-        });
+        boost::mp11::tuple_for_each(args, [&](auto &target) { first = parse(first, last, target, ec); });
         if (not ec.failed())
             return ret = first;
         return ret;
     }
 
-    const_buffer_iterator parse(const_buffer_iterator first,
-                                const_buffer_iterator last,
-                                std::u16string &      result,
-                                error_code &          ec);
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::u16string &result, error_code &ec);
 
     // parse std::size_t quantity of T into std::vector.
     template < class T >
     const_buffer_iterator
-    parse(const_buffer_iterator                           first,
-          const_buffer_iterator                           last,
-          std::tuple< std::vector< T > &, std::size_t & > result,
-          error_code &                                    ec)
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::tuple< std::vector< T > &, std::size_t & > result, error_code &ec)
     {
         if (not ec.failed())
         {
@@ -278,5 +232,16 @@ namespace minecraft
         }
         return first;
     }
+
+    template < typename T, std::size_t Size >
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, std::array< T, Size > &result)
+    {
+        for (auto & item : result)
+        {
+            first = parse(first,last,item);
+        }
+        return first;
+    }
+
 
 }   // namespace minecraft

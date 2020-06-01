@@ -34,10 +34,10 @@ namespace minecraft::packets
             var_ = std::move(packet);
         }
 
-        template<class PacketType>
-        PacketType& emplace()
+        template<class PacketType, typename ...Args>
+        PacketType& emplace(Args && ... args)
         {
-            return var_.template emplace<PacketType>();
+            return var_.template emplace<PacketType>(std::forward<Args>(args)...);
         }
 
         template<class PacketType>

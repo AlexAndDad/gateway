@@ -27,10 +27,10 @@ TEST_CASE("minecraft::nbt::nvp", "[minecraft][minecraft::nbt][minecraft::nbt::nv
         CHECK(name == "");
         REQUIRE_NOTHROW(c0.at("WORLD_SURFACE"));
         REQUIRE_NOTHROW(c0.at("MOTION_BLOCKING"));
-        REQUIRE(c0.at("WORLD_SURFACE").is(nbt::Int_Array));
-        REQUIRE(c0.at("MOTION_BLOCKING").is(nbt::Int_Array));
-        CHECK(c0.at("WORLD_SURFACE").get_int_array().size() == 36);
-        CHECK(c0.at("MOTION_BLOCKING").get_int_array().size() == 36);
+        REQUIRE(c0.at("WORLD_SURFACE").is(nbt::Long_Array));
+        REQUIRE(c0.at("MOTION_BLOCKING").is(nbt::Long_Array));
+        CHECK(c0.at("WORLD_SURFACE").get_long_array().size() == 36);
+        CHECK(c0.at("MOTION_BLOCKING").get_long_array().size() == 36);
 
 
         ::munmap(addr, size);

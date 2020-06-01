@@ -1,8 +1,8 @@
 #pragma once
 
 #include "config/net.hpp"
-#include "minecraft/player.hpp"
 #include "minecraft/time/ticker.hpp"
+#include "player/player.hpp"
 #include "player_connection.hpp"
 #include "player_handle.hpp"
 #include "polyfill/class_logger.hpp"

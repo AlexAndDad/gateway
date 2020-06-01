@@ -1,4 +1,5 @@
 #pragma once
+
 #include "minecraft/encode.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/types.hpp"

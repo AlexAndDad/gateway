@@ -17,7 +17,7 @@ namespace minecraft::chunks
     auto provider::operator=(provider &&other) -> provider &
     {
         auto old = std::exchange(impl_, nullptr);
-        impl_ = std::exchange(other.impl_, nullptr);
+        impl_    = std::exchange(other.impl_, nullptr);
         if (old)
             old->cancel();
         return *this;
@@ -30,13 +30,19 @@ namespace minecraft::chunks
         impl_.reset();
     }
 
-    auto provider::notify(chunk_column_impl const& cc) -> void
+    auto provider::cancel() -> void
+    {
+        impl_->cancel();
+        impl_.reset();
+    }
+
+    auto provider::notify(chunk_column_impl const &cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(cc);
     }
 
-    auto provider::notify(chunk_column_impl && cc) -> void
+    auto provider::notify(chunk_column_impl &&cc) -> void
     {
         assert(impl_);
         impl_->notify_chunk(std::move(cc));

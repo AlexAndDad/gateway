@@ -19,7 +19,7 @@ namespace polyfill
 
         friend std::ostream &operator<<(std::ostream &os, const args_with_header &self)
         {
-            os << self.header_ << ":";
+            os << self.header_ << " - ";
             auto lam = [&](auto &&... args) { fmt::print(os, self.fmt_str_, args...); };
             std::apply(lam, self.args_);
             return os;

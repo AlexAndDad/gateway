@@ -12,4 +12,5 @@ namespace minecraft
         encode(variable_length(len), std::back_inserter(target));
         target.insert(target.end(), source.begin(), source.end());
     }
+
 }   // namespace minecraft

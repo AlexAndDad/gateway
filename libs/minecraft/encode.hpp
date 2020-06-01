@@ -1,7 +1,8 @@
 #pragma once
 
 #include "packet_id.hpp"
-#include "types.hpp"
+#include "types/var.hpp"
+#include "types/var_enum.hpp"
 
 #include <boost/assert.hpp>
 #include <boost/endian/buffers.hpp>
@@ -187,6 +188,16 @@ namespace minecraft
 
     template <class Iter, class T>
     Iter encode(const std::vector<T> & in, Iter first)
+    {
+        for (auto & item : in)
+        {
+            first = encode(item, first);
+        }
+        return first;
+    }
+
+    template <class Iter, class T, std::size_t Size>
+    Iter encode(const std::array<T,Size> & in, Iter first)
     {
         for (auto & item : in)
         {

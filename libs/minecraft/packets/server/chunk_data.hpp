@@ -1,5 +1,6 @@
 #pragma once
 
+#include "minecraft/chunks/chunk_column_impl.hpp"
 #include "minecraft/nbt/nvp.hpp"
 #include "minecraft/packets/packet_base.hpp"
 #include "minecraft/types.hpp"
@@ -10,7 +11,7 @@
 
 namespace minecraft::packets::server
 {
-    struct palette_type
+    /*struct palette_type
     {
         var_int                palette_length;
         std::vector< var_int > palette_data;
@@ -27,8 +28,7 @@ namespace minecraft::packets::server
         return stream;
     }
 
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, palette_type &target, error_code &ec);
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, palette_type &target, error_code &ec);
 
     template < class Iter >
     Iter encode(const palette_type &in, Iter first)
@@ -69,8 +69,7 @@ namespace minecraft::packets::server
         return stream;
     }
 
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, chunk_section_type &target, error_code &ec);
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, chunk_section_type &target, error_code &ec);
 
     template < class Iter >
     Iter encode(const chunk_section_type &in, Iter first)
@@ -107,10 +106,8 @@ namespace minecraft::packets::server
         }
         return stream;
     }
-    const_buffer_iterator parse(const_buffer_iterator                      first,
-                                const_buffer_iterator                      last,
-                                std::tuple< chunk_column_type &, var_int > target,
-                                error_code &                               ec);
+    const_buffer_iterator
+    parse(const_buffer_iterator first, const_buffer_iterator last, std::tuple< chunk_column_type &, var_int > target, error_code &ec);
 
     template < class Iter >
     Iter encode(const chunk_column_type &in, Iter first)
@@ -121,17 +118,13 @@ namespace minecraft::packets::server
         }
         return first;
     }
+     */
 
     struct chunk_data_type
     {
-        std::int32_t                         chunk_x;
-        std::int32_t                         chunk_z;
+        chunks::vector2                      coords;
         bool                                 full_chunk;
-        var_int                              primary_bit_mask;
-        nbt::nvp< nbt::Compound >            heightmaps;
-        std::vector< std::int32_t >          biomes;
-        var_int                              data_size;
-        chunk_column_type                    column;
+        chunks::copyable_chunk_column_impl   column;
         var_int                              no_block_entities;
         std::vector< minecraft::nbt::value > block_entities;
 
@@ -142,39 +135,26 @@ namespace minecraft::packets::server
     template < class Stream >
     Stream &operator<<(Stream &stream, const chunk_data_type &self)
     {
+        stream << "TODO fix this function!!!!\n";
         stream << "chunk_data:\n";
-        stream << "chunk_x: " << self.chunk_x << "\n";
-        stream << "chunk_z: " << self.chunk_z << "\n";
+        stream << "x: " << self.coords.x << "\n";
+        stream << "z: " << self.coords.z << "\n";
         stream << "full_chunk: " << self.full_chunk << "\n";
-        stream << "primary_bit_mask: " << std::bitset< 16 >(self.primary_bit_mask.value()).to_string() << "\n";
-        stream << "heightmaps: " << self.heightmaps.value << "\n";
-        stream << "biomes: " << polyfill::printers::print(self.biomes) << "\n";
-        stream << "chunk_column: " << self.column << "\n";
+        //stream << "primary_bit_mask: " << self.primary_bit_mask.to_string() << "\n";
+        // stream << "heightmaps: " << self.heightmaps << "\n";
+        //stream << "biomes: " << polyfill::printers::print(self.biomes) << "\n";
+        // stream << "chunk_column: " << self.column << "\n";
         stream << "block_entities: " << polyfill::printers::print(self.block_entities) << "\n";
         return stream;
     }
 
-    const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, chunk_data_type &target, error_code &ec);
+    const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, chunk_data_type &target, error_code &ec);
 
     template < class Iter >
     Iter encode(const chunk_data_type &in, Iter first)
     {
-        first = minecraft::encode(in.chunk_x, first);
-        first = minecraft::encode(in.chunk_z, first);
-        first = minecraft::encode(in.full_chunk, first);
-        first = minecraft::encode(in.primary_bit_mask, first);
-        first = encode(in.heightmaps, first);
-
-        if (in.full_chunk)
-        {
-            first = minecraft::encode(in.biomes, first);
-        }
-        first = minecraft::encode(in.data_size, first);
-        first = encode(in.column, first);
-
-        first = minecraft::encode(in.no_block_entities, first);
-        first = minecraft::encode(in.block_entities, first);
+        first = minecraft::chunks::encode(in.column.value(), in.coords, in.full_chunk, first);
+        boost::ignore_unused(in.block_entities,in.no_block_entities);
         return first;
     }
 

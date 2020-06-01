@@ -1,6 +1,6 @@
 #pragma once
 
-#include "minecraft/player.hpp"
+#include "player/player.hpp"
 
 #include <memory>
 

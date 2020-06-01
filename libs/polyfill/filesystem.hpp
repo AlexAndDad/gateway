@@ -8,5 +8,5 @@
 
 namespace polyfill
 {
-    using fs = config::fs;
+    namespace fs = config::fs;
 }

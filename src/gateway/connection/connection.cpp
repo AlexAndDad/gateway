@@ -4,13 +4,11 @@
 
 #include <polyfill/explain.hpp>
 
-
 namespace gateway
 {
     using namespace std::literals;
 
-
-    connection::connection(polyfill::configuration & config, socket_type &&sock)
+    connection::connection(polyfill::configuration &config, socket_type &&sock)
     : impl_(std::make_shared< connection_impl >(config, std::move(sock)))
     {
         impl_->start();

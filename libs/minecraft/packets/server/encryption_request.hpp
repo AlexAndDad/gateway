@@ -1,5 +1,6 @@
 #pragma once
 
+#include "minecraft/types/varchar.hpp"
 #include "minecraft/encode.hpp"
 #include "minecraft/net.hpp"
 #include "minecraft/parse.hpp"

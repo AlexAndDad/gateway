@@ -1,10 +1,13 @@
 {
   "application": {},
   "connection_manager": {
-    "connection_queue_limit": 10
+    "pending_connection_limit": 10
   },
   "listener": {
     "port": 25565
+  },
+  "client_connection": {
+    "compression_threshold": 256
   }
 
 }

@@ -1,13 +1,11 @@
 #pragma once
 
-#include "minecraft/player.hpp"
+#include "player/player.hpp"
 
 #include <boost/optional.hpp>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
-
-#include <stdexcept>
-
 
 namespace region::player
 {

@@ -5,6 +5,7 @@
 
 // Packets
 #include "client/animation.hpp"
+#include "client/client_status.hpp"
 #include "client/client_settings.hpp"
 #include "client/keep_alive.hpp"
 #include "client/play_id.hpp"
@@ -19,6 +20,7 @@ namespace minecraft::packets::client
                                          teleport_confirm,
                                          plugin_message,
                                          keep_alive,
+                                         client_status,
                                          client_settings,
                                          player_position_and_rotation,
                                          animation,

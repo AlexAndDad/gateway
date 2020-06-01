@@ -10,6 +10,7 @@
 #include "minecraft/nvp.hpp"
 #include "minecraft/parse.hpp"
 #include "minecraft/types.hpp"
+#include "minecraft/types/remaining_bytes.hpp"
 #include "minecraft/print.hpp"
 #include "minecraft/to_json.hpp"
 

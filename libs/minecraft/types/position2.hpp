@@ -10,6 +10,20 @@ namespace minecraft
 {
     struct position2
     {
+        position2()
+        : x(0)
+        , y(0)
+        , z(0)
+        {
+        }
+
+        position2(int x, int y, int z)
+        : x(x)
+        , y(y)
+        , z(z)
+        {
+        }
+
         int x, y, z;
     };
 
@@ -18,8 +32,8 @@ namespace minecraft
     {
         auto [x, y, z] = arg;
 
-        auto packed = ((static_cast< std::uint64_t >(x) & 0x3FFFFFF) << 38) |
-                      ((static_cast< std::uint64_t >(z) & 0x3FFFFFF) << 12) | (static_cast< std::uint64_t >(y) & 0xFFF);
+        auto packed = ((static_cast< std::uint64_t >(x) & 0x3FFFFFF) << 38) | ((static_cast< std::uint64_t >(z) & 0x3FFFFFF) << 12) |
+                      (static_cast< std::uint64_t >(y) & 0xFFF);
 
         return encode(packed, first);
     }
@@ -32,8 +46,7 @@ namespace minecraft
         return os;
     }
 
-    inline const_buffer_iterator
-    parse(const_buffer_iterator first, const_buffer_iterator last, position2 &target, error_code &ec)
+    inline const_buffer_iterator parse(const_buffer_iterator first, const_buffer_iterator last, position2 &target, error_code &ec)
     {
         using minecraft::parse;
 
